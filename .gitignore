@@ -1,0 +1,22 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# auth generated js and jsmap files
+*.js
+*.js.map
+
+# Distribution / packaging
+.Python
+env/
+build/
+develop-eggs/
+*.egg-info
+MANIFEST
+dist
+.idea
+.vscode
+
+# docs
+docs/api_autodoc
