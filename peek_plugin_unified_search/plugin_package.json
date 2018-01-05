@@ -2,7 +2,7 @@
     "plugin": {
         "title": "UnifiedSearch Plugin",
         "packageName": "peek_plugin_unified_search",
-    "version":"0.7.9.2",
+    "version":"0.7.9.3",
         "buildNumber": "#PLUGIN_BUILD#",
         "buildDate": "#BUILD_DATE#",
         "creator": "Synerty Pty Ltd",
