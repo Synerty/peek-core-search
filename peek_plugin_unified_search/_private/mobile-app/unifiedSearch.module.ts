@@ -3,7 +3,7 @@ import {NgModule} from "@angular/core";
 import {Routes} from "@angular/router";
 
 // Import a small abstraction library to switch between nativescript and web
-import {PeekModuleFactory} from "@synerty/peek-util/index.web";
+import {PeekModuleFactory} from "@synerty/peek-util-web";
 
 // Import the default route component
 import {UnifiedSearchComponent} from "./unifiedSearch.component";
