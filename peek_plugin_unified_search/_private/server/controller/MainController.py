@@ -1,16 +1,17 @@
 import logging
 
 from twisted.internet.defer import Deferred
-from txhttputil.util.DeferUtil import deferToThreadWrap
-
-from vortex.TupleSelector import TupleSelector
+from vortex.DeferUtil import deferToThreadWrapWithLogger
 from vortex.TupleAction import TupleActionABC
+from vortex.TupleSelector import TupleSelector
 from vortex.handler.TupleActionProcessor import TupleActionProcessorDelegateABC
 from vortex.handler.TupleDataObservableHandler import TupleDataObservableHandler
 
 from peek_plugin_unified_search._private.storage.ExcludedKwTuple import ExcludedKwTuple
-from peek_plugin_unified_search._private.tuples.AddIntValueActionTuple import AddIntValueActionTuple
-from peek_plugin_unified_search._private.tuples.StringCapToggleActionTuple import StringCapToggleActionTuple
+from peek_plugin_unified_search._private.tuples.AddIntValueActionTuple import \
+    AddIntValueActionTuple
+from peek_plugin_unified_search._private.tuples.StringCapToggleActionTuple import \
+    StringCapToggleActionTuple
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +34,7 @@ class MainController(TupleActionProcessorDelegateABC):
 
         raise NotImplementedError(tupleAction.tupleName())
 
-    @deferToThreadWrap
+    @deferToThreadWrapWithLogger(logger)
     def _processCapToggleString(self, action: StringCapToggleActionTuple):
         try:
             # Perform update using SQLALchemy
@@ -65,7 +66,7 @@ class MainController(TupleActionProcessorDelegateABC):
             # Always close the session after we create it
             session.close()
 
-    @deferToThreadWrap
+    @deferToThreadWrapWithLogger(logger)
     def _processAddIntValue(self, action: AddIntValueActionTuple):
         try:
             # Perform update using SQLALchemy
