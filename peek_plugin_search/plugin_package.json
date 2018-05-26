@@ -1,0 +1,45 @@
+{
+    "plugin": {
+        "title": "Search Plugin",
+        "packageName": "peek_plugin_search",
+    "version":"0.10.1",
+        "buildNumber": "#PLUGIN_BUILD#",
+        "buildDate": "#BUILD_DATE#",
+        "creator": "Synerty Pty Ltd",
+        "website": "www.synerty.com"
+    },
+    "requiresServices": [
+        "server",
+        "storage",
+        "admin",
+        "client",
+        "mobile",
+        "agent"
+    ],
+    "server": {
+    },
+    "storage": {
+        "alembicDir": "_private/alembic"
+    },
+    "admin": {
+        "showHomeLink": true,
+        "appDir": "_private/admin-app",
+        "appModule": "search.module#SearchModule",
+        "moduleDir": "plugin-module",
+    },
+    "client": {
+    },
+    "mobile": {
+        "showHomeLink": true,
+        "appDir": "_private/mobile-app",
+        "appModule": "search.module#SearchModule",
+        "assetDir": "_private/mobile-assets",
+        "icon": "/assets/peek_plugin_search/icon.png",
+        "moduleDir": "plugin-module"
+    },
+    "agent": {
+    },
+    "desktop": {
+        "moduleDir": "plugin-module"
+    }
+}

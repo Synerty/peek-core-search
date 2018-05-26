@@ -1,5 +1,5 @@
 =================
-UnifiedSearch Plugin 1
+Search Plugin 1
 =================
 
-This is a Peek Plugin, from the unifiedSearch.
+This is a Peek Plugin, from the search.
