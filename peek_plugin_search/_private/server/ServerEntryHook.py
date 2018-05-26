@@ -1,29 +1,28 @@
 import logging
 
+from celery import Celery
+
 from peek_plugin_base.server.PluginServerEntryHookABC import PluginServerEntryHookABC
-
-from peek_plugin_search._private.storage import DeclarativeBase
-from peek_plugin_search._private.storage.DeclarativeBase import loadStorageTuples
-
 from peek_plugin_base.server.PluginServerStorageEntryHookABC import \
     PluginServerStorageEntryHookABC
-
+from peek_plugin_base.server.PluginServerWorkerEntryHookABC import \
+    PluginServerWorkerEntryHookABC
+from peek_plugin_search._private.storage import DeclarativeBase
+from peek_plugin_search._private.storage.DeclarativeBase import loadStorageTuples
 from peek_plugin_search._private.tuples import loadPrivateTuples
 from peek_plugin_search.tuples import loadPublicTuples
-
-from .TupleDataObservable import makeTupleDataObservableHandler
-
+from peek_plugin_search._private.server.api.SearchApi import SearchApi
 from .TupleActionProcessor import makeTupleActionProcessorHandler
-from .controller.MainController import MainController
-
+from .TupleDataObservable import makeTupleDataObservableHandler
 from .admin_backend import makeAdminBackendHandlers
-
-from .SearchApi import SearchApi
+from .controller.MainController import MainController
 
 logger = logging.getLogger(__name__)
 
 
-class ServerEntryHook(PluginServerEntryHookABC, PluginServerStorageEntryHookABC):
+class ServerEntryHook(PluginServerEntryHookABC,
+                      PluginServerStorageEntryHookABC,
+                      PluginServerWorkerEntryHookABC):
     def __init__(self, *args, **kwargs):
         """" Constructor """
         # Call the base classes constructor
@@ -109,3 +108,11 @@ class ServerEntryHook(PluginServerEntryHookABC, PluginServerStorageEntryHookABC)
         platform service.
         """
         return self._api
+
+
+    ###### Implement PluginServerWorkerEntryHookABC
+
+    @property
+    def celeryApp(self) -> Celery:
+        from peek_plugin_search._private.worker.CeleryApp import celeryApp
+        return celeryApp

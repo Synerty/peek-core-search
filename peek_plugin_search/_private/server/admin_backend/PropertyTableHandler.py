@@ -29,12 +29,9 @@ class __ExtUpdateObservable(OrmCrudHandlerExtension):
         self._tupleDataObserver = tupleDataObserver
 
     def _tellObserver(self, tuple_, tuples, session, payloadFilt):
-        selector = {}
-        # Copy any filter values into the selector
-        # selector["lookupName"] = payloadFilt["lookupName"]
-        tupleSelector = TupleSelector(SearchPropertyTuple.tupleName(),
-                                      selector)
-        self._tupleDataObserver.notifyOfTupleUpdate(tupleSelector)
+        self._tupleDataObserver.notifyOfTupleUpdate(
+            TupleSelector(SearchPropertyTuple.tupleName(), {})
+        )
         return True
 
     afterUpdateCommit = _tellObserver

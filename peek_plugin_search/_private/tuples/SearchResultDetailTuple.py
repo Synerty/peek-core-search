@@ -1,8 +1,5 @@
-from typing import List
-
-from vortex.Tuple import Tuple, addTupleType, TupleField
-
 from peek_plugin_search._private.PluginNames import searchTuplePrefix
+from vortex.Tuple import Tuple, addTupleType, TupleField
 
 
 @addTupleType
@@ -11,7 +8,7 @@ class SearchResultDetailTuple(Tuple):
 
     This tuple represents the details of a search result.
     """
-    __tupleType__ = searchTuplePrefix + 'SearchIndexChunkTuple'
+    __tupleType__ = searchTuplePrefix + 'SearchResultDetailTuple'
 
     #:  The name of the detail
     name: str = TupleField()

@@ -10,11 +10,11 @@
     },
     "requiresServices": [
         "server",
+        "worker",
         "storage",
         "admin",
         "client",
-        "mobile",
-        "agent"
+        "mobile"
     ],
     "server": {
     },

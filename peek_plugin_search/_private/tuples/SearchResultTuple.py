@@ -12,7 +12,7 @@ class SearchResultTuple(Tuple):
 
     This tuple represents a search result
     """
-    __tupleType__ = searchTuplePrefix + 'SearchResultObjectTuple'
+    __tupleType__ = searchTuplePrefix + 'SearchResultTuple'
 
     #:  The id of the object this search result is for
     objectId: str = TupleField()

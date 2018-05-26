@@ -1,9 +1,5 @@
-from typing import List
-
-from vortex.Tuple import Tuple, addTupleType, TupleField
-
 from peek_plugin_search._private.PluginNames import searchTuplePrefix
-from .SearchResultDetailTuple import SearchResultDetailTuple
+from vortex.Tuple import Tuple, addTupleType, TupleField
 
 
 @addTupleType
@@ -12,7 +8,7 @@ class SearchResultOpenHandlerTuple(Tuple):
 
     This tuple represents a search result
     """
-    __tupleType__ = searchTuplePrefix + 'SearchResultObjectTuple'
+    __tupleType__ = searchTuplePrefix + 'SearchResultOpenHandlerTuple'
 
     #:  The key of a registered open handler
     key: str = TupleField()

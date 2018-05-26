@@ -1,10 +1,9 @@
 import logging
 
-from sqlalchemy import Column
+from sqlalchemy import Column, LargeBinary
 from sqlalchemy import Integer, String
 from sqlalchemy.sql.schema import Index
 
-from peek_plugin_base.storage.TypeDecorators import PeekLargeBinary
 from peek_plugin_search._private.PluginNames import searchTuplePrefix
 from vortex.Tuple import Tuple, addTupleType
 from .DeclarativeBase import DeclarativeBase
@@ -20,7 +19,7 @@ class SearchChunk(Tuple, DeclarativeBase):
     id = Column(Integer, primary_key=True, autoincrement=True)
 
     chunkKey = Column(String, primary_key=True)
-    encodedData = Column(PeekLargeBinary, nullable=False)
+    encodedData = Column(LargeBinary, nullable=False)
     encodedHash = Column(String, nullable=False)
     lastUpdate = Column(String, nullable=False)
 

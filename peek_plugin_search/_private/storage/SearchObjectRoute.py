@@ -28,10 +28,12 @@ class SearchObjectRoute(Tuple, DeclarativeBase):
                       ForeignKey('SearchObject.id', ondelete='CASCADE'),
                       nullable=False)
 
+    importGroupHash = Column(String, nullable=False)
     routeTitle = Column(String, nullable=False)
     routePath = Column(String, nullable=False)
 
     __table_args__ = (
-        Index("idx_ObjectRoute_objectId", objectId),
+        Index("idx_ObjectRoute_objectId", objectId), # For foreign key
+        Index("idx_ObjectRoute_routeTitle_importGroupHash", importGroupHash, unique=True),
         Index("idx_ObjectRoute_routeTitle_objectId", routeTitle, objectId, unique=True),
     )

@@ -1,15 +1,15 @@
-"""Initial tables
+"""initial tables
 
 Peek Plugin Database Migration Script
 
-Revision ID: 68bf87e6cda8
+Revision ID: fb19bea990c1
 Revises: 
-Create Date: 2018-05-26 14:43:01.885830
+Create Date: 2018-05-26 16:35:28.093710
 
 """
 
 # revision identifiers, used by Alembic.
-revision = '68bf87e6cda8'
+revision = 'fb19bea990c1'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -24,7 +24,7 @@ def upgrade():
     op.create_table('ObjectChunk',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('chunkKey', sa.String(), nullable=False),
-    sa.Column('encodedData', peek_plugin_base.storage.TypeDecorators.PeekLargeBinary(), nullable=False),
+    sa.Column('encodedData', sa.LargeBinary(), nullable=False),
     sa.Column('encodedHash', sa.String(), nullable=False),
     sa.Column('lastUpdate', sa.String(), nullable=False),
     sa.PrimaryKeyConstraint('id', 'chunkKey'),
@@ -34,7 +34,7 @@ def upgrade():
     op.create_table('SearchChunk',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('chunkKey', sa.String(), nullable=False),
-    sa.Column('encodedData', peek_plugin_base.storage.TypeDecorators.PeekLargeBinary(), nullable=False),
+    sa.Column('encodedData', sa.LargeBinary(), nullable=False),
     sa.Column('encodedHash', sa.String(), nullable=False),
     sa.Column('lastUpdate', sa.String(), nullable=False),
     sa.PrimaryKeyConstraint('id', 'chunkKey'),
@@ -89,6 +89,7 @@ def upgrade():
     op.create_table('SearchObjectRoute',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('objectId', sa.Integer(), nullable=False),
+    sa.Column('importGroupHash', sa.String(), nullable=False),
     sa.Column('routeTitle', sa.String(), nullable=False),
     sa.Column('routePath', sa.String(), nullable=False),
     sa.ForeignKeyConstraint(['objectId'], ['pl_search.SearchObject.id'], ondelete='CASCADE'),
@@ -96,6 +97,7 @@ def upgrade():
     schema='pl_search'
     )
     op.create_index('idx_ObjectRoute_objectId', 'SearchObjectRoute', ['objectId'], unique=False, schema='pl_search')
+    op.create_index('idx_ObjectRoute_routeTitle_importGroupHash', 'SearchObjectRoute', ['importGroupHash'], unique=True, schema='pl_search')
     op.create_index('idx_ObjectRoute_routeTitle_objectId', 'SearchObjectRoute', ['routeTitle', 'objectId'], unique=True, schema='pl_search')
     op.create_table('SettingProperty',
     sa.Column('id', sa.Integer(), nullable=False),
@@ -118,6 +120,7 @@ def downgrade():
     op.drop_index('idx_SettingProperty_settingId', table_name='SettingProperty', schema='pl_search')
     op.drop_table('SettingProperty', schema='pl_search')
     op.drop_index('idx_ObjectRoute_routeTitle_objectId', table_name='SearchObjectRoute', schema='pl_search')
+    op.drop_index('idx_ObjectRoute_routeTitle_importGroupHash', table_name='SearchObjectRoute', schema='pl_search')
     op.drop_index('idx_ObjectRoute_objectId', table_name='SearchObjectRoute', schema='pl_search')
     op.drop_table('SearchObjectRoute', schema='pl_search')
     op.drop_index('idx_SearchIndex_quick_query', table_name='SearchIndex', schema='pl_search')
