@@ -5,7 +5,6 @@ from twisted.internet.defer import Deferred
 from peek_plugin_search._private.server.controller.SearchObjectImportController import \
     SearchObjectImportController
 from peek_plugin_search.server.SearchApiABC import SearchApiABC
-from peek_plugin_search.tuples.ImportSearchObjectTuple import ImportSearchObjectTuple
 
 
 class SearchApi(SearchApiABC):

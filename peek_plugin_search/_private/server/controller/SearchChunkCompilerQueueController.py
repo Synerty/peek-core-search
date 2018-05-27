@@ -7,8 +7,8 @@ from sqlalchemy import asc
 from twisted.internet import task
 from twisted.internet.defer import inlineCallbacks
 
-from peek_plugin_search._private.server.client_handlers.ClientSearchChunkUpdateHandler import \
-    ClientSearchChunkUpdateHandler
+from peek_plugin_search._private.server.client_handlers.ClientSearchIndexChunkUpdateHandler import \
+    ClientSearchIndexChunkUpdateHandler
 from peek_plugin_search._private.server.controller.StatusController import \
     StatusController
 from peek_plugin_search._private.storage.SearchIndexCompilerQueue import \
@@ -37,11 +37,11 @@ class SearchChunkCompilerQueueController:
 
     def __init__(self, ormSessionCreator,
                  statusController: StatusController,
-                 clientLocationUpdateHandler: ClientSearchChunkUpdateHandler,
+                 clientLocationUpdateHandler: ClientSearchIndexChunkUpdateHandler,
                  readyLambdaFunc: Callable):
         self._ormSessionCreator = ormSessionCreator
         self._statusController: StatusController = statusController
-        self._clientLocationUpdateHandler: ClientSearchChunkUpdateHandler = clientLocationUpdateHandler
+        self._clientLocationUpdateHandler: ClientSearchIndexChunkUpdateHandler = clientLocationUpdateHandler
         self._readyLambdaFunc = readyLambdaFunc
 
         self._pollLoopingCall = task.LoopingCall(self._poll)
@@ -155,7 +155,7 @@ class SearchChunkCompilerQueueController:
     def _pollCallback(self, indexBuckets: List[str], startTime, processedCount):
         self._queueCount -= 1
         logger.debug("Time Taken = %s" % (datetime.now(pytz.utc) - startTime))
-        self._clientLocationUpdateHandler.sendLocationIndexes(indexBuckets)
+        self._clientLocationUpdateHandler.sendChunks(indexBuckets)
         self._statusController.addToLocationIndexCompilerTotal(processedCount)
         self._statusController.setLocationIndexCompilerStatus(True, self._queueCount)
 

@@ -12,9 +12,9 @@ logger = logging.getLogger(__name__)
 
 
 @addTupleType
-class SearchChunk(Tuple, DeclarativeBase):
-    __tablename__ = 'SearchChunk'
-    __tupleType__ = searchTuplePrefix + 'SearchChunkTable'
+class SearchIndexChunk(Tuple, DeclarativeBase):
+    __tablename__ = 'SearchIndexChunk'
+    __tupleType__ = searchTuplePrefix + 'SearchIndexChunkTable'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
 

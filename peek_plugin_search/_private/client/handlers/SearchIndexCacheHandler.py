@@ -5,8 +5,8 @@ from typing import List
 from twisted.internet.defer import DeferredList, inlineCallbacks, Deferred
 
 from peek_plugin_search._private.PluginNames import searchFilt
-from peek_plugin_search._private.client.controller.LocationIndexCacheController import \
-    LocationIndexCacheController
+from peek_plugin_search._private.client.controller.SearchIndexCacheController import \
+    SearchIndexCacheController
 from peek_plugin_search._private.tuples.LocationIndexUpdateDateTuple import \
     LocationIndexUpdateDateTuple, DeviceLocationIndexT
 from vortex.DeferUtil import vortexLogFailure
@@ -25,8 +25,8 @@ clientLocationIndexWatchUpdateFromDeviceFilt.update(searchFilt)
 
 
 # ModelSet HANDLER
-class LocationIndexCacheHandler(object):
-    def __init__(self, locationIndexCacheController: LocationIndexCacheController,
+class SearchIndexCacheHandler(object):
+    def __init__(self, locationIndexCacheController: SearchIndexCacheController,
                  clientId: str):
         """ App LocationIndex Handler
 

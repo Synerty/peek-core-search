@@ -9,10 +9,10 @@ from peek_plugin_search._private.PluginNames import searchFilt
 from peek_plugin_search._private.PluginNames import searchObservableName
 from peek_plugin_search._private.client.TupleDataObservable import \
     makeClientTupleDataObservableHandler
-from peek_plugin_search._private.client.controller.LocationIndexCacheController import \
-    LocationIndexCacheController
-from peek_plugin_search._private.client.handlers.LocationIndexCacheHandler import \
-    LocationIndexCacheHandler
+from peek_plugin_search._private.client.controller.SearchIndexCacheController import \
+    SearchIndexCacheController
+from peek_plugin_search._private.client.handlers.SearchIndexCacheHandler import \
+    SearchIndexCacheHandler
 from peek_plugin_search._private.storage.DeclarativeBase import loadStorageTuples
 from peek_plugin_search._private.tuples import loadPrivateTuples
 from peek_plugin_search.tuples import loadPublicTuples
@@ -90,12 +90,12 @@ class ClientEntryHook(PluginClientEntryHookABC):
 
         # ----- Location Index Cache Controller
 
-        locationIndexCacheController = LocationIndexCacheController(
+        locationIndexCacheController = SearchIndexCacheController(
             self.platform.serviceId)
         self._loadedObjects.append(locationIndexCacheController)
 
         # This is the custom handler for the client
-        locationIndexCacheHandler = LocationIndexCacheHandler(
+        locationIndexCacheHandler = SearchIndexCacheHandler(
             locationIndexCacheController=locationIndexCacheController,
             clientId=self.platform.serviceId
         )

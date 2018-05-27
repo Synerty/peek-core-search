@@ -6,11 +6,12 @@ import {searchTuplePrefix} from "../PluginNames";
 export class SearchIndexChunkTuple extends Tuple {
     public static readonly tupleName = searchTuplePrefix + "SearchIndexChunkTuple";
 
-    //  The name of the detail
-    name: string;
+    // id: number;
+    // encodedHash: string;
 
-    //  The value of the detail
-    value: string;
+    chunkKey: string;
+    encodedData: string;
+    lastUpdate: string;
 
     constructor() {
         super(SearchIndexChunkTuple.tupleName)
