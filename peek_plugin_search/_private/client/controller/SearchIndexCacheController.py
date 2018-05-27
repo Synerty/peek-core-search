@@ -94,8 +94,8 @@ class SearchIndexCacheController:
 
         self._webAppHandler.notifyOfSearchIndexUpdate(chunkKeysUpdated)
 
-    def locationIndex(self, chunkKey) -> EncodedSearchIndexChunkTuple:
+    def searchIndex(self, chunkKey) -> EncodedSearchIndexChunkTuple:
         return self._cache.get(chunkKey)
 
-    def locationIndexKeys(self) -> List[str]:
+    def searchIndexKeys(self) -> List[str]:
         return list(self._cache)

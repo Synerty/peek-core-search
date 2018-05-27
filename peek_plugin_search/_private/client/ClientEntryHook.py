@@ -96,7 +96,7 @@ class ClientEntryHook(PluginClientEntryHookABC):
 
         # This is the custom handler for the client
         locationIndexCacheHandler = SearchIndexCacheHandler(
-            locationIndexCacheController=locationIndexCacheController,
+            cacheController=locationIndexCacheController,
             clientId=self.platform.serviceId
         )
         self._loadedObjects.append(locationIndexCacheHandler)
