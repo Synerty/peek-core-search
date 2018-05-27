@@ -7,20 +7,19 @@ from sqlalchemy import asc
 from twisted.internet import task
 from twisted.internet.defer import inlineCallbacks
 
-from peek_plugin_base.storage.StorageUtil import makeCoreValuesSubqueryCondition
-from peek_plugin_diagram._private.server.client_handlers.ClientLocationIndexUpdateHandler import \
-    ClientLocationIndexUpdateHandler
-from peek_plugin_diagram._private.server.controller.StatusController import \
+from peek_plugin_search._private.server.client_handlers.ClientSearchChunkUpdateHandler import \
+    ClientSearchChunkUpdateHandler
+from peek_plugin_search._private.server.controller.StatusController import \
     StatusController
-from peek_plugin_diagram._private.storage.LocationIndex import \
-    LocationIndexCompilerQueue
+from peek_plugin_search._private.storage.SearchIndexCompilerQueue import \
+    SearchIndexCompilerQueue
 from vortex.DeferUtil import deferToThreadWrapWithLogger, vortexLogFailure
 
 logger = logging.getLogger(__name__)
 
 
-class DispKeyCompilerQueueController:
-    """ Disp Compiler
+class SearchChunkCompilerQueueController:
+    """ SearchChunkCompilerQueueController
 
     Compile the disp items into the grid data
 
@@ -38,11 +37,11 @@ class DispKeyCompilerQueueController:
 
     def __init__(self, ormSessionCreator,
                  statusController: StatusController,
-                 clientLocationUpdateHandler: ClientLocationIndexUpdateHandler,
+                 clientLocationUpdateHandler: ClientSearchChunkUpdateHandler,
                  readyLambdaFunc: Callable):
         self._ormSessionCreator = ormSessionCreator
         self._statusController: StatusController = statusController
-        self._clientLocationUpdateHandler: ClientLocationIndexUpdateHandler = clientLocationUpdateHandler
+        self._clientLocationUpdateHandler: ClientSearchChunkUpdateHandler = clientLocationUpdateHandler
         self._readyLambdaFunc = readyLambdaFunc
 
         self._pollLoopingCall = task.LoopingCall(self._poll)
@@ -73,8 +72,8 @@ class DispKeyCompilerQueueController:
         if not self._readyLambdaFunc():
             return
 
-        from peek_plugin_diagram._private.worker.tasks.LocationIndexCompilerTask import \
-            compileLocationIndex
+        from peek_plugin_search._private.worker.tasks.SearchChunkCompilerTask import \
+            compileSearchChunk
 
         # We queue the grids in bursts, reducing the work we have to do.
         if self._queueCount > self.QUEUE_MIN:
@@ -111,7 +110,7 @@ class DispKeyCompilerQueueController:
             # Set the watermark
             self._lastQueueId = items[-1].id
 
-            d = compileLocationIndex.delay(items)
+            d = compileSearchChunk.delay(items)
             d.addCallback(self._pollCallback, datetime.now(pytz.utc), len(items))
             d.addErrback(self._pollErrback, datetime.now(pytz.utc))
 
@@ -123,9 +122,9 @@ class DispKeyCompilerQueueController:
     def _grabQueueChunk(self):
         session = self._ormSessionCreator()
         try:
-            qry = (session.query(LocationIndexCompilerQueue)
-                .order_by(asc(LocationIndexCompilerQueue.id))
-                .filter(LocationIndexCompilerQueue.id > self._lastQueueId)
+            qry = (session.query(SearchIndexCompilerQueue)
+                .order_by(asc(SearchIndexCompilerQueue.id))
+                .filter(SearchIndexCompilerQueue.id > self._lastQueueId)
                 .yield_per(500)
                 # .limit(self.FETCH_SIZE)
                 )
@@ -141,15 +140,13 @@ class DispKeyCompilerQueueController:
     @deferToThreadWrapWithLogger(logger)
     def _deleteDuplicateQueueItems(self, itemIds):
         session = self._ormSessionCreator()
-        table = LocationIndexCompilerQueue.__table__
+        table = SearchIndexCompilerQueue.__table__
         try:
             SIZE = 1000
             for start in range(0, len(itemIds), SIZE):
                 chunkIds = itemIds[start: start + SIZE]
 
-                session.execute(table.delete(makeCoreValuesSubqueryCondition(
-                    session.bind, table.c.id, chunkIds
-                )))
+                session.execute(table.delete(table.c.id.in_(chunkIds)))
 
             session.commit()
         finally:

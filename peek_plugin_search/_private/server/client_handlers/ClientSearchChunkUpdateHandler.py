@@ -6,12 +6,12 @@ from twisted.internet.defer import Deferred
 
 from peek_plugin_base.PeekVortexUtil import peekClientName
 from peek_plugin_base.storage.StorageUtil import makeOrmValuesSubqueryCondition
-from peek_plugin_diagram._private.client.controller.LocationIndexCacheController import \
+from peek_plugin_search._private.client.controller.LocationIndexCacheController import \
     clientLocationIndexUpdateFromServerFilt
-from peek_plugin_diagram._private.storage.LocationIndex import LocationIndexCompiled
-from peek_plugin_diagram._private.tuples.EncodedLocationIndexTuple import \
+from peek_plugin_search._private.storage.LocationIndex import LocationIndexCompiled
+from peek_plugin_search._private.tuples.EncodedLocationIndexTuple import \
     EncodedLocationIndexTuple
-from peek_plugin_diagram._private.tuples.LocationIndexTuple import LocationIndexTuple
+from peek_plugin_search._private.tuples.LocationIndexTuple import LocationIndexTuple
 from vortex.DeferUtil import vortexLogFailure, deferToThreadWrapWithLogger
 from vortex.Payload import Payload
 from vortex.VortexFactory import VortexFactory, NoVortexException
@@ -19,7 +19,7 @@ from vortex.VortexFactory import VortexFactory, NoVortexException
 logger = logging.getLogger(__name__)
 
 
-class ClientLocationIndexUpdateHandler:
+class ClientSearchChunkUpdateHandler:
     """ Client Update Controller
 
     This controller handles sending updates the the client.

@@ -5,7 +5,7 @@ from typing import Dict, List
 from twisted.internet.defer import inlineCallbacks, Deferred
 
 from peek_plugin_search._private.PluginNames import searchFilt
-from peek_plugin_search._private.server.client_handlers.ClientLocationIndexLoaderRpc import ClientLocationIndexLoaderRpc
+from peek_plugin_search._private.server.client_handlers.ClientSearchChunkLoaderRpc import ClientSearchChunkLoaderRpc
 from peek_plugin_search._private.tuples.EncodedLocationIndexTuple import \
     EncodedLocationIndexTuple
 from peek_plugin_search._private.tuples.LocationIndexTuple import LocationIndexTuple
@@ -65,7 +65,7 @@ class LocationIndexCacheController:
         offset = 0
         while True:
             logger.info("Loading LocationIndex %s to %s" % (offset, offset + self.LOAD_CHUNK))
-            locationIndexTuples = yield ClientLocationIndexLoaderRpc.loadLocationIndexes(offset, self.LOAD_CHUNK)
+            locationIndexTuples = yield ClientSearchChunkLoaderRpc.loadLocationIndexes(offset, self.LOAD_CHUNK)
             if not locationIndexTuples:
                 break
 

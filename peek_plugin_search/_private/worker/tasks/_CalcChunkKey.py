@@ -4,8 +4,8 @@ from typing import Optional
 
 from collections import namedtuple
 
-from peek_plugin_diagram._private.tuples.DispLocationTuple import DispKeyLocationTuple
-from peek_plugin_diagram._private.worker.tasks._CalcGrid import _calcBounds
+from peek_plugin_search._private.tuples.DispLocationTuple import DispKeyLocationTuple
+from peek_plugin_search._private.worker.tasks._CalcGrid import _calcBounds
 
 logger = logging.getLogger(__name__)
 

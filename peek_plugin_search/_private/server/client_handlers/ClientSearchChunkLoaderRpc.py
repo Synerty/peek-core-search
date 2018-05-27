@@ -3,18 +3,18 @@ from typing import List
 
 from peek_plugin_base.PeekVortexUtil import peekServerName, peekClientName
 from peek_plugin_base.storage.DbConnection import DbSessionCreator
-from peek_plugin_diagram._private.PluginNames import diagramFilt
-from peek_plugin_diagram._private.storage.LocationIndex import LocationIndexCompiled
-from peek_plugin_diagram._private.storage.ModelSet import ModelSet
-from peek_plugin_diagram._private.tuples.EncodedLocationIndexTuple import \
+from peek_plugin_search._private.PluginNames import diagramFilt
+from peek_plugin_search._private.storage.LocationIndex import LocationIndexCompiled
+from peek_plugin_search._private.storage.ModelSet import ModelSet
+from peek_plugin_search._private.tuples.EncodedLocationIndexTuple import \
     EncodedLocationIndexTuple
-from peek_plugin_diagram._private.tuples.LocationIndexTuple import LocationIndexTuple
+from peek_plugin_search._private.tuples.LocationIndexTuple import LocationIndexTuple
 from vortex.rpc.RPC import vortexRPC
 
 logger = logging.getLogger(__name__)
 
 
-class ClientLocationIndexLoaderRpc:
+class ClientSearchChunkLoaderRpc:
     def __init__(self, dbSessionCreator: DbSessionCreator):
         self._dbSessionCreator = dbSessionCreator
 

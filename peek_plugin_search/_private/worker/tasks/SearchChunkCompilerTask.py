@@ -8,18 +8,18 @@ import hashlib
 import pytz
 from base64 import b64encode
 
-from peek_plugin_diagram._private.storage.ModelSet import ModelSet
+from peek_plugin_search._private.storage.ModelSet import ModelSet
 from vortex.Payload import Payload
 
 from peek_plugin_base.storage.StorageUtil import makeCoreValuesSubqueryCondition, \
     makeOrmValuesSubqueryCondition
 from peek_plugin_base.worker import CeleryDbConn
-from peek_plugin_diagram._private.storage.Display import DispBase
-from peek_plugin_diagram._private.storage.LocationIndex import LocationIndexCompiled, \
+from peek_plugin_search._private.storage.Display import DispBase
+from peek_plugin_search._private.storage.LocationIndex import LocationIndexCompiled, \
     LocationIndex
-from peek_plugin_diagram._private.storage.LocationIndex import LocationIndexCompilerQueue
-from peek_plugin_diagram._private.tuples.LocationIndexTuple import LocationIndexTuple
-from peek_plugin_diagram._private.worker.CeleryApp import celeryApp
+from peek_plugin_search._private.storage.LocationIndex import LocationIndexCompilerQueue
+from peek_plugin_search._private.tuples.LocationIndexTuple import LocationIndexTuple
+from peek_plugin_search._private.worker.CeleryApp import celeryApp
 from txcelery.defer import DeferrableTask
 
 logger = logging.getLogger(__name__)
@@ -36,7 +36,7 @@ Compile the location indexes
 
 @DeferrableTask
 @celeryApp.task(bind=True)
-def compileLocationIndex(self, queueItems) -> List[str]:
+def compileSearchChunk(self, queueItems) -> List[str]:
     """ Compile Location Index Task
 
     :param self: A celery reference to this task

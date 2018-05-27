@@ -9,13 +9,15 @@ from peek_plugin_search.tuples.ImportSearchObjectTuple import ImportSearchObject
 class SearchApiABC(metaclass=ABCMeta):
 
     @abstractmethod
-    def importSearchObjects(self,
-                            searchObjects: List[ImportSearchObjectTuple]) -> Deferred:
+    def importSearchObjects(self, searchObjectsEncodedPayload: bytes) -> Deferred:
         """ Import Search Objects
 
         This method imports a group of objects into the search.
 
-        :param searchObjects: A group/list of objects to import into the search
+        :param searchObjectsEncodedPayload: A group/list of objects to import into the search
+                The format of the encodedPayload tuples is List[ImportSearchObjectTuple]
+                using Payload(tuples=tuples).toEncodedPayload()
+
         :return: A deferred that fires when the objects are queued for indexing.
 
         """
