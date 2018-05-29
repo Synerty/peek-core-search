@@ -1,20 +1,16 @@
-import logging
-
 from sqlalchemy import Column, LargeBinary
 from sqlalchemy import Integer, String
 from sqlalchemy.sql.schema import Index
 
 from peek_plugin_search._private.PluginNames import searchTuplePrefix
+from peek_plugin_search._private.storage.DeclarativeBase import DeclarativeBase
 from vortex.Tuple import Tuple, addTupleType
-from .DeclarativeBase import DeclarativeBase
-
-logger = logging.getLogger(__name__)
 
 
 @addTupleType
-class SearchIndexChunk(Tuple, DeclarativeBase):
-    __tablename__ = 'SearchIndexChunk'
-    __tupleType__ = searchTuplePrefix + 'SearchIndexChunkTable'
+class EncodedSearchIndexChunk(Tuple, DeclarativeBase):
+    __tablename__ = 'EncodedSearchIndexChunk'
+    __tupleType__ = searchTuplePrefix + 'EncodedSearchIndexChunkTable'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
 
@@ -24,5 +20,5 @@ class SearchIndexChunk(Tuple, DeclarativeBase):
     lastUpdate = Column(String, nullable=False)
 
     __table_args__ = (
-        Index("idx_SearchChunk_chunkKey", chunkKey, unique=True),
+        Index("idx_EncodedSearchIndex_chunkKey", chunkKey, unique=True),
     )

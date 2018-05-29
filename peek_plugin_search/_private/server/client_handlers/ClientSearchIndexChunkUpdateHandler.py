@@ -1,5 +1,5 @@
 import logging
-from typing import List, Dict, Optional
+from typing import List, Optional
 
 from sqlalchemy import select
 from twisted.internet.defer import Deferred
@@ -7,8 +7,8 @@ from twisted.internet.defer import Deferred
 from peek_plugin_base.PeekVortexUtil import peekClientName
 from peek_plugin_search._private.client.controller.SearchIndexCacheController import \
     clientSearchIndexUpdateFromServerFilt
-from peek_plugin_search._private.storage.SearchIndexChunk import SearchIndexChunk
-from peek_plugin_search._private.tuples.EncodedSearchIndexChunkTuple import \
+from peek_plugin_search._private.tuples.search_index.SearchIndexChunkTuple import SearchIndexChunkTuple
+from peek_plugin_search._private.tuples.search_index.EncodedSearchIndexChunkTuple import \
     EncodedSearchIndexChunkTuple
 from vortex.DeferUtil import vortexLogFailure, deferToThreadWrapWithLogger
 from vortex.Payload import Payload
@@ -72,7 +72,7 @@ class ClientSearchIndexChunkUpdateHandler:
     @deferToThreadWrapWithLogger(logger)
     def _serialiseLocationIndexes(self, chunkKeys: List[str]) -> Optional[bytes]:
 
-        table = SearchIndexChunk.__table__
+        table = SearchIndexChunkTuple.__table__
 
         session = self._dbSessionCreator()
         try:
@@ -83,7 +83,7 @@ class ClientSearchIndexChunkUpdateHandler:
 
             results: List[EncodedSearchIndexChunkTuple] = []
             for row in resultSet:
-                chunk = SearchIndexChunk(**row)
+                chunk = SearchIndexChunkTuple(**row)
                 
                 results.append(
                     EncodedSearchIndexChunkTuple(

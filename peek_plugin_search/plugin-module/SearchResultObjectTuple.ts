@@ -1,6 +1,6 @@
 import {addTupleType, Tuple} from "@synerty/vortexjs";
-import {searchTuplePrefix} from "../PluginNames";
-import {SearchIndexChunkTuple} from "./SearchIndexChunkTuple";
+import {searchTuplePrefix} from "./_private/PluginNames";
+import {SearchIndexChunkTuple} from "./_private/tuples/search-index/SearchIndexChunkTuple";
 
 
 

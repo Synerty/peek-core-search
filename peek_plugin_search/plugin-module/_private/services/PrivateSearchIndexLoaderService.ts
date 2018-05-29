@@ -1,5 +1,4 @@
 import {Injectable} from "@angular/core";
-import {SearchIndexTuple} from "../tuples/SearchIndexTuple";
 
 import {
     ComponentLifecycleEventEmitter,
@@ -13,84 +12,46 @@ import {
     VortexService,
     VortexStatusService
 } from "@synerty/vortexjs";
-import {
-    diagramFilt,
-    searchIndexCacheStorageName
-} from "@peek/peek_plugin_diagram/_private";
+import {searchFilt, searchIndexCacheStorageName} from "@peek/peek_plugin_search/_private";
 
-
-import {SearchIndexUpdateDateTuple} from "../tuples/SearchIndexUpdateDateTuple";
-import {DispKeySearchTuple} from "../tuples/DispSearchTuple";
-import {PrivateDiagramCoordSetService} from "./PrivateDiagramCoordSetService";
 
 import {Subject} from "rxjs/Subject";
 import {Observable} from "rxjs/Observable";
-import {EncodedSearchIndexTuple} from "../tuples/EncodedSearchIndexTuple";
-
-let pako = require("pako");
+import {
+    EncodedSearchIndexChunkTuple,
+    SearchIndexChunkTuple,
+    SearchIndexUpdateDateTuple
+} from "../tuples/search-index";
 
 
 // ----------------------------------------------------------------------------
 
 let clientSearchIndexWatchUpdateFromDeviceFilt = extend(
     {'key': "clientSearchIndexWatchUpdateFromDevice"},
-    diagramFilt
+    searchFilt
 );
 
 // ----------------------------------------------------------------------------
-/** SearchIndexTupleSelector
+/** SearchIndexChunkTupleSelector
+ *
+ * This is just a short cut for the tuple selector
  */
-class SearchIndexTupleSelector extends TupleSelector {
-    constructor(indexBucket: string) {
-        super(SearchIndexTuple.tupleName, {key: indexBucket});
+
+class SearchIndexChunkTupleSelector extends TupleSelector {
+    constructor(chunkKey: string) {
+        super(SearchIndexChunkTuple.tupleName, {key: chunkKey});
     }
 }
 
 // ----------------------------------------------------------------------------
-/** LastUpdateTupleSelector
+/** UpdateDateTupleSelector
+ *
+ * This is just a short cut for the tuple selector
  */
 class UpdateDateTupleSelector extends TupleSelector {
-    constructor(modelSetKey: string) {
-        super(SearchIndexUpdateDateTuple.tupleName, {
-            modelSetKey: modelSetKey
-        });
+    constructor() {
+        super(SearchIndexUpdateDateTuple.tupleName, {});
     }
-}
-
-
-// ----------------------------------------------------------------------------
-/** hash method
- */
-function dispKeyHashBucket(modelSetKey: string, dispKey: string): string {
-    /** Disp Key Hash Bucket
-
-     This method create an int from 0 to 255, representing the hash bucket for this
-     key.
-
-     This is simple, and provides a reasonable distribution
-
-     @param modelSetKey:
-     @param dispKey:
-
-     @return:
-
-     */
-    if (modelSetKey == null || modelSetKey.length == 0)
-        throw new Error("modelSetkey is None or zero length");
-
-    if (dispKey == null || dispKey.length == 0)
-        throw new Error("dispKey is None or zero length");
-
-    let hash = 0;
-
-    for (let i = 0; i < dispKey.length; i++) {
-        hash = ((hash << 5) - hash) + dispKey.charCodeAt(i);
-        hash |= 0; // Convert to 32bit integer
-    }
-
-    hash = hash & 1023; // 1024 buckets
-
-    return `${modelSetKey}:${hash}`;
 }
 
 
@@ -105,59 +66,9 @@ function dispKeyHashBucket(modelSetKey: string, dispKey: string): string {
  *
  */
 @Injectable()
-export class PrivateSearchIndexLoaderService {
-
-    private indexByModelSet = {};
-    private storage: TupleOfflineStorageService;
-
-    constructor(private vortexService: VortexService,
-                private vortexStatusService: VortexStatusService,
-                storageFactory: TupleStorageFactoryService,
-                private coordSetService: PrivateDiagramCoordSetService) {
-
-        this.storage = new TupleOfflineStorageService(
-            storageFactory,
-            new TupleOfflineStorageNameService(searchIndexCacheStorageName)
-        );
-
-    }
-
-    indexForModelSetKey(modelSetKey: string): Promise<SearchIndex> {
-        let newIndex: SearchIndex | null = null;
-
-        if (this.indexByModelSet.hasOwnProperty(modelSetKey)) {
-            newIndex = this.indexByModelSet[modelSetKey];
-            if (newIndex.isReady())
-                return Promise.resolve(newIndex);
-
-        } else {
-            newIndex = new SearchIndex(
-                this.vortexService,
-                this.vortexStatusService,
-                this.storage,
-                modelSetKey,
-                this.coordSetService
-            );
-            this.indexByModelSet[modelSetKey] = newIndex;
-        }
-
-        return new Promise<SearchIndex>((resolve, reject) => {
-            newIndex.isReadyObservable()
-                .first()
-                .subscribe(() => {
-                    resolve(newIndex);
-                });
-        });
-    }
-
-
-}
-
-export class SearchIndex {
+export class PrivateSearchIndexLoaderService extends ComponentLifecycleEventEmitter {
 
     private index = new SearchIndexUpdateDateTuple();
-
-    private lifecycleEmitter = new ComponentLifecycleEventEmitter();
 
     private _hasLoaded = false;
 
@@ -165,10 +76,8 @@ export class SearchIndex {
 
     constructor(private vortexService: VortexService,
                 private vortexStatusService: VortexStatusService,
-                private storage: TupleOfflineStorageService,
-                private modelSetKey: string,
-                private coordSetService: PrivateDiagramCoordSetService) {
-        this.index.modelSetKey = this.modelSetKey;
+                private storage: TupleOfflineStorageService) {
+        super();
         this.initialLoad();
     }
 
@@ -186,7 +95,7 @@ export class SearchIndex {
      */
     private initialLoad(): void {
 
-        this.storage.loadTuples(new UpdateDateTupleSelector(this.modelSetKey))
+        this.storage.loadTuples(new UpdateDateTupleSelector())
             .then((tuples: SearchIndexUpdateDateTuple[]) => {
                 if (tuples.length != 0) {
                     this.index = tuples[0];
@@ -207,12 +116,9 @@ export class SearchIndex {
 
     private setupVortexSubscriptions(): void {
 
-        let filt = extend({modelSetKey: this.modelSetKey},
-            clientSearchIndexWatchUpdateFromDeviceFilt);
-
         // Services don't have destructors, I'm not sure how to unsubscribe.
-        this.vortexService.createEndpointObservable(this.lifecycleEmitter, filt)
-            .takeUntil(this.lifecycleEmitter.onDestroyEvent)
+        this.vortexService.createEndpointObservable(this, clientSearchIndexWatchUpdateFromDeviceFilt)
+            .takeUntil(this.onDestroyEvent)
             .subscribe((payloadEnvelope: PayloadEnvelope) => {
                 this.processSearchIndexesFromServer(payloadEnvelope);
             });
@@ -220,7 +126,7 @@ export class SearchIndex {
         // If the vortex service comes back online, update the watch grids.
         this.vortexStatusService.isOnline
             .filter(isOnline => isOnline == true)
-            .takeUntil(this.lifecycleEmitter.onDestroyEvent)
+            .takeUntil(this.onDestroyEvent)
             .subscribe(() => this.askServerForUpdates());
 
     }
@@ -233,12 +139,9 @@ export class SearchIndex {
             return;
 
         let tuple = new SearchIndexUpdateDateTuple();
-        tuple.indexBucketUpdateDates = this.index.indexBucketUpdateDates;
+        tuple.updateDateByChunkKey = this.index.updateDateByChunkKey;
 
-        let filt = extend({modelSetKey: this.modelSetKey},
-            clientSearchIndexWatchUpdateFromDeviceFilt);
-
-        let payload = new Payload(filt, [tuple]);
+        let payload = new Payload(clientSearchIndexWatchUpdateFromDeviceFilt, [tuple]);
         this.vortexService.sendPayload(payload);
     }
 
@@ -256,9 +159,7 @@ export class SearchIndex {
         if (payloadEnvelope.filt["finished"] == true) {
             this.index.initialLoadComplete = true;
 
-            this.storage.saveTuples(
-                new UpdateDateTupleSelector(this.modelSetKey), [this.index]
-            )
+            this.storage.saveTuples(new UpdateDateTupleSelector(), [this.index])
                 .then(() => {
                     this._hasLoaded = true;
                     this._hasLoadedSubject.next();
@@ -279,26 +180,26 @@ export class SearchIndex {
 
     private storeSearchIndexPayload(payload: Payload) {
 
-        let encodedSearchIndexTuples: EncodedSearchIndexTuple[] = <EncodedSearchIndexTuple[]>payload.tuples;
+        let encodedSearchIndexChunkTuples: EncodedSearchIndexChunkTuple[] = <EncodedSearchIndexChunkTuple[]>payload.tuples;
 
         let tuplesToSave = [];
 
-        for (let item of encodedSearchIndexTuples) {
+        for (let item of encodedSearchIndexChunkTuples) {
             tuplesToSave.push(item);
         }
 
 
         // 2) Store the index
-        this.storeSearchIndexTuples(tuplesToSave)
+        this.storeSearchIndexChunkTuples(tuplesToSave)
             .then(() => {
                 // 3) Store the update date
 
                 for (let searchIndex of tuplesToSave) {
-                    this.index.indexBucketUpdateDates[searchIndex.indexBucket] = searchIndex.lastUpdate;
+                    this.index.updateDateByChunkKey[searchIndex.chunkKey] = searchIndex.lastUpdate;
                 }
 
                 return this.storage.saveTuples(
-                    new UpdateDateTupleSelector(this.modelSetKey), [this.index]
+                    new UpdateDateTupleSelector(), [this.index]
                 );
 
             })
@@ -310,18 +211,18 @@ export class SearchIndex {
     /** Store Index Bucket
      * Stores the index bucket in the local db.
      */
-    private storeSearchIndexTuples(encodedSearchIndexTuples: EncodedSearchIndexTuple[]): Promise<void> {
+    private storeSearchIndexChunkTuples(encodedSearchIndexChunkTuples: EncodedSearchIndexChunkTuple[]): Promise<void> {
         let retPromise: any;
         retPromise = this.storage.transaction(true)
             .then((tx) => {
 
                 let promises = [];
 
-                for (let encodedSearchIndexTuple of encodedSearchIndexTuples) {
+                for (let encodedSearchIndexChunkTuple of encodedSearchIndexChunkTuples) {
                     promises.push(
                         tx.saveTuplesEncoded(
-                            new SearchIndexTupleSelector(encodedSearchIndexTuple.indexBucket),
-                            encodedSearchIndexTuple.encodedSearchIndexTuple
+                            new SearchIndexChunkTupleSelector(encodedSearchIndexChunkTuple.chunkKey),
+                            encodedSearchIndexChunkTuple.encodedPayload
                         )
                     );
                 }
@@ -332,68 +233,5 @@ export class SearchIndex {
         return retPromise;
     }
 
-    /** Get Searchs
-     *
-     * Get the search of a Disp.key from the index..
-     *
-     */
-    getSearchs(dispKey: string): Promise<DispKeySearchTuple[]> {
-        if (dispKey == null || dispKey.length == 0) {
-            let val: DispKeySearchTuple[] = [];
-            return Promise.resolve(val);
-        }
-
-        let indexBucket = dispKeyHashBucket(this.modelSetKey, dispKey);
-
-        if (!this.index.indexBucketUpdateDates.hasOwnProperty(indexBucket)) {
-            console.log(`DispKey ${dispKey} doesn't appear in the index`);
-            return Promise.resolve([]);
-        }
-
-        let retPromise: any;
-        retPromise = this.storage.loadTuples(new SearchIndexTupleSelector(indexBucket))
-            .then((tuples: SearchIndexTuple[]) => {
-                if (tuples.length == 0)
-                    return [];
-
-                if (tuples.length != 1)
-                    throw new Error("We received more tuples then expected");
-
-                let dispIndexArray = JSON.parse(tuples[0].jsonStr);
-
-                let dispSearchIndexRawData: any[] | null = null;
-
-                // TODO These keys are sorted, so we can do a binary search.
-                for (let i = 0; i < dispIndexArray.length; i++) {
-                    if (dispIndexArray[i][0] == dispKey) {
-                        dispSearchIndexRawData = dispIndexArray[i].slice(1);
-                        break;
-                    }
-                }
-
-                // If we didn't find the key, return no indexes
-                if (dispSearchIndexRawData == null)
-                    return [];
-
-                let dispIndexes: DispKeySearchTuple[] = [];
-                for (let rawData of dispSearchIndexRawData) {
-                    let dispSearch = DispKeySearchTuple.fromSearchJson(rawData);
-
-                    let coordSet = this.coordSetService
-                        .coordSetForId(dispSearch.coordSetId);
-
-                    if (coordSet == null)
-                        continue;
-
-                    dispSearch.coordSetKey = coordSet.key;
-
-                    dispIndexes.push(dispSearch);
-                }
-
-                return dispIndexes;
-            });
-        return retPromise;
-
-    }
 
 }

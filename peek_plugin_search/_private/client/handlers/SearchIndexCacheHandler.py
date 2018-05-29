@@ -2,7 +2,7 @@ import logging
 from collections import defaultdict
 from typing import List, Dict
 
-from peek_plugin_search._private.tuples.SearchIndexUpdateDateTuple import \
+from peek_plugin_search._private.tuples.search_index.SearchIndexUpdateDateTuple import \
     SearchIndexUpdateDateTuple
 from twisted.internet.defer import DeferredList, inlineCallbacks, Deferred
 from vortex.DeferUtil import vortexLogFailure

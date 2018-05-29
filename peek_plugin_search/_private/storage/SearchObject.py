@@ -27,6 +27,6 @@ class SearchObject(Tuple, DeclarativeBase):
 
 
     __table_args__ = (
-        Index("idx_SearchObject_keyWord", key, unique=True),
+        Index("idx_SearchObject_keyword", key, unique=True),
         Index("idx_SearchObject_chunkKey", chunkKey, unique=False),
     )

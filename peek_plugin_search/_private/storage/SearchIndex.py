@@ -19,8 +19,9 @@ class SearchIndex(Tuple, DeclarativeBase):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
 
-    keyWord = Column(String, nullable=False)
-    searchChunkKey = Column(String, nullable=False)
+    chunkKey = Column(String, nullable=False)
+    keyword = Column(String, nullable=False)
+    propertyName = Column(String, nullable=False)
 
     #:  The object that this routs is for
     objectId = Column(Integer,
@@ -28,5 +29,7 @@ class SearchIndex(Tuple, DeclarativeBase):
                       nullable=False)
 
     __table_args__ = (
-        Index("idx_SearchIndex_quick_query", keyWord, objectId, searchChunkKey, unique=True),
+        Index("idx_SearchIndex_quick_query",
+              chunkKey, keyword, propertyName, objectId,
+              unique=True),
     )

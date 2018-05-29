@@ -7,7 +7,7 @@ from twisted.internet.defer import inlineCallbacks
 from peek_plugin_search._private.PluginNames import searchFilt
 from peek_plugin_search._private.server.client_handlers.ClientChunkLoadRpc import \
     ClientChunkLoadRpc
-from peek_plugin_search._private.tuples.EncodedSearchIndexChunkTuple import \
+from peek_plugin_search._private.tuples.search_index.EncodedSearchIndexChunkTuple import \
     EncodedSearchIndexChunkTuple
 from vortex.PayloadEndpoint import PayloadEndpoint
 from vortex.PayloadEnvelope import PayloadEnvelope

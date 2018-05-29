@@ -2,8 +2,7 @@ import logging
 
 from twisted.internet.defer import Deferred
 
-from peek_plugin_search._private.tuples.DiagramLoaderStatusTuple import \
-    DiagramLoaderStatusTuple
+from peek_plugin_search._private.tuples.AdminStatusTuple import AdminStatusTuple
 from vortex.TupleAction import TupleActionABC
 from vortex.TupleSelector import TupleSelector
 from vortex.handler.TupleActionProcessor import TupleActionProcessorDelegateABC
@@ -14,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 class StatusController(TupleActionProcessorDelegateABC):
     def __init__(self):
-        self._status = DiagramLoaderStatusTuple()
+        self._status = AdminStatusTuple()
         self._tupleObservable = None
 
     def setTupleObservable(self, tupleObserver: TupleDataObservableHandler):
@@ -33,52 +32,38 @@ class StatusController(TupleActionProcessorDelegateABC):
     def status(self):
         return self._status
 
-    # ---------------
-    # Display Compiler Methods
-
-    def setDisplayCompilerStatus(self, state: bool, queueSize: int):
-        self._status.displayCompilerQueueStatus = state
-        self._status.displayCompilerQueueSize = queueSize
-        self._notify()
-
-    def addToDisplayCompilerTotal(self, delta: int):
-        self._status.displayCompilerProcessedTotal += delta
-        self._notify()
-
-    def setDisplayCompilerError(self, error: str):
-        self._status.displayCompilerLastError = error
-        self._notify()
 
     # ---------------
-    # Grid Compiler Methods
+    # Search Index Compiler Methods
 
-    def setGridCompilerStatus(self, state: bool, queueSize: int):
-        self._status.gridCompilerQueueStatus = state
-        self._status.gridCompilerQueueSize = queueSize
+    def setSearchIndexCompilerStatus(self, state: bool, queueSize: int):
+        self._status.searchIndexCompilerQueueStatus = state
+        self._status.searchIndexCompilerQueueSize = queueSize
         self._notify()
 
-    def addToGridCompilerTotal(self, delta: int):
-        self._status.gridCompilerQueueProcessedTotal += delta
+    def addToSearchIndexCompilerTotal(self, delta: int):
+        self._status.searchIndexCompilerQueueProcessedTotal += delta
         self._notify()
 
-    def setGridCompilerError(self, error: str):
-        self._status.gridCompilerQueueLastError = error
+    def setSearchIndexCompilerError(self, error: str):
+        self._status.searchIndexCompilerQueueLastError = error
         self._notify()
+
 
     # ---------------
-    # Disp Key Index Compiler Methods
+    # Search Object Compiler Methods
 
-    def setLocationIndexCompilerStatus(self, state: bool, queueSize: int):
-        self._status.locationIndexCompilerQueueStatus = state
-        self._status.locationIndexCompilerQueueSize = queueSize
+    def setSearchObjectCompilerStatus(self, state: bool, queueSize: int):
+        self._status.searchObjectCompilerQueueStatus = state
+        self._status.searchObjectCompilerQueueSize = queueSize
         self._notify()
 
-    def addToLocationIndexCompilerTotal(self, delta: int):
-        self._status.locationIndexCompilerQueueProcessedTotal += delta
+    def addToSearchObjectCompilerTotal(self, delta: int):
+        self._status.searchObjectCompilerQueueProcessedTotal += delta
         self._notify()
 
-    def setLocationIndexCompilerError(self, error: str):
-        self._status.locationIndexCompilerQueueLastError = error
+    def setSearchObjectCompilerError(self, error: str):
+        self._status.searchObjectCompilerQueueLastError = error
         self._notify()
 
     # ---------------
@@ -86,5 +71,5 @@ class StatusController(TupleActionProcessorDelegateABC):
 
     def _notify(self):
         self._tupleObserver.notifyOfTupleUpdate(
-            TupleSelector(DiagramLoaderStatusTuple.tupleType(), {})
+            TupleSelector(AdminStatusTuple.tupleType(), {})
         )

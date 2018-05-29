@@ -6,17 +6,13 @@ from vortex.Tuple import addTupleType, TupleField, Tuple
 class AdminStatusTuple(Tuple):
     __tupleType__ = searchTuplePrefix + "AdminStatusTuple"
 
-    displayCompilerQueueStatus: bool = TupleField(False)
-    displayCompilerQueueSize: int = TupleField(0)
-    displayCompilerProcessedTotal: int = TupleField(0)
-    displayCompilerLastError: str = TupleField()
+    searchIndexCompilerQueueStatus: bool = TupleField(False)
+    searchIndexCompilerQueueSize: int = TupleField(0)
+    searchIndexCompilerQueueProcessedTotal: int = TupleField(0)
+    searchIndexCompilerQueueLastError: str = TupleField()
 
-    gridCompilerQueueStatus: bool = TupleField(False)
-    gridCompilerQueueSize: int = TupleField(0)
-    gridCompilerQueueProcessedTotal: int = TupleField(0)
-    gridCompilerQueueLastError: str = TupleField()
 
-    locationIndexCompilerQueueStatus: bool = TupleField(False)
-    locationIndexCompilerQueueSize: int = TupleField(0)
-    locationIndexCompilerQueueProcessedTotal: int = TupleField(0)
-    locationIndexCompilerQueueLastError: str = TupleField()
+    objectIndexCompilerQueueStatus: bool = TupleField(False)
+    objectIndexCompilerQueueSize: int = TupleField(0)
+    objectIndexCompilerQueueProcessedTotal: int = TupleField(0)
+    objectIndexCompilerQueueLastError: str = TupleField()

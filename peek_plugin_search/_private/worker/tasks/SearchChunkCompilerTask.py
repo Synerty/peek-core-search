@@ -1,30 +1,27 @@
+import hashlib
+import json
 import logging
-import zlib
 from _collections import defaultdict
+from base64 import b64encode
 from datetime import datetime
 from typing import List, Dict
 
-import hashlib
 import pytz
-from base64 import b64encode
-
-from peek_plugin_search._private.storage.ModelSet import ModelSet
-from vortex.Payload import Payload
-
-from peek_plugin_base.storage.StorageUtil import makeCoreValuesSubqueryCondition, \
-    makeOrmValuesSubqueryCondition
-from peek_plugin_base.worker import CeleryDbConn
-from peek_plugin_search._private.storage.Display import DispBase
-from peek_plugin_search._private.storage.LocationIndex import LocationIndexCompiled, \
-    LocationIndex
-from peek_plugin_search._private.storage.LocationIndex import LocationIndexCompilerQueue
-from peek_plugin_search._private.tuples.LocationIndexTuple import LocationIndexTuple
-from peek_plugin_search._private.worker.CeleryApp import celeryApp
+from sqlalchemy import select
 from txcelery.defer import DeferrableTask
+
+from peek_plugin_base.worker import CeleryDbConn
+from peek_plugin_search._private.storage.SearchIndex import SearchIndex
+from peek_plugin_search._private.storage.SearchIndexCompilerQueue import \
+    SearchIndexCompilerQueue
+from peek_plugin_search._private.tuples.search_index.SearchIndexChunkTuple import \
+    SearchIndexChunkTuple
+from peek_plugin_search._private.worker.CeleryApp import celeryApp
+from vortex.Payload import Payload
 
 logger = logging.getLogger(__name__)
 
-""" Location Index Compiler
+""" Search Index Compiler
 
 Compile the location indexes
 
@@ -37,22 +34,20 @@ Compile the location indexes
 @DeferrableTask
 @celeryApp.task(bind=True)
 def compileSearchChunk(self, queueItems) -> List[str]:
-    """ Compile Location Index Task
+    """ Compile Search Index Task
 
     :param self: A celery reference to this task
     :param queueItems: An encoded payload containing the queue tuples.
     :returns: A list of grid keys that have been updated.
     """
-    indexBuckets = list(set([i.indexBucket for i in queueItems]))
-    modelSetIdByIndexBucket = {i.indexBucket: i.modelSetId for i in queueItems}
+    chunkKeys = list(set([i.chunkKey for i in queueItems]))
 
-    queueTable = LocationIndexCompilerQueue.__table__
-    compiledTable = LocationIndexCompiled.__table__
+    queueTable = SearchIndexCompilerQueue.__table__
+    compiledTable = SearchIndexChunkTuple.__table__
     lastUpdate = datetime.now(pytz.utc).isoformat()
 
     startTime = datetime.now(pytz.utc)
 
-    session = CeleryDbConn.getDbSession()
     engine = CeleryDbConn.getDbEngine()
     conn = engine.connect()
     transaction = conn.begin()
@@ -63,68 +58,60 @@ def compileSearchChunk(self, queueItems) -> List[str]:
 
         # Get Model Sets
 
-        modelSetIds = list(set(modelSetIdByIndexBucket.values()))
-        modelSetQry = (
-            session.query(ModelSet.key, ModelSet.id)
-                .filter(ModelSet.id.in_(modelSetIds))
-        )
-
-        modelSetKeyByModelSetId = {o.id: o.key for o in modelSetQry}
-
         total = 0
-        dispData = _buildIndex(session, indexBuckets)
-
-        conn.execute(compiledTable.delete(
-            makeCoreValuesSubqueryCondition(engine, compiledTable.c.indexBucket,
-                                            indexBuckets)
-        ))
-        transaction.commit()
-        transaction = conn.begin()
+        existingHashes = _loadExistingHashes(conn, chunkKeys)
+        encKwPayloadByChunkKey = _buildIndex(conn, chunkKeys)
+        chunksToDelete = []
 
         inserts = []
-        for indexBucket, jsonStr in dispData.items():
-            modelSetId = modelSetIdByIndexBucket[indexBucket]
-            modelSetKey = modelSetKeyByModelSetId[modelSetId]
-
+        for chunkKey, searchIndexChunkEncodedPayload in encKwPayloadByChunkKey.items():
             m = hashlib.sha256()
-            m.update(modelSetKey.encode())
-            m.update(jsonStr.encode())
-            dataHash = b64encode(m.digest()).decode()
+            m.update(searchIndexChunkEncodedPayload)
+            encodedHash = b64encode(m.digest()).decode()
 
-            locationIndexTuple = LocationIndexTuple(
-                modelSetKey=modelSetKey,
-                indexBucket=indexBucket,
-                jsonStr=jsonStr,
-                lastUpdate=dataHash
+            # Compare the hash, AND delete the chunk key
+            if chunkKey in existingHashes:
+                # At this point we could decide to do an update instead,
+                # but inserts are quicker
+                if encodedHash == existingHashes.pop(chunkKey):
+                    continue
 
+            chunksToDelete.append(chunkKey)
+            inserts.append(dict(
+                chunkKey=chunkKey,
+                encodedData=searchIndexChunkEncodedPayload,
+                encodedHash=encodedHash,
+                lastUpdate=lastUpdate))
+
+        # Add any chnuks that we need to delete that we don't have new data for, here
+        chunksToDelete.extend(list(existingHashes))
+
+        if chunksToDelete:
+            # Delete the old chunks
+            conn.execute(
+                compiledTable.delete(compiledTable.c.chunkKey.in_(chunksToDelete))
             )
 
-            blobData = Payload(tuples=[locationIndexTuple]).toEncodedPayload()
-
-            inserts.append(dict(modelSetId=modelSetId,
-                                indexBucket=indexBucket,
-                                lastUpdate=dataHash,
-                                blobData=blobData))
+            transaction.commit()
+            transaction = conn.begin()
 
         if inserts:
             conn.execute(compiledTable.insert(), inserts)
 
-        logger.debug("Compiled %s LocationIndexes, %s missing, in %s",
+        logger.debug("Compiled %s SearchIndexes, %s missing, in %s",
                      len(inserts),
-                     len(indexBuckets) - len(inserts), (datetime.now(pytz.utc) - startTime))
+                     len(chunkKeys) - len(inserts), (datetime.now(pytz.utc) - startTime))
 
         total += len(inserts)
 
         queueItemIds = [o.id for o in queueItems]
-        conn.execute(queueTable.delete(
-            makeCoreValuesSubqueryCondition(engine, queueTable.c.id, queueItemIds)
-        ))
+        conn.execute(queueTable.delete(queueTable.c.id.in_(queueItemIds)))
 
         transaction.commit()
-        logger.debug("Compiled and Comitted %s LocationIndexCompileds in %s",
+        logger.debug("Compiled and Committed %s EncodedSearchIndexChunks in %s",
                      total, (datetime.now(pytz.utc) - startTime))
 
-        return indexBuckets
+        return chunkKeys
 
     except Exception as e:
         transaction.rollback()
@@ -134,41 +121,58 @@ def compileSearchChunk(self, queueItems) -> List[str]:
 
     finally:
         conn.close()
-        session.close()
 
 
-def _buildIndex(session, indexBuckets) -> Dict[str, str]:
-    indexQry = (
-        session.query(LocationIndex.indexBucket,
-                      DispBase.id, DispBase.key, DispBase.locationJson)
-            .join(DispBase, DispBase.id == LocationIndex.dispId)
-            .filter(makeOrmValuesSubqueryCondition(
-            session, LocationIndex.indexBucket, indexBuckets
-        ))
-            .order_by(DispBase.key, DispBase.id)
+def _loadExistingHashes(conn, chunkKeys: List[str]) -> Dict[str, str]:
+    compiledTable = SearchIndexChunkTuple.__table__
+
+    results = conn.execute(select(
+        columns=[compiledTable.c.chunkKey, compiledTable.c.encodedHash],
+        whereclause=compiledTable.c.chunkKey.in_(chunkKeys)
+    )).fetchall()
+
+    return {result[0]: result[1] for result in results}
+
+
+def _buildIndex(conn, chunkKeys) -> Dict[str, bytes]:
+    indexTable = SearchIndex.__table__
+
+    results = conn.execute(select(
+        columns=[indexTable.c.chunkKey, indexTable.c.keyword,
+                 indexTable.c.propertyName, indexTable.c.objectId],
+        whereclause=indexTable.c.chunkKey.in_(chunkKeys)
+    ))
+
+    encKwPayloadByChunkKey = {}
+
+    # Create the SearchTerm -> SearchProperty -> [objectIds, objectIds, ....] structure
+    objIdsByPropByKwByChunkKey = defaultdict(
+        lambda: defaultdict(lambda: defaultdict(list))
     )
 
-    jsonByIndexBucket = {}
-
-    # Create the IndexBucket -> Key -> [Locations] structure
-    locationByKeyByBucket = defaultdict(lambda: defaultdict(list))
-    for item in indexQry:
-        locationByKeyByBucket[item.indexBucket][item.key].append(item.locationJson)
+    for item in results:
+        (
+            objIdsByPropByKwByChunkKey
+            [item.chunkKey]
+            [item.keyword]
+            [item.propertyName]
+                .append(item.objectId)
+        )
 
     # Sort each bucket by the key
-    for indexBucket, locationByKey in locationByKeyByBucket.items():
-
+    for chunkKey, objIdsByPropByKw in objIdsByPropByKwByChunkKey.items():
         # Create a list of of key, [locationJson, locationJson, locationJson]
-        sortedKeyLocations = list(sorted(locationByKey.items(), key=lambda i: i[0]))
+        sortedKeySearchs = list(sorted(objIdsByPropByKw.items(), key=lambda i: i[0]))
 
         # [even] is a key, [odd] is the locations json string
-        indexStructure = []
-        for key, locationsJson in sortedKeyLocations:
-            # Combine the key and locations into one json array
-            indexStructure.append('["%s",' % key + ','.join(locationsJson) + ']')
+        dataByKeyword = {
+            keyword: json.dumps(objIdsByProp)
+            for keyword, objIdsByProp in sortedKeySearchs
+        }
 
         # Create the blob data for this index.
         # It will be searched by a binary sort
-        jsonByIndexBucket[indexBucket] = '[' + ','.join(indexStructure) + ']'
+        encKwPayloadByChunkKey[chunkKey] = Payload(
+            tuples=dataByKeyword).toEncodedPayload()
 
-    return jsonByIndexBucket
+    return encKwPayloadByChunkKey

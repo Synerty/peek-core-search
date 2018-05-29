@@ -1,5 +1,5 @@
 import logging
-from typing import List, Dict, Optional
+from typing import List, Optional
 
 from peek_plugin_search._private.client.controller.SearchObjectCacheController import \
     clientSearchObjectUpdateFromServerFilt
@@ -7,9 +7,8 @@ from sqlalchemy import select
 from twisted.internet.defer import Deferred
 
 from peek_plugin_base.PeekVortexUtil import peekClientName
-from peek_plugin_search._private.storage.SearchObjectChunk import SearchObjectChunk
-from peek_plugin_search._private.tuples.EncodedSearchObjectChunkTuple import \
-    EncodedSearchObjectChunkTuple
+from peek_plugin_search._private.storage.EncodedSearchIndexChunk import \
+    EncodedSearchIndexChunk
 from vortex.DeferUtil import vortexLogFailure, deferToThreadWrapWithLogger
 from vortex.Payload import Payload
 from vortex.VortexFactory import VortexFactory, NoVortexException
@@ -72,7 +71,7 @@ class ClientSearchObjectChunkUpdateHandler:
     @deferToThreadWrapWithLogger(logger)
     def _serialiseLocationIndexes(self, chunkKeys: List[str]) -> Optional[bytes]:
 
-        table = SearchObjectChunk.__table__
+        table = EncodedSearchIndexChunk.__table__
 
         session = self._dbSessionCreator()
         try:
@@ -81,12 +80,12 @@ class ClientSearchObjectChunkUpdateHandler:
                     .where(table.c.chunkKey.in_(chunkKeys))
             )
 
-            results: List[EncodedSearchObjectChunkTuple] = []
+            results: List[EncodedSearchIndexChunk] = []
             for row in resultSet:
-                chunk = SearchObjectChunk(**row)
+                chunk = EncodedSearchIndexChunk(**row)
 
                 results.append(
-                    EncodedSearchObjectChunkTuple(
+                    EncodedSearchIndexChunk(
                         chunkKey=chunk.chunkKey,
                         lastUpdate=chunk.lastUpdate,
                         encodedPayload=Payload(tuples=[chunk]).toEncodedPayload()

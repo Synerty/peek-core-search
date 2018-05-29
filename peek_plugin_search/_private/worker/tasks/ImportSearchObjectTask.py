@@ -11,7 +11,7 @@ from peek_plugin_search._private.storage.Display import \
     DispBase, DispGroup, \
     DispGroupPointer, DispGroupItem
 from peek_plugin_search._private.storage.ModelSet import \
-    ModelCoordSet, getOrCreateCoordSet
+    ModelCoordSet
 from peek_plugin_search._private.worker.tasks.ImportDispLink import importDispLinks
 from peek_plugin_search._private.worker.tasks.LookupHashConverter import \
     LookupHashConverter
@@ -19,11 +19,17 @@ from txcelery.defer import DeferrableTask
 
 from peek_plugin_base.worker import CeleryDbConn
 from peek_plugin_search._private.worker.CeleryApp import celeryApp
+from peek_plugin_search.tuples.ImportSearchObjectTuple import ImportSearchObjectTuple
 from vortex.Payload import Payload
 
 logger = logging.getLogger(__name__)
 
 
+# We need to insert the into the following tables:
+# SearchObject - or update it's details if required
+# SearchIndex - The index of the keywords for the object
+# SearchObjectRoute - delete old importGroupHash
+# SearchObjectRoute - insert the new routes
 
 @DeferrableTask
 @celeryApp.task(bind=True)
@@ -40,12 +46,12 @@ def importSearchObjectTask(self, searchObjectsEncodedPayload: bytes) -> None:
 
     """
     try:
-        disps = Payload().fromEncodedPayload(dispsEncodedPayload).tuples
-
-        coordSet = _loadCoordSet(modelSetKey, coordSetKey)
+        newSearchObjects: List[ImportSearchObjectTuple] = (
+            Payload().fromEncodedPayload(searchObjectsEncodedPayload).tuples
+        )
 
         dispIdsToCompile, dispLinkImportTuples, ormDisps, dispGroupLinks = _importDisps(
-            coordSet, disps
+            coordSet, newSearchObjects
         )
 
         _bulkLoadDispsTask(
@@ -66,17 +72,6 @@ def importSearchObjectTask(self, searchObjectsEncodedPayload: bytes) -> None:
         # logger.exception(e)
         logger.info("Retrying import displays, %s", e)
         raise self.retry(exc=e, countdown=3)
-
-
-def _loadCoordSet(modelSetKey, coordSetKey):
-    ormSession = CeleryDbConn.getDbSession()
-    try:
-        coordSet = getOrCreateCoordSet(ormSession, modelSetKey, coordSetKey)
-        ormSession.expunge_all()
-        return coordSet
-
-    finally:
-        ormSession.close()
 
 
 def _importDisps(coordSet: ModelCoordSet, importDisps: List):
@@ -252,8 +247,8 @@ def _bulkLoadDispsTask(coordSet: ModelCoordSet, importGroupHash: str,
 
         # Initialise the ModelCoordSet initial position if it's not set
         if (not coordSet.initialPanX
-            and not coordSet.initialPanY
-            and not coordSet.initialZoom):
+                and not coordSet.initialPanY
+                and not coordSet.initialZoom):
             for disp in disps:
                 if not hasattr(disp, 'geomJson'):
                     continue

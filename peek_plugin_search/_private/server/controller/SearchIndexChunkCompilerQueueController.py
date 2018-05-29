@@ -18,7 +18,7 @@ from vortex.DeferUtil import deferToThreadWrapWithLogger, vortexLogFailure
 logger = logging.getLogger(__name__)
 
 
-class SearchChunkCompilerQueueController:
+class SearchIndexChunkCompilerQueueController:
     """ SearchChunkCompilerQueueController
 
     Compile the disp items into the grid data
@@ -49,17 +49,17 @@ class SearchChunkCompilerQueueController:
         self._queueCount = 0
 
     def start(self):
-        self._statusController.setLocationIndexCompilerStatus(True, self._queueCount)
+        self._statusController.setSearchIndexCompilerStatus(True, self._queueCount)
         d = self._pollLoopingCall.start(self.PERIOD, now=False)
         d.addCallbacks(self._timerCallback, self._timerErrback)
 
     def _timerErrback(self, failure):
         vortexLogFailure(failure, logger)
-        self._statusController.setLocationIndexCompilerStatus(False, self._queueCount)
-        self._statusController.setLocationIndexCompilerError(str(failure.value))
+        self._statusController.setSearchIndexCompilerStatus(False, self._queueCount)
+        self._statusController.setSearchIndexCompilerError(str(failure.value))
 
     def _timerCallback(self, _):
-        self._statusController.setLocationIndexCompilerStatus(False, self._queueCount)
+        self._statusController.setSearchIndexCompilerStatus(False, self._queueCount)
 
     def stop(self):
         self._pollLoopingCall.stop()
@@ -90,12 +90,12 @@ class SearchChunkCompilerQueueController:
         # and there are lots of them
         queueIdsToDelete = []
 
-        locationIndexBucketSet = set()
+        searchIndexChunkKeys = set()
         for i in queueItems:
-            if i.indexBucket in locationIndexBucketSet:
+            if i.chunkKey in searchIndexChunkKeys:
                 queueIdsToDelete.append(i.id)
             else:
-                locationIndexBucketSet.add(i.indexBucket)
+                searchIndexChunkKeys.add(i.chunkKey)
 
         if queueIdsToDelete:
             # Delete the duplicates and requery for our new list
@@ -152,16 +152,17 @@ class SearchChunkCompilerQueueController:
         finally:
             session.close()
 
-    def _pollCallback(self, indexBuckets: List[str], startTime, processedCount):
+    def _pollCallback(self, chunkKeys: List[str], startTime, processedCount):
         self._queueCount -= 1
         logger.debug("Time Taken = %s" % (datetime.now(pytz.utc) - startTime))
-        self._clientLocationUpdateHandler.sendChunks(indexBuckets)
-        self._statusController.addToLocationIndexCompilerTotal(processedCount)
-        self._statusController.setLocationIndexCompilerStatus(True, self._queueCount)
+        self._clientLocationUpdateHandler.sendChunks(chunkKeys)
+        self._statusController.addToSearchIndexCompilerTotal(processedCount)
+        self._statusController.setSearchIndexCompilerStatus(True, self._queueCount)
 
     def _pollErrback(self, failure, startTime):
         self._queueCount -= 1
-        self._statusController.setLocationIndexCompilerError(str(failure.value))
-        self._statusController.setLocationIndexCompilerStatus(True, self._queueCount)
+        self._statusController.setSearchIndexCompilerError(str(failure.value))
+        self._statusController.setSearchIndexCompilerStatus(True, self._queueCount)
         logger.debug("Time Taken = %s" % (datetime.now(pytz.utc) - startTime))
         vortexLogFailure(failure, logger)
+

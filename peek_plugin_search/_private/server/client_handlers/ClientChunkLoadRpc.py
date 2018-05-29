@@ -4,12 +4,11 @@ from typing import List
 from peek_plugin_base.PeekVortexUtil import peekServerName, peekClientName
 from peek_plugin_base.storage.DbConnection import DbSessionCreator
 from peek_plugin_search._private.PluginNames import searchFilt
-from peek_plugin_search._private.storage.SearchIndexChunk import SearchIndexChunk
-from peek_plugin_search._private.storage.SearchObjectChunk import SearchObjectChunk
-from peek_plugin_search._private.tuples.EncodedSearchIndexChunkTuple import \
+from peek_plugin_search._private.tuples.search_index.SearchIndexChunkTuple import SearchIndexChunkTuple
+from peek_plugin_search._private.tuples.search_index.EncodedSearchIndexChunkTuple import \
     EncodedSearchIndexChunkTuple
-from peek_plugin_search._private.tuples.EncodedSearchObjectChunkTuple import \
-    EncodedSearchObjectChunkTuple
+from peek_plugin_search._private.storage.EncodedSearchIndexChunk import \
+    EncodedSearchIndexChunk
 from vortex.Payload import Payload
 from vortex.rpc.RPC import vortexRPC
 
@@ -46,8 +45,8 @@ class ClientChunkLoadRpc:
         session = self._dbSessionCreator()
         try:
             chunks = (session
-                      .query(SearchIndexChunk)
-                      .order_by(SearchIndexChunk.id)
+                      .query(SearchIndexChunkTuple)
+                      .order_by(SearchIndexChunkTuple.id)
                       .offset(offset)
                       .limit(count)
                       .yield_per(count))
@@ -72,7 +71,7 @@ class ClientChunkLoadRpc:
     @vortexRPC(peekServerName, acceptOnlyFromVortex=peekClientName, timeoutSeconds=60,
                additionalFilt=searchFilt, deferToThread=True)
     def loadSearchObjectChunks(self, offset: int, count: int
-                               ) -> List[EncodedSearchObjectChunkTuple]:
+                               ) -> List[EncodedSearchIndexChunk]:
         """ Update Page Loader Status
 
         Tell the server of the latest status of the loader
@@ -81,17 +80,17 @@ class ClientChunkLoadRpc:
         session = self._dbSessionCreator()
         try:
             chunks = (session
-                      .query(SearchObjectChunk)
-                      .order_by(SearchObjectChunk.id)
+                      .query(EncodedSearchIndexChunk)
+                      .order_by(EncodedSearchIndexChunk.id)
                       .offset(offset)
                       .limit(count)
                       .yield_per(count))
 
-            results: List[EncodedSearchObjectChunkTuple] = []
+            results: List[EncodedSearchIndexChunk] = []
 
             for chunk in chunks:
                 results.append(
-                    EncodedSearchObjectChunkTuple(
+                    EncodedSearchIndexChunk(
                         chunkKey=chunk.chunkKey,
                         lastUpdate=chunk.lastUpdate,
                         encodedPayload=Payload(tuples=[chunk]).toEncodedPayload()
