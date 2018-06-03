@@ -1,7 +1,8 @@
 from typing import List, Dict
 
 from peek_plugin_search._private.PluginNames import searchTuplePrefix
-from peek_plugin_search.tuples.ImportSearchObjectRouteTuple import ImportSearchObjectRouteTuple
+from peek_plugin_search.tuples.ImportSearchObjectRouteTuple import \
+    ImportSearchObjectRouteTuple
 from vortex.Tuple import Tuple, addTupleType, TupleField
 
 

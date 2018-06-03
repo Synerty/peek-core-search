@@ -11,15 +11,12 @@ class ImportSearchObjectRouteTuple(Tuple):
     """
     __tupleType__ = searchTuplePrefix + 'ImportSearchObjectRouteTuple'
 
-    __slots__ = ('importGroupHash', 'routeTitle', 'routePath')
-
     #:  A unique string describing this group being imported
     # This can be used for deleting as well
-    #importGroupHash: str = TupleField()
+    importGroupHash: str = TupleField()
 
     #:  The title of the route, that the user will see
-    #routeTitle: str = TupleField()
+    routeTitle: str = TupleField()
 
     #:  The route that the angular app will route to
-    #routePath: str = TupleField()
-
+    routePath: str = TupleField()
