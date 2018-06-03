@@ -24,4 +24,4 @@ class ImportSearchObjectTuple(Tuple):
     properties: Dict[str, str] = TupleField()
 
     #:  The color
-    routes: List[ImportSearchObjectRouteTuple] = TupleField()
+    routes: List[ImportSearchObjectRouteTuple] = TupleField([])

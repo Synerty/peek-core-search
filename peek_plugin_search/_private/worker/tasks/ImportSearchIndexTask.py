@@ -130,14 +130,14 @@ def _indexObject(objectToIndex: ObjectToIndexTuple) -> List[SearchIndex]:
 
     return searchIndexes
 
-
-if __name__ == '__main__':
-    objectToIndex = ObjectToIndexTuple(
-        id=1,
-        key='COMP3453453J',
-        props={
-            'alias': 'AB1345XXX',
-            'name': 'Hello, this is tokenising, strings string, child children'
-        }
-    )
-    print(_indexObject(objectToIndex))
+#
+# if __name__ == '__main__':
+#     objectToIndex = ObjectToIndexTuple(
+#         id=1,
+#         key='COMP3453453J',
+#         props={
+#             'alias': 'AB1345XXX',
+#             'name': 'Hello, this is tokenising, strings string, child children'
+#         }
+#     )
+#     print(_indexObject(objectToIndex))

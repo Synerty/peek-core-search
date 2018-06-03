@@ -2,14 +2,14 @@
 
 Peek Plugin Database Migration Script
 
-Revision ID: 5bb5bd137db5
+Revision ID: 53fccd56fa39
 Revises: 
-Create Date: 2018-05-28 23:33:49.870094
+Create Date: 2018-06-03 14:18:15.583831
 
 """
 
 # revision identifiers, used by Alembic.
-revision = '5bb5bd137db5'
+revision = '53fccd56fa39'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -78,14 +78,15 @@ def upgrade():
     )
     op.create_table('SearchIndex',
     sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('chunkKey', sa.String(), nullable=False),
     sa.Column('keyword', sa.String(), nullable=False),
-    sa.Column('searchChunkKey', sa.String(), nullable=False),
+    sa.Column('propertyName', sa.String(), nullable=False),
     sa.Column('objectId', sa.Integer(), nullable=False),
     sa.ForeignKeyConstraint(['objectId'], ['pl_search.SearchObject.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id'),
     schema='pl_search'
     )
-    op.create_index('idx_SearchIndex_quick_query', 'SearchIndex', ['keyword', 'objectId', 'searchChunkKey'], unique=True, schema='pl_search')
+    op.create_index('idx_SearchIndex_quick_query', 'SearchIndex', ['chunkKey', 'keyword', 'propertyName', 'objectId'], unique=True, schema='pl_search')
     op.create_table('SearchObjectRoute',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('objectId', sa.Integer(), nullable=False),

@@ -7,11 +7,18 @@ from peek_plugin_base.server.PluginServerStorageEntryHookABC import \
     PluginServerStorageEntryHookABC
 from peek_plugin_base.server.PluginServerWorkerEntryHookABC import \
     PluginServerWorkerEntryHookABC
+from peek_plugin_search._private.server.api.SearchApi import SearchApi
+from peek_plugin_search._private.server.controller.SearchObjectImportController import \
+    SearchObjectImportController
 from peek_plugin_search._private.storage import DeclarativeBase
 from peek_plugin_search._private.storage.DeclarativeBase import loadStorageTuples
 from peek_plugin_search._private.tuples import loadPrivateTuples
 from peek_plugin_search.tuples import loadPublicTuples
-from peek_plugin_search._private.server.api.SearchApi import SearchApi
+from peek_plugin_search.tuples.ImportSearchObjectRouteTuple import \
+    ImportSearchObjectRouteTuple
+from peek_plugin_search.tuples.ImportSearchObjectTuple import ImportSearchObjectTuple
+from vortex.DeferUtil import vortexLogFailure
+from vortex.Payload import Payload
 from .TupleActionProcessor import makeTupleActionProcessorHandler
 from .TupleDataObservable import makeTupleDataObservableHandler
 from .admin_backend import makeAdminBackendHandlers
@@ -57,23 +64,87 @@ class ServerEntryHook(PluginServerEntryHookABC,
 
         """
 
+        # ----------------
+        # Tuple Observable
+
         tupleObservable = makeTupleDataObservableHandler(self.dbSessionCreator)
-
-        self._loadedObjects.extend(
-            makeAdminBackendHandlers(tupleObservable, self.dbSessionCreator))
-
         self._loadedObjects.append(tupleObservable)
 
+        # ----------------
+        # Admin Handler
+        self._loadedObjects.extend(
+            makeAdminBackendHandlers(tupleObservable, self.dbSessionCreator)
+        )
+
+        # ----------------
+        # Main Controller
         mainController = MainController(
             dbSessionCreator=self.dbSessionCreator,
             tupleObservable=tupleObservable)
 
         self._loadedObjects.append(mainController)
+
+        # ----------------
+        # Import Controller
+        searchObjectImportController = SearchObjectImportController()
+        self._loadedObjects.append(searchObjectImportController)
+
+        # ----------------
+        # Setup the Action Processor
         self._loadedObjects.append(makeTupleActionProcessorHandler(mainController))
 
+        # ----------------
+        # Setup the APIs
         # Initialise the API object that will be shared with other plugins
-        self._api = SearchApi(mainController)
+        self._api = SearchApi(searchObjectImportController)
         self._loadedObjects.append(self._api)
+
+        # ----------------
+        # API test
+
+        searchObjects = []
+
+        so1 = ImportSearchObjectTuple(
+            key="so1key",
+            properties={
+                "name": "134 Ocean Parade, Circuit breaker 1",
+                "alias": "SO1ALIAS"
+            }
+        )
+        so1.routes.append(ImportSearchObjectRouteTuple(
+            importGroupHash="importHash1",
+            routeTitle="SO1 Route1",
+            routePath="/route/for/so1"
+        ))
+        so1.routes.append(ImportSearchObjectRouteTuple(
+            importGroupHash="importHash2",
+            routeTitle="SO1 Route2",
+            routePath="/route/for/so2"
+        ))
+        searchObjects.append(so1)
+
+        so2 = ImportSearchObjectTuple(
+            key="so2key",
+            properties={
+                "name": "69 Sheep Farmers Rd Sub TX",
+                "alias": "SO2ALIAS"
+            }
+        )
+        so2.routes.append(ImportSearchObjectRouteTuple(
+            importGroupHash="importHash1",
+            routeTitle="SO2 Route1",
+            routePath="/route/for/so2/r2"
+        ))
+        so2.routes.append(ImportSearchObjectRouteTuple(
+            importGroupHash="importHash2",
+            routeTitle="SO2 Route2",
+            routePath="/route/for/so2/r2"
+        ))
+        searchObjects.append(so2)
+
+        d = Payload(tuples=searchObjects).toEncodedPayloadDefer()
+        d.addCallback(self._api.importSearchObjects)
+        d.addErrback(vortexLogFailure, logger, consumeError=True)
 
         logger.debug("Started")
 
@@ -108,7 +179,6 @@ class ServerEntryHook(PluginServerEntryHookABC,
         platform service.
         """
         return self._api
-
 
     ###### Implement PluginServerWorkerEntryHookABC
 
