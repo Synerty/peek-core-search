@@ -8,8 +8,14 @@ from peek_plugin_base.server.PluginServerStorageEntryHookABC import \
 from peek_plugin_base.server.PluginServerWorkerEntryHookABC import \
     PluginServerWorkerEntryHookABC
 from peek_plugin_search._private.server.api.SearchApi import SearchApi
+from peek_plugin_search._private.server.client_handlers.ClientSearchIndexChunkUpdateHandler import \
+    ClientSearchIndexChunkUpdateHandler
+from peek_plugin_search._private.server.controller.SearchIndexChunkCompilerQueueController import \
+    SearchIndexChunkCompilerQueueController
 from peek_plugin_search._private.server.controller.SearchObjectImportController import \
     SearchObjectImportController
+from peek_plugin_search._private.server.controller.StatusController import \
+    StatusController
 from peek_plugin_search._private.storage import DeclarativeBase
 from peek_plugin_search._private.storage.DeclarativeBase import loadStorageTuples
 from peek_plugin_search._private.tuples import loadPrivateTuples
@@ -66,7 +72,6 @@ class ServerEntryHook(PluginServerEntryHookABC,
 
         # ----------------
         # Tuple Observable
-
         tupleObservable = makeTupleDataObservableHandler(self.dbSessionCreator)
         self._loadedObjects.append(tupleObservable)
 
@@ -77,12 +82,36 @@ class ServerEntryHook(PluginServerEntryHookABC,
         )
 
         # ----------------
+        # Status Controller
+        statusController = StatusController()
+        self._loadedObjects.append(statusController)
+
+        # Tell the status controller about the Tuple Observable
+        statusController.setTupleObservable(tupleObservable)
+
+        # ----------------
         # Main Controller
         mainController = MainController(
             dbSessionCreator=self.dbSessionCreator,
             tupleObservable=tupleObservable)
 
         self._loadedObjects.append(mainController)
+
+        # ----------------
+        # Search Index client update handler
+        clientSearchIndexChunkUpdateHandler = ClientSearchIndexChunkUpdateHandler(
+            self.dbSessionCreator
+        )
+        self._loadedObjects.append(clientSearchIndexChunkUpdateHandler)
+
+        # ----------------
+        # Search Index Controller
+        searchIndexChunkCompilerQueueController = SearchIndexChunkCompilerQueueController(
+            dbSessionCreator=self.dbSessionCreator,
+            statusController=statusController,
+            clientSearchIndexUpdateHandler=clientSearchIndexChunkUpdateHandler
+        )
+        self._loadedObjects.append(searchIndexChunkCompilerQueueController)
 
         # ----------------
         # Import Controller
@@ -145,6 +174,10 @@ class ServerEntryHook(PluginServerEntryHookABC,
         d = Payload(tuples=searchObjects).toEncodedPayloadDefer()
         d.addCallback(self._api.importSearchObjects)
         d.addErrback(vortexLogFailure, logger, consumeError=True)
+
+        # ----------------
+        # Start the compiler controllers
+        searchIndexChunkCompilerQueueController.start()
 
         logger.debug("Started")
 

@@ -34,6 +34,6 @@ class SearchObjectRoute(Tuple, DeclarativeBase):
 
     __table_args__ = (
         Index("idx_ObjectRoute_objectId", objectId), # For foreign key
-        Index("idx_ObjectRoute_routeTitle_importGroupHash", importGroupHash, unique=True),
+        Index("idx_ObjectRoute_routeTitle_importGroupHash", importGroupHash, unique=False),
         Index("idx_ObjectRoute_routeTitle_objectId", routeTitle, objectId, unique=True),
     )

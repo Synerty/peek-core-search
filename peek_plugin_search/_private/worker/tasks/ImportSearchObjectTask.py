@@ -1,7 +1,7 @@
 import json
 import logging
 from datetime import datetime
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Set
 
 import pytz
 from sqlalchemy import select, bindparam
@@ -12,6 +12,7 @@ from peek_plugin_search._private.storage.SearchObject import SearchObject
 from peek_plugin_search._private.storage.SearchObjectCompilerQueue import \
     SearchObjectCompilerQueue
 from peek_plugin_search._private.storage.SearchObjectRoute import SearchObjectRoute
+from peek_plugin_search._private.storage.SearchPropertyTuple import SearchPropertyTuple
 from peek_plugin_search._private.worker.CeleryApp import celeryApp
 from peek_plugin_search._private.worker.tasks.ImportSearchIndexTask import \
     ObjectToIndexTuple, reindexSearchObject
@@ -54,11 +55,11 @@ def importSearchObjectTask(self, searchObjectsEncodedPayload: bytes) -> None:
 
     except Exception as e:
         logger.info("Retrying import search objects, %s", e)
-        raise self.retry(exc=e, countdown=3)
+        raise  # self.retry(exc=e, countdown=3)
 
 
 def _insertOrUpdateObjects(newSearchObjects: List[ImportSearchObjectTuple]) -> Tuple[
-    List[ObjectToIndexTuple], Dict[str, int], List[str]]:
+    List[ObjectToIndexTuple], Dict[str, int], Set[str]]:
     """ Insert or Update Objects
 
     1) Find objects and update them
@@ -76,11 +77,13 @@ def _insertOrUpdateObjects(newSearchObjects: List[ImportSearchObjectTuple]) -> T
 
     try:
         objectsToIndex: List[ObjectToIndexTuple] = []
-        objectIdByKey: Dict[str, int] = []
+        objectIdByKey: Dict[str, int] = {}
+        searchPropertiesSet = set()
 
         objectKeys = [o.key for o in newSearchObjects]
         chunkKeysForQueue = set()
 
+        # Query existing objects
         results = list(conn.execute(select(
             columns=[searchObjectTable.c.id, searchObjectTable.c.key,
                      searchObjectTable.c.chunkKey, searchObjectTable.c.detailJson],
@@ -88,13 +91,18 @@ def _insertOrUpdateObjects(newSearchObjects: List[ImportSearchObjectTuple]) -> T
         )))
 
         foundObjectByKey = {o.key: o for o in results}
+        del results
 
+        # Get the IDs that we need
         newIdGen = CeleryDbConn.prefetchDeclarativeIds(
             SearchObject, len(newSearchObjects) - len(foundObjectByKey)
         )
+
+        # Create state arrays
         inserts = []
         propUpdates = []
 
+        # Work out which objects have been updated or need inserting
         for importObject in newSearchObjects:
             if importObject.properties:
                 propsStr = json.dumps(importObject.properties, sort_keys=True)
@@ -120,8 +128,10 @@ def _insertOrUpdateObjects(newSearchObjects: List[ImportSearchObjectTuple]) -> T
                 inserts.append(existingObject.tupleToSqlaBulkInsertDict())
 
             if searchIndexUpdateNeeded:
+                searchPropertiesSet.update(importObject.properties)
+
                 objectsToIndex.append(ObjectToIndexTuple(
-                    id=newSearchObjects,
+                    id=existingObject.id,
                     key=existingObject.key,
                     props=importObject.properties
                 ))
@@ -141,6 +151,9 @@ def _insertOrUpdateObjects(newSearchObjects: List[ImportSearchObjectTuple]) -> T
             )
             conn.execute(stmt, propUpdates)
 
+        # Update Properties
+        _checkOrInsertSearchProperties(conn, searchPropertiesSet)
+
         if inserts or propUpdates:
             transaction.commit()
         else:
@@ -150,7 +163,7 @@ def _insertOrUpdateObjects(newSearchObjects: List[ImportSearchObjectTuple]) -> T
                      len(inserts), len(propUpdates),
                      (datetime.now(pytz.utc) - startTime))
 
-        return objectsToIndex, objectIdByKey, list(chunkKeysForQueue)
+        return objectsToIndex, objectIdByKey, chunkKeysForQueue
 
     except Exception as e:
         transaction.rollback()
@@ -161,9 +174,33 @@ def _insertOrUpdateObjects(newSearchObjects: List[ImportSearchObjectTuple]) -> T
         conn.close()
 
 
+def _checkOrInsertSearchProperties(conn, newPropertyNames: Set[str]) -> None:
+    """ Check Or Insert Search Properties
+
+    Make sure the search properties exist.
+
+    """
+    searchPropertyTable = SearchPropertyTuple.__table__
+
+    # Load the search properties
+    results = list(conn.execute(select(
+        columns=[searchPropertyTable.c.name]
+    )))
+
+    newPropertyNames -= set([o.name for o in results])
+
+    if not newPropertyNames:
+        return
+
+    conn.execute(
+        searchPropertyTable.insert(),
+        [dict(name=v, title=v) for v in newPropertyNames]
+    )
+
+
 def _insertObjectRoutes(newSearchObjects: List[ImportSearchObjectTuple],
                         objectIdByKey: Dict[str, int],
-                        chunkKeysForQueue: List[str]):
+                        chunkKeysForQueue: Set[str]):
     """ Insert Object Routes
 
     1) Drop all routes with matching importGroupHash
@@ -210,8 +247,10 @@ def _insertObjectRoutes(newSearchObjects: List[ImportSearchObjectTuple],
             conn.execute(searchObjectRoute.insert(), inserts)
 
         if chunkKeysForQueue:
-            conn.execute(objectQueueTable.insert(),
-                         [dict(chunKey=v) for v in chunkKeysForQueue])
+            conn.execute(
+                objectQueueTable.insert(),
+                [dict(chunkKey=v) for v in chunkKeysForQueue]
+            )
 
         if importHashSet or inserts:
             transaction.commit()

@@ -68,10 +68,13 @@ def reindexSearchObject(objectsToIndex: List[ObjectToIndexTuple]) -> None:
             inserts = [o.tupleToSqlaBulkInsertDict() for o in newSearchIndexes]
             conn.execute(searchIndexTable.insert(), inserts)
 
-        if queueTable:
-            conn.execute(queueTable.insert(), list(searchIndexChunksToQueue))
+        if searchIndexChunksToQueue:
+            conn.execute(
+                queueTable.insert(),
+                [dict(chunkKey=k) for k in searchIndexChunksToQueue]
+            )
 
-        if objectIds or newSearchIndexes or queueTable:
+        if objectIds or newSearchIndexes or searchIndexChunksToQueue:
             transaction.commit()
         else:
             transaction.rollback()
@@ -93,6 +96,7 @@ stopwords.update(list(string.punctuation))
 from nltk import PorterStemmer
 
 stemmer = PorterStemmer()
+
 
 # from nltk.stem import WordNetLemmatizer
 #

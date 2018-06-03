@@ -3,12 +3,11 @@ from typing import List, Optional
 
 from peek_plugin_search._private.client.controller.SearchObjectCacheController import \
     clientSearchObjectUpdateFromServerFilt
-from sqlalchemy import select
 from twisted.internet.defer import Deferred
 
 from peek_plugin_base.PeekVortexUtil import peekClientName
-from peek_plugin_search._private.storage.EncodedSearchIndexChunk import \
-    EncodedSearchIndexChunk
+from peek_plugin_search._private.storage.EncodedSearchObjectChunk import \
+    EncodedSearchObjectChunk
 from vortex.DeferUtil import vortexLogFailure, deferToThreadWrapWithLogger
 from vortex.Payload import Payload
 from vortex.VortexFactory import VortexFactory, NoVortexException
@@ -55,7 +54,7 @@ class ClientSearchObjectChunkUpdateHandler:
                     vortexMsg, destVortexName=peekClientName
                 )
 
-        d: Deferred = self._serialiseLocationIndexes(chunkKeys)
+        d: Deferred = self._loadChunks(chunkKeys)
         d.addCallback(send)
         d.addErrback(self._sendErrback, chunkKeys)
 
@@ -69,28 +68,14 @@ class ClientSearchObjectChunkUpdateHandler:
         vortexLogFailure(failure, logger)
 
     @deferToThreadWrapWithLogger(logger)
-    def _serialiseLocationIndexes(self, chunkKeys: List[str]) -> Optional[bytes]:
-
-        table = EncodedSearchIndexChunk.__table__
+    def _loadChunks(self, chunkKeys: List[str]) -> Optional[bytes]:
 
         session = self._dbSessionCreator()
         try:
-            resultSet = session.execute(
-                select([table])
-                    .where(table.c.chunkKey.in_(chunkKeys))
+            results = list(
+                session.query(EncodedSearchObjectChunk)
+                    .filter(EncodedSearchObjectChunk.chunkKey.in_(chunkKeys))
             )
-
-            results: List[EncodedSearchIndexChunk] = []
-            for row in resultSet:
-                chunk = EncodedSearchIndexChunk(**row)
-
-                results.append(
-                    EncodedSearchIndexChunk(
-                        chunkKey=chunk.chunkKey,
-                        lastUpdate=chunk.lastUpdate,
-                        encodedPayload=Payload(tuples=[chunk]).toEncodedPayload()
-                    )
-                )
 
             if not results:
                 return None

@@ -11,11 +11,11 @@ from sqlalchemy import select
 from txcelery.defer import DeferrableTask
 
 from peek_plugin_base.worker import CeleryDbConn
+from peek_plugin_search._private.storage.EncodedSearchIndexChunk import \
+    EncodedSearchIndexChunk
 from peek_plugin_search._private.storage.SearchIndex import SearchIndex
 from peek_plugin_search._private.storage.SearchIndexCompilerQueue import \
     SearchIndexCompilerQueue
-from peek_plugin_search._private.tuples.search_index.SearchIndexChunkTuple import \
-    SearchIndexChunkTuple
 from peek_plugin_search._private.worker.CeleryApp import celeryApp
 from vortex.Payload import Payload
 
@@ -43,7 +43,7 @@ def compileSearchChunk(self, queueItems) -> List[str]:
     chunkKeys = list(set([i.chunkKey for i in queueItems]))
 
     queueTable = SearchIndexCompilerQueue.__table__
-    compiledTable = SearchIndexChunkTuple.__table__
+    compiledTable = EncodedSearchIndexChunk.__table__
     lastUpdate = datetime.now(pytz.utc).isoformat()
 
     startTime = datetime.now(pytz.utc)
@@ -92,8 +92,13 @@ def compileSearchChunk(self, queueItems) -> List[str]:
                 compiledTable.delete(compiledTable.c.chunkKey.in_(chunksToDelete))
             )
 
-            transaction.commit()
-            transaction = conn.begin()
+        if inserts:
+            newIdGen = CeleryDbConn.prefetchDeclarativeIds(SearchIndex, len(inserts))
+            for insert in inserts:
+                insert["id"] = next(newIdGen)
+
+        transaction.commit()
+        transaction = conn.begin()
 
         if inserts:
             conn.execute(compiledTable.insert(), inserts)
@@ -124,7 +129,7 @@ def compileSearchChunk(self, queueItems) -> List[str]:
 
 
 def _loadExistingHashes(conn, chunkKeys: List[str]) -> Dict[str, str]:
-    compiledTable = SearchIndexChunkTuple.__table__
+    compiledTable = EncodedSearchIndexChunk.__table__
 
     results = conn.execute(select(
         columns=[compiledTable.c.chunkKey, compiledTable.c.encodedHash],

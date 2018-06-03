@@ -7,8 +7,8 @@ from twisted.internet.defer import inlineCallbacks
 from peek_plugin_search._private.PluginNames import searchFilt
 from peek_plugin_search._private.server.client_handlers.ClientChunkLoadRpc import \
     ClientChunkLoadRpc
-from peek_plugin_search._private.tuples.search_index.EncodedSearchIndexChunkTuple import \
-    EncodedSearchIndexChunkTuple
+from peek_plugin_search._private.storage.EncodedSearchIndexChunk import \
+    EncodedSearchIndexChunk
 from vortex.PayloadEndpoint import PayloadEndpoint
 from vortex.PayloadEnvelope import PayloadEnvelope
 
@@ -33,7 +33,7 @@ class SearchIndexCacheController:
         self._webAppHandler = None
 
         #: This stores the cache of locationIndex data for the clients
-        self._cache: Dict[str, EncodedSearchIndexChunkTuple] = {}
+        self._cache: Dict[str, EncodedSearchIndexChunk] = {}
 
         self._endpoint = PayloadEndpoint(clientSearchIndexUpdateFromServerFilt,
                                          self._processSearchIndexPayload)
@@ -62,7 +62,7 @@ class SearchIndexCacheController:
         while True:
             logger.info(
                 "Loading SearchIndexChunk %s to %s" % (offset, offset + self.LOAD_CHUNK))
-            encodedChunkTuples: List[EncodedSearchIndexChunkTuple] = (
+            encodedChunkTuples: List[EncodedSearchIndexChunk] = (
                 yield ClientChunkLoadRpc.loadSearchIndexChunks(offset, self.LOAD_CHUNK)
             )
 
@@ -76,11 +76,11 @@ class SearchIndexCacheController:
     @inlineCallbacks
     def _processSearchIndexPayload(self, payloadEnvelope: PayloadEnvelope, **kwargs):
         paylod = yield payloadEnvelope.decodePayloadDefer()
-        locationIndexTuples: List[EncodedSearchIndexChunkTuple] = paylod.tuples
+        locationIndexTuples: List[EncodedSearchIndexChunk] = paylod.tuples
         self._loadSearchIndexIntoCache(locationIndexTuples)
 
     def _loadSearchIndexIntoCache(self,
-                                  encodedChunkTuples: List[EncodedSearchIndexChunkTuple]):
+                                  encodedChunkTuples: List[EncodedSearchIndexChunk]):
         chunkKeysUpdated: List[str] = []
 
         for t in encodedChunkTuples:
@@ -94,7 +94,7 @@ class SearchIndexCacheController:
 
         self._webAppHandler.notifyOfSearchIndexUpdate(chunkKeysUpdated)
 
-    def searchIndex(self, chunkKey) -> EncodedSearchIndexChunkTuple:
+    def searchIndex(self, chunkKey) -> EncodedSearchIndexChunk:
         return self._cache.get(chunkKey)
 
     def searchIndexKeys(self) -> List[str]:

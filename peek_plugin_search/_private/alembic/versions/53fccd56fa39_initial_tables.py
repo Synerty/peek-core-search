@@ -42,7 +42,7 @@ def upgrade():
     )
     op.create_index('idx_EncodedSearchObject_chunkKey', 'EncodedSearchObjectChunk', ['chunkKey'], unique=True, schema='pl_search')
     op.create_table('SearchIndexCompilerQueue',
-    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('id', sa.Integer(), nullable=False, autoincrement=True),
     sa.Column('chunkKey', sa.String(), nullable=False),
     sa.PrimaryKeyConstraint('id', 'chunkKey'),
     schema='pl_search'
@@ -58,7 +58,7 @@ def upgrade():
     op.create_index('idx_SearchObject_chunkKey', 'SearchObject', ['chunkKey'], unique=False, schema='pl_search')
     op.create_index('idx_SearchObject_keyword', 'SearchObject', ['key'], unique=True, schema='pl_search')
     op.create_table('SearchObjectCompilerQueue',
-    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('id', sa.Integer(), nullable=False, autoincrement=True),
     sa.Column('chunkKey', sa.String(), nullable=False),
     sa.PrimaryKeyConstraint('id', 'chunkKey'),
     schema='pl_search'
@@ -98,7 +98,7 @@ def upgrade():
     schema='pl_search'
     )
     op.create_index('idx_ObjectRoute_objectId', 'SearchObjectRoute', ['objectId'], unique=False, schema='pl_search')
-    op.create_index('idx_ObjectRoute_routeTitle_importGroupHash', 'SearchObjectRoute', ['importGroupHash'], unique=True, schema='pl_search')
+    op.create_index('idx_ObjectRoute_routeTitle_importGroupHash', 'SearchObjectRoute', ['importGroupHash'], unique=False, schema='pl_search')
     op.create_index('idx_ObjectRoute_routeTitle_objectId', 'SearchObjectRoute', ['routeTitle', 'objectId'], unique=True, schema='pl_search')
     op.create_table('SettingProperty',
     sa.Column('id', sa.Integer(), nullable=False),

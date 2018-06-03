@@ -35,14 +35,12 @@ class SearchIndexChunkCompilerQueueController:
     QUEUE_MAX = 10
     QUEUE_MIN = 0
 
-    def __init__(self, ormSessionCreator,
+    def __init__(self, dbSessionCreator,
                  statusController: StatusController,
-                 clientLocationUpdateHandler: ClientSearchIndexChunkUpdateHandler,
-                 readyLambdaFunc: Callable):
-        self._ormSessionCreator = ormSessionCreator
+                 clientSearchIndexUpdateHandler: ClientSearchIndexChunkUpdateHandler):
+        self._dbSessionCreator = dbSessionCreator
         self._statusController: StatusController = statusController
-        self._clientLocationUpdateHandler: ClientSearchIndexChunkUpdateHandler = clientLocationUpdateHandler
-        self._readyLambdaFunc = readyLambdaFunc
+        self._clientSearchIndexUpdateHandler: ClientSearchIndexChunkUpdateHandler = clientSearchIndexUpdateHandler
 
         self._pollLoopingCall = task.LoopingCall(self._poll)
         self._lastQueueId = -1
@@ -69,9 +67,6 @@ class SearchIndexChunkCompilerQueueController:
 
     @inlineCallbacks
     def _poll(self):
-        if not self._readyLambdaFunc():
-            return
-
         from peek_plugin_search._private.worker.tasks.SearchChunkCompilerTask import \
             compileSearchChunk
 
@@ -120,7 +115,7 @@ class SearchIndexChunkCompilerQueueController:
 
     @deferToThreadWrapWithLogger(logger)
     def _grabQueueChunk(self):
-        session = self._ormSessionCreator()
+        session = self._dbSessionCreator()
         try:
             qry = (session.query(SearchIndexCompilerQueue)
                 .order_by(asc(SearchIndexCompilerQueue.id))
@@ -139,7 +134,7 @@ class SearchIndexChunkCompilerQueueController:
 
     @deferToThreadWrapWithLogger(logger)
     def _deleteDuplicateQueueItems(self, itemIds):
-        session = self._ormSessionCreator()
+        session = self._dbSessionCreator()
         table = SearchIndexCompilerQueue.__table__
         try:
             SIZE = 1000
@@ -155,7 +150,7 @@ class SearchIndexChunkCompilerQueueController:
     def _pollCallback(self, chunkKeys: List[str], startTime, processedCount):
         self._queueCount -= 1
         logger.debug("Time Taken = %s" % (datetime.now(pytz.utc) - startTime))
-        self._clientLocationUpdateHandler.sendChunks(chunkKeys)
+        self._clientSearchIndexUpdateHandler.sendChunks(chunkKeys)
         self._statusController.addToSearchIndexCompilerTotal(processedCount)
         self._statusController.setSearchIndexCompilerStatus(True, self._queueCount)
 

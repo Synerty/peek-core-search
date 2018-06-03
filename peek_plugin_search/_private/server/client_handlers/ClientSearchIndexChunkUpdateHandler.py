@@ -1,15 +1,13 @@
 import logging
 from typing import List, Optional
 
-from sqlalchemy import select
 from twisted.internet.defer import Deferred
 
 from peek_plugin_base.PeekVortexUtil import peekClientName
 from peek_plugin_search._private.client.controller.SearchIndexCacheController import \
     clientSearchIndexUpdateFromServerFilt
-from peek_plugin_search._private.tuples.search_index.SearchIndexChunkTuple import SearchIndexChunkTuple
-from peek_plugin_search._private.tuples.search_index.EncodedSearchIndexChunkTuple import \
-    EncodedSearchIndexChunkTuple
+from peek_plugin_search._private.storage.EncodedSearchIndexChunk import \
+    EncodedSearchIndexChunk
 from vortex.DeferUtil import vortexLogFailure, deferToThreadWrapWithLogger
 from vortex.Payload import Payload
 from vortex.VortexFactory import VortexFactory, NoVortexException
@@ -56,7 +54,7 @@ class ClientSearchIndexChunkUpdateHandler:
                     vortexMsg, destVortexName=peekClientName
                 )
 
-        d: Deferred = self._serialiseLocationIndexes(chunkKeys)
+        d: Deferred = self._loadChunks(chunkKeys)
         d.addCallback(send)
         d.addErrback(self._sendErrback, chunkKeys)
 
@@ -70,28 +68,14 @@ class ClientSearchIndexChunkUpdateHandler:
         vortexLogFailure(failure, logger)
 
     @deferToThreadWrapWithLogger(logger)
-    def _serialiseLocationIndexes(self, chunkKeys: List[str]) -> Optional[bytes]:
-
-        table = SearchIndexChunkTuple.__table__
+    def _loadChunks(self, chunkKeys: List[str]) -> Optional[bytes]:
 
         session = self._dbSessionCreator()
         try:
-            resultSet = session.execute(
-                select([table])
-                    .where(table.c.chunkKey.in_(chunkKeys))
+            results = list(
+                session.query(EncodedSearchIndexChunk)
+                    .filter(EncodedSearchIndexChunk.chunkKey.in_(chunkKeys))
             )
-
-            results: List[EncodedSearchIndexChunkTuple] = []
-            for row in resultSet:
-                chunk = SearchIndexChunkTuple(**row)
-                
-                results.append(
-                    EncodedSearchIndexChunkTuple(
-                        chunkKey=chunk.chunkKey,
-                        lastUpdate=chunk.lastUpdate,
-                        encodedPayload=Payload(tuples=[chunk]).toEncodedPayload()
-                    )
-                )
 
             if not results:
                 return None
