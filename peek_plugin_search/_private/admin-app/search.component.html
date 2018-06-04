@@ -5,10 +5,15 @@
         <li role="presentation" class="active">
             <a href="#home" aria-controls="home" role="tab" data-toggle="tab">Home</a>
         </li>
+        <!-- Status -->
+        <li role="presentation">
+            <a href="#status" aria-controls="status" role="tab"
+               data-toggle="tab">Status</a>
+        </li>
         <!-- Edit Excluded Keyword Tab -->
         <li role="presentation">
-            <a href="#editProperty" aria-controls="editProperty" role="tab"
-               data-toggle="tab">Edit Excluded Keyword</a>
+            <a href="#editSearchProperty" aria-controls="editSearchProperty" role="tab"
+               data-toggle="tab">Edit Search Properties</a>
         </li>
         <!-- Edit Settings Tab -->
         <li role="presentation">
@@ -19,19 +24,32 @@
 
     <!-- Tab panes -->
     <div class="tab-content">
+        <!-- Home Tab -->
+        <div role="tabpanel" class="tab-pane active" id="home">
+            <div class="panel panel-default">
+                <div class="panel-body">
+                    <h1 class="text-center">Peek Unified Search</h1>
+                    <p>This plugin provides a search facility for peek with the following support :</p>
+                    <ul>
+                        <li>Search by multiple keywords</li>
+                        <li>Indexing multiple object types, jobs, equipment, etc.</li>
+                        <li>Support for switching to other plugins and showing the object.</li>
+                        <li>Multiple location results for each object.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <!-- Edit Settings Tab -->
+        <div role="tabpanel" class="tab-pane" id="status">
+            <pl-search-status></pl-search-status>
+        </div>
         <!-- Edit Settings Tab -->
         <div role="tabpanel" class="tab-pane" id="editSetting">
             <pl-search-edit-setting></pl-search-edit-setting>
         </div>
         <!-- Edit Excluded Keyword Tab -->
-        <div role="tabpanel" class="tab-pane" id="editProperty">
+        <div role="tabpanel" class="tab-pane" id="editSearchProperty">
             <pl-search-edit-property></pl-search-edit-property>
-        </div>
-        <!-- Home Tab -->
-        <div role="tabpanel" class="tab-pane active" id="home">
-            <h1 class="text-center">Search Plugin</h1>
-            <p>Angular2 Lazy Loaded Module</p>
-            <p>This is the root of the admin app for the Search plugin</p>
         </div>
 
     </div>

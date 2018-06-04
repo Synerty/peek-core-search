@@ -10,8 +10,12 @@ from peek_plugin_base.server.PluginServerWorkerEntryHookABC import \
 from peek_plugin_search._private.server.api.SearchApi import SearchApi
 from peek_plugin_search._private.server.client_handlers.ClientSearchIndexChunkUpdateHandler import \
     ClientSearchIndexChunkUpdateHandler
+from peek_plugin_search._private.server.client_handlers.ClientSearchObjectChunkUpdateHandler import \
+    ClientSearchObjectChunkUpdateHandler
 from peek_plugin_search._private.server.controller.SearchIndexChunkCompilerQueueController import \
     SearchIndexChunkCompilerQueueController
+from peek_plugin_search._private.server.controller.SearchObjectChunkCompilerQueueController import \
+    SearchObjectChunkCompilerQueueController
 from peek_plugin_search._private.server.controller.SearchObjectImportController import \
     SearchObjectImportController
 from peek_plugin_search._private.server.controller.StatusController import \
@@ -71,8 +75,16 @@ class ServerEntryHook(PluginServerEntryHookABC,
         """
 
         # ----------------
+        # Status Controller
+        statusController = StatusController()
+        self._loadedObjects.append(statusController)
+
+        # ----------------
         # Tuple Observable
-        tupleObservable = makeTupleDataObservableHandler(self.dbSessionCreator)
+        tupleObservable = makeTupleDataObservableHandler(
+            dbSessionCreator=self.dbSessionCreator,
+            statusController=statusController
+        )
         self._loadedObjects.append(tupleObservable)
 
         # ----------------
@@ -82,10 +94,6 @@ class ServerEntryHook(PluginServerEntryHookABC,
         )
 
         # ----------------
-        # Status Controller
-        statusController = StatusController()
-        self._loadedObjects.append(statusController)
-
         # Tell the status controller about the Tuple Observable
         statusController.setTupleObservable(tupleObservable)
 
@@ -114,6 +122,22 @@ class ServerEntryHook(PluginServerEntryHookABC,
         self._loadedObjects.append(searchIndexChunkCompilerQueueController)
 
         # ----------------
+        # Search Object client update handler
+        clientSearchObjectChunkUpdateHandler = ClientSearchObjectChunkUpdateHandler(
+            self.dbSessionCreator
+        )
+        self._loadedObjects.append(clientSearchObjectChunkUpdateHandler)
+
+        # ----------------
+        # Search Object Controller
+        searchObjectChunkCompilerQueueController = SearchObjectChunkCompilerQueueController(
+            dbSessionCreator=self.dbSessionCreator,
+            statusController=statusController,
+            clientSearchObjectUpdateHandler=clientSearchObjectChunkUpdateHandler
+        )
+        self._loadedObjects.append(searchObjectChunkCompilerQueueController)
+
+        # ----------------
         # Import Controller
         searchObjectImportController = SearchObjectImportController()
         self._loadedObjects.append(searchObjectImportController)
@@ -127,6 +151,11 @@ class ServerEntryHook(PluginServerEntryHookABC,
         # Initialise the API object that will be shared with other plugins
         self._api = SearchApi(searchObjectImportController)
         self._loadedObjects.append(self._api)
+
+        # ----------------
+        # Start the compiler controllers
+        searchIndexChunkCompilerQueueController.start()
+        searchObjectChunkCompilerQueueController.start()
 
         # ----------------
         # API test
@@ -175,9 +204,24 @@ class ServerEntryHook(PluginServerEntryHookABC,
         d.addCallback(self._api.importSearchObjects)
         d.addErrback(vortexLogFailure, logger, consumeError=True)
 
-        # ----------------
-        # Start the compiler controllers
-        searchIndexChunkCompilerQueueController.start()
+
+        searchObjects = []
+
+        # Try an update of the object, it should add to the props
+        so1v2 = ImportSearchObjectTuple(key="so1key", properties={"additional": "ADMS"})
+        searchObjects.append(so1v2)
+
+        # This should do nothing
+        so2v2 = ImportSearchObjectTuple(
+            key="so2key",
+            properties=None
+        )
+        searchObjects.append(so2v2)
+
+        d = Payload(tuples=searchObjects).toEncodedPayloadDefer()
+        d.addCallback(self._api.importSearchObjects)
+        d.addErrback(vortexLogFailure, logger, consumeError=True)
+
 
         logger.debug("Started")
 

@@ -7,18 +7,18 @@ from sqlalchemy import asc
 from twisted.internet import task
 from twisted.internet.defer import inlineCallbacks
 
-from peek_plugin_search._private.server.client_handlers.ClientSearchIndexChunkUpdateHandler import \
-    ClientSearchIndexChunkUpdateHandler
+from peek_plugin_search._private.server.client_handlers.ClientSearchObjectChunkUpdateHandler import \
+    ClientSearchObjectChunkUpdateHandler
 from peek_plugin_search._private.server.controller.StatusController import \
     StatusController
-from peek_plugin_search._private.storage.SearchIndexCompilerQueue import \
-    SearchIndexCompilerQueue
+from peek_plugin_search._private.storage.SearchObjectCompilerQueue import \
+    SearchObjectCompilerQueue
 from vortex.DeferUtil import deferToThreadWrapWithLogger, vortexLogFailure
 
 logger = logging.getLogger(__name__)
 
 
-class SearchIndexChunkCompilerQueueController:
+class SearchObjectChunkCompilerQueueController:
     """ SearchChunkCompilerQueueController
 
     Compile the disp items into the grid data
@@ -37,27 +37,27 @@ class SearchIndexChunkCompilerQueueController:
 
     def __init__(self, dbSessionCreator,
                  statusController: StatusController,
-                 clientSearchIndexUpdateHandler: ClientSearchIndexChunkUpdateHandler):
+                 clientSearchObjectUpdateHandler: ClientSearchObjectChunkUpdateHandler):
         self._dbSessionCreator = dbSessionCreator
         self._statusController: StatusController = statusController
-        self._clientSearchIndexUpdateHandler: ClientSearchIndexChunkUpdateHandler = clientSearchIndexUpdateHandler
+        self._clientSearchObjectUpdateHandler: ClientSearchObjectChunkUpdateHandler = clientSearchObjectUpdateHandler
 
         self._pollLoopingCall = task.LoopingCall(self._poll)
         self._lastQueueId = -1
         self._queueCount = 0
 
     def start(self):
-        self._statusController.setSearchIndexCompilerStatus(True, self._queueCount)
+        self._statusController.setSearchObjectCompilerStatus(True, self._queueCount)
         d = self._pollLoopingCall.start(self.PERIOD, now=False)
         d.addCallbacks(self._timerCallback, self._timerErrback)
 
     def _timerErrback(self, failure):
         vortexLogFailure(failure, logger)
-        self._statusController.setSearchIndexCompilerStatus(False, self._queueCount)
-        self._statusController.setSearchIndexCompilerError(str(failure.value))
+        self._statusController.setSearchObjectCompilerStatus(False, self._queueCount)
+        self._statusController.setSearchObjectCompilerError(str(failure.value))
 
     def _timerCallback(self, _):
-        self._statusController.setSearchIndexCompilerStatus(False, self._queueCount)
+        self._statusController.setSearchObjectCompilerStatus(False, self._queueCount)
 
     def stop(self):
         self._pollLoopingCall.stop()
@@ -67,8 +67,8 @@ class SearchIndexChunkCompilerQueueController:
 
     @inlineCallbacks
     def _poll(self):
-        from peek_plugin_search._private.worker.tasks.SearchIndexChunkCompilerTask import \
-            compileSearchIndexChunk
+        from peek_plugin_search._private.worker.tasks.SearchObjectChunkCompilerTask import \
+            compileSearchObjectChunk
 
         # We queue the grids in bursts, reducing the work we have to do.
         if self._queueCount > self.QUEUE_MIN:
@@ -105,7 +105,7 @@ class SearchIndexChunkCompilerQueueController:
             # Set the watermark
             self._lastQueueId = items[-1].id
 
-            d = compileSearchIndexChunk.delay(items)
+            d = compileSearchObjectChunk.delay(items)
             d.addCallback(self._pollCallback, datetime.now(pytz.utc), len(items))
             d.addErrback(self._pollErrback, datetime.now(pytz.utc))
 
@@ -117,9 +117,9 @@ class SearchIndexChunkCompilerQueueController:
     def _grabQueueChunk(self):
         session = self._dbSessionCreator()
         try:
-            qry = (session.query(SearchIndexCompilerQueue)
-                .order_by(asc(SearchIndexCompilerQueue.id))
-                .filter(SearchIndexCompilerQueue.id > self._lastQueueId)
+            qry = (session.query(SearchObjectCompilerQueue)
+                .order_by(asc(SearchObjectCompilerQueue.id))
+                .filter(SearchObjectCompilerQueue.id > self._lastQueueId)
                 .yield_per(500)
                 # .limit(self.FETCH_SIZE)
                 )
@@ -135,7 +135,7 @@ class SearchIndexChunkCompilerQueueController:
     @deferToThreadWrapWithLogger(logger)
     def _deleteDuplicateQueueItems(self, itemIds):
         session = self._dbSessionCreator()
-        table = SearchIndexCompilerQueue.__table__
+        table = SearchObjectCompilerQueue.__table__
         try:
             SIZE = 1000
             for start in range(0, len(itemIds), SIZE):
@@ -150,14 +150,14 @@ class SearchIndexChunkCompilerQueueController:
     def _pollCallback(self, chunkKeys: List[str], startTime, processedCount):
         self._queueCount -= 1
         logger.debug("Time Taken = %s" % (datetime.now(pytz.utc) - startTime))
-        self._clientSearchIndexUpdateHandler.sendChunks(chunkKeys)
-        self._statusController.addToSearchIndexCompilerTotal(processedCount)
-        self._statusController.setSearchIndexCompilerStatus(True, self._queueCount)
+        self._clientSearchObjectUpdateHandler.sendChunks(chunkKeys)
+        self._statusController.addToSearchObjectCompilerTotal(processedCount)
+        self._statusController.setSearchObjectCompilerStatus(True, self._queueCount)
 
     def _pollErrback(self, failure, startTime):
         self._queueCount -= 1
-        self._statusController.setSearchIndexCompilerError(str(failure.value))
-        self._statusController.setSearchIndexCompilerStatus(True, self._queueCount)
+        self._statusController.setSearchObjectCompilerError(str(failure.value))
+        self._statusController.setSearchObjectCompilerStatus(True, self._queueCount)
         logger.debug("Time Taken = %s" % (datetime.now(pytz.utc) - startTime))
         vortexLogFailure(failure, logger)
 

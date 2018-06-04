@@ -11,8 +11,12 @@ from peek_plugin_search._private.client.TupleDataObservable import \
     makeClientTupleDataObservableHandler
 from peek_plugin_search._private.client.controller.SearchIndexCacheController import \
     SearchIndexCacheController
+from peek_plugin_search._private.client.controller.SearchObjectCacheController import \
+    SearchObjectCacheController
 from peek_plugin_search._private.client.handlers.SearchIndexCacheHandler import \
     SearchIndexCacheHandler
+from peek_plugin_search._private.client.handlers.SearchObjectCacheHandler import \
+    SearchObjectCacheHandler
 from peek_plugin_search._private.storage.DeclarativeBase import loadStorageTuples
 from peek_plugin_search._private.tuples import loadPrivateTuples
 from peek_plugin_search.tuples import loadPublicTuples
@@ -56,6 +60,7 @@ class ClientEntryHook(PluginClientEntryHookABC):
 
         """
 
+        # ----------------
         # Proxy actions back to the server, we don't process them at all
         self._loadedObjects.append(
             TupleActionProcessorProxy(
@@ -63,6 +68,7 @@ class ClientEntryHook(PluginClientEntryHookABC):
                 proxyToVortexName=peekServerName,
                 additionalFilt=searchFilt)
         )
+        # ----------------
 
         # Provide the devices access to the servers observable
         tupleDataObservableProxyHandler = TupleDataObservableProxyHandler(
@@ -72,6 +78,7 @@ class ClientEntryHook(PluginClientEntryHookABC):
             observerName="Proxy to devices")
         self._loadedObjects.append(tupleDataObservableProxyHandler)
 
+        # ----------------
         #: This is an observer for us (the client) to use to observe data
         # from the server
         serverTupleObserver = TupleDataObserverClient(
@@ -82,16 +89,16 @@ class ClientEntryHook(PluginClientEntryHookABC):
         )
         self._loadedObjects.append(serverTupleObserver)
 
+        # ----------------
         # Create the Tuple Observer
-        makeClientTupleDataObservableHandler(
-            tupleDataObservableProxyHandler
-        )
-        # This is already in the _loadedObjects, it's tupleDataObservableProxyHandler
+        makeClientTupleDataObservableHandler(tupleDataObservableProxyHandler)
 
-        # ----- Location Index Cache Controller
+        # ----------------
+        # Location Index Cache Controller
 
         locationIndexCacheController = SearchIndexCacheController(
-            self.platform.serviceId)
+            self.platform.serviceId
+        )
         self._loadedObjects.append(locationIndexCacheController)
 
         # This is the custom handler for the client
@@ -101,10 +108,33 @@ class ClientEntryHook(PluginClientEntryHookABC):
         )
         self._loadedObjects.append(locationIndexCacheHandler)
 
-        locationIndexCacheController.setLocationIndexCacheHandler(
-            locationIndexCacheHandler)
+        locationIndexCacheController.setSearchIndexCacheHandler(
+            locationIndexCacheHandler
+        )
 
+        # ----------------
+        # Location Object Cache Controller
+
+        locationObjectCacheController = SearchObjectCacheController(
+            self.platform.serviceId
+        )
+        self._loadedObjects.append(locationObjectCacheController)
+
+        # This is the custom handler for the client
+        locationObjectCacheHandler = SearchObjectCacheHandler(
+            cacheController=locationObjectCacheController,
+            clientId=self.platform.serviceId
+        )
+        self._loadedObjects.append(locationObjectCacheHandler)
+
+        locationObjectCacheController.setSearchObjectCacheHandler(
+            locationObjectCacheHandler
+        )
+
+        # ----------------
+        # Start the compiler controllers
         yield locationIndexCacheController.start()
+        yield locationObjectCacheController.start()
 
         logger.debug("Started")
 

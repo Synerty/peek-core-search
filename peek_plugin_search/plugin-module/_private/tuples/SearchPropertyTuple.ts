@@ -10,7 +10,7 @@ export class SearchPropertyTuple extends Tuple {
     name : string;
 
     //  The title of the search property
-    title : number;
+    title : string;
 
     constructor() {
         super(SearchPropertyTuple.tupleName)

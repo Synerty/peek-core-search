@@ -1,15 +1,12 @@
 <div class="panel panel-default">
-    <div class="panel-heading">Edit Excluded Keywords
+    <div class="panel-heading">Edit Search Properties
         <div class="btn-toolbar pull-right">
             <div class="btn-group">
                 <div class="btn btn-default btn-sm" (click)='save()'>
                     Save
                 </div>
-                <div class="btn btn-default btn-sm" (click)='loader.load()'>
+                <div class="btn btn-default btn-sm" (click)='resetClicked()'>
                     Reset
-                </div>
-                <div class="btn btn-default btn-sm" (click)='addRow()'>
-                    Add
                 </div>
             </div>
         </div>
@@ -17,25 +14,17 @@
     <div class="panel-body">
         <table class="table">
             <tr>
-                <th>String 1</th>
-                <th>Int 1</th>
-                <th></th>
+                <th>Name</th>
+                <th>Description</th>
             </tr>
             <tr *ngFor="let item of items">
                 <td>
-                    <input [(ngModel)]="item.string1"
+                    {{item.name}}
+                </td>
+                <td>
+                    <input [(ngModel)]="item.title"
                            class="form-control input-sm"
                            type="text"/>
-                </td>
-                <td>
-                    <input [(ngModel)]="item.int1"
-                           class="form-control input-sm"
-                           type="number"/>
-                </td>
-                <td>
-                    <div class="btn btn-default" (click)='removeRow(item)'>
-                        <span class="glyphicon glyphicon-minus" aria-hidden="true"></span>
-                    </div>
                 </td>
             </tr>
         </table>

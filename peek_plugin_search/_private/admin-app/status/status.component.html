@@ -1,0 +1,44 @@
+<div class="panel panel-default">
+    <div class="panel-heading">Search Preprocessor Status
+    </div>
+    <div class="panel-body">
+
+        <table class="table">
+            <thead>
+
+            <tr>
+                <th></th>
+                <th>Is Running</th>
+                <th>Queue Size</th>
+                <th>Total Processed</th>
+                <th>Last Error</th>
+            </tr>
+
+            </thead>
+
+            <tbody>
+
+            <!-- Search Index Compiler -->
+            <tr>
+                <th>Search Index (Keyword) Compiler</th>
+                <td>{{item.searchIndexCompilerQueueStatus}}</td>
+                <td>{{item.searchIndexCompilerQueueSize}}</td>
+                <td>{{item.searchIndexCompilerQueueProcessedTotal}}</td>
+                <td>{{item.searchIndexCompilerQueueLastError}}</td>
+
+            </tr>
+
+            <!-- Search Object Compiler -->
+            <tr>
+                <th>Search Object (Result) Compiler</th>
+                <td>{{item.searchObjectCompilerQueueStatus}}</td>
+                <td>{{item.searchObjectCompilerQueueSize}}</td>
+                <td>{{item.searchObjectCompilerQueueProcessedTotal}}</td>
+                <td>{{item.searchObjectCompilerQueueLastError}}</td>
+
+            </tr>
+
+            </tbody>
+        </table>
+    </div>
+</div>

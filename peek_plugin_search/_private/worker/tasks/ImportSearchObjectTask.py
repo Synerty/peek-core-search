@@ -104,17 +104,27 @@ def _insertOrUpdateObjects(newSearchObjects: List[ImportSearchObjectTuple]) -> T
 
         # Work out which objects have been updated or need inserting
         for importObject in newSearchObjects:
-            if importObject.properties:
-                propsStr = json.dumps(importObject.properties, sort_keys=True)
-            else:
-                propsStr = None
 
             existingObject = foundObjectByKey.get(importObject.key)
 
+            propsWithKey = dict(key=importObject.key)
+
+            if importObject.properties:
+                propsWithKey.update(importObject.properties)
+
+                if existingObject and existingObject.detailJson:
+                    existingProps = json.loads(existingObject.detailJson)
+                    propsWithKey.update(existingProps)
+
+                propsStr = json.dumps(propsWithKey, sort_keys=True)
+
+            else:
+                propsStr = None
+
             if existingObject:
-                searchIndexUpdateNeeded = existingObject.detailJson != propsStr
+                searchIndexUpdateNeeded = propsStr and existingObject.detailJson != propsStr
                 if searchIndexUpdateNeeded:
-                    propUpdates.append(dict(id=existingObject.id, propsStr=propsStr))
+                    propUpdates.append(dict(b_id=existingObject.id, b_propsStr=propsStr))
 
             else:
                 searchIndexUpdateNeeded = True
@@ -133,7 +143,7 @@ def _insertOrUpdateObjects(newSearchObjects: List[ImportSearchObjectTuple]) -> T
                 objectsToIndex.append(ObjectToIndexTuple(
                     id=existingObject.id,
                     key=existingObject.key,
-                    props=importObject.properties
+                    props=propsWithKey
                 ))
 
             objectIdByKey[existingObject.key] = existingObject.id
@@ -146,8 +156,8 @@ def _insertOrUpdateObjects(newSearchObjects: List[ImportSearchObjectTuple]) -> T
         if propUpdates:
             stmt = (
                 searchObjectTable.update()
-                    .where(searchObjectTable.c.name == bindparam('id'))
-                    .values(name=bindparam('detailJson'))
+                    .where(searchObjectTable.c.id == bindparam('b_id'))
+                    .values(detailJson=bindparam('b_propsStr'))
             )
             conn.execute(stmt, propUpdates)
 

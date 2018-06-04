@@ -11,10 +11,10 @@ export class AdminStatusTuple extends Tuple {
     searchIndexCompilerQueueProcessedTotal: number;
     searchIndexCompilerQueueLastError: string;
 
-    objectIndexCompilerQueueStatus: boolean;
-    objectIndexCompilerQueueSize: number;
-    objectIndexCompilerQueueProcessedTotal: number;
-    objectIndexCompilerQueueLastError: string;
+    searchObjectCompilerQueueStatus: boolean;
+    searchObjectCompilerQueueSize: number;
+    searchObjectCompilerQueueProcessedTotal: number;
+    searchObjectCompilerQueueLastError: string;
 
     constructor() {
         super(AdminStatusTuple.tupleName)

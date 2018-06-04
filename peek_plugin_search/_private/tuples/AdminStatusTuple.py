@@ -12,7 +12,7 @@ class AdminStatusTuple(Tuple):
     searchIndexCompilerQueueLastError: str = TupleField()
 
 
-    objectIndexCompilerQueueStatus: bool = TupleField(False)
-    objectIndexCompilerQueueSize: int = TupleField(0)
-    objectIndexCompilerQueueProcessedTotal: int = TupleField(0)
-    objectIndexCompilerQueueLastError: str = TupleField()
+    searchObjectCompilerQueueStatus: bool = TupleField(False)
+    searchObjectCompilerQueueSize: int = TupleField(0)
+    searchObjectCompilerQueueProcessedTotal: int = TupleField(0)
+    searchObjectCompilerQueueLastError: str = TupleField()

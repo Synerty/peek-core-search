@@ -1,10 +1,10 @@
+import json
 import logging
 import string
 from collections import namedtuple
 from datetime import datetime
 from typing import List
 
-import nltk
 import pytz
 from sqlalchemy import select
 
@@ -52,19 +52,23 @@ def reindexSearchObject(objectsToIndex: List[ObjectToIndexTuple]) -> None:
             whereclause=searchIndexTable.c.objectId.in_(objectIds)
         ))
 
-        newIdGen = CeleryDbConn.prefetchDeclarativeIds(SearchIndex, len(newSearchIndexes))
 
         for result in results:
             searchIndexChunksToQueue.add(result.chunkKey)
 
         for newSearchIndex in newSearchIndexes:
+            newIdGen = CeleryDbConn.prefetchDeclarativeIds(SearchIndex, len(newSearchIndexes))
             newSearchIndex.id = next(newIdGen)
             searchIndexChunksToQueue.add(newSearchIndex.chunkKey)
 
         if objectIds:
-            conn.execute(queueTable.delete(searchIndexTable.c.objectId.in_(objectIds)))
+            conn.execute(searchIndexTable.delete()
+                         .where(searchIndexTable.c.objectId.in_(objectIds)))
+            transaction.commit()
+            transaction = conn.begin()
 
         if newSearchIndexes:
+            logger.debug("Inserting %s SearchIndex", len(newSearchIndexes))
             inserts = [o.tupleToSqlaBulkInsertDict() for o in newSearchIndexes]
             conn.execute(searchIndexTable.insert(), inserts)
 
@@ -74,7 +78,7 @@ def reindexSearchObject(objectsToIndex: List[ObjectToIndexTuple]) -> None:
                 [dict(chunkKey=k) for k in searchIndexChunksToQueue]
             )
 
-        if objectIds or newSearchIndexes or searchIndexChunksToQueue:
+        if newSearchIndexes or searchIndexChunksToQueue:
             transaction.commit()
         else:
             transaction.rollback()
@@ -90,12 +94,12 @@ def reindexSearchObject(objectsToIndex: List[ObjectToIndexTuple]) -> None:
         conn.close()
 
 
-stopwords = set()  # nltk.corpus.stopwords.words('english'))
-stopwords.update(list(string.punctuation))
-
-from nltk import PorterStemmer
-
-stemmer = PorterStemmer()
+# stopwords = set()  # nltk.corpus.stopwords.words('english'))
+# stopwords.update(list(string.punctuation))
+#
+# from nltk import PorterStemmer
+#
+# stemmer = PorterStemmer()
 
 
 # from nltk.stem import WordNetLemmatizer
@@ -119,18 +123,18 @@ def _indexObject(objectToIndex: ObjectToIndexTuple) -> List[SearchIndex]:
 
     for propKey, text in objectToIndex.props.items():
         text = text.lower()
-        tokens = set([stemmer.stem(w)
-                      for w in nltk.word_tokenize(text)
-                      if w not in stopwords])
+        tokens = ''.join([c for c in text if c not in string.punctuation])
+        tokens = set([w.strip() for w in tokens.split(' ') if w.strip()])
 
         for token in tokens:
-            indexItem = SearchIndex(
-                chunkKey=makeChunkKeyFromString(token),
-                keyword=token,
-                propertyName=propKey,
-                objectId=objectToIndex.id
+            searchIndexes.append(
+                SearchIndex(
+                    chunkKey=makeChunkKeyFromString(token),
+                    keyword=token,
+                    propertyName=propKey,
+                    objectId=objectToIndex.id
+                )
             )
-            searchIndexes.append(indexItem)
 
     return searchIndexes
 

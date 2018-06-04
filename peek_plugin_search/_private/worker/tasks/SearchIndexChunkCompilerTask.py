@@ -33,7 +33,7 @@ Compile the location indexes
 
 @DeferrableTask
 @celeryApp.task(bind=True)
-def compileSearchChunk(self, queueItems) -> List[str]:
+def compileSearchIndexChunk(self, queueItems) -> List[str]:
     """ Compile Search Index Task
 
     :param self: A celery reference to this task
@@ -170,10 +170,10 @@ def _buildIndex(conn, chunkKeys) -> Dict[str, bytes]:
         sortedKeySearchs = list(sorted(objIdsByPropByKw.items(), key=lambda i: i[0]))
 
         # [even] is a key, [odd] is the locations json string
-        dataByKeyword = {
-            keyword: json.dumps(objIdsByProp)
+        dataByKeyword = json.dumps({
+            keyword: json.dumps(objIdsByProp, sort_keys=True)
             for keyword, objIdsByProp in sortedKeySearchs
-        }
+        }, sort_keys=True)
 
         # Create the blob data for this index.
         # It will be searched by a binary sort
