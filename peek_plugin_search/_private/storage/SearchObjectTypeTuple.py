@@ -7,9 +7,9 @@ from peek_plugin_search._private.storage.DeclarativeBase import DeclarativeBase
 
 
 @addTupleType
-class SearchPropertyTuple(Tuple, DeclarativeBase):
-    __tupleType__ = searchTuplePrefix + 'SearchPropertyTuple'
-    __tablename__ = 'SearchProperty'
+class SearchObjectTypeTuple(Tuple, DeclarativeBase):
+    __tupleType__ = searchTuplePrefix + 'SearchObjectTypeTuple'
+    __tablename__ = 'SearchObjectType'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String, nullable=False)

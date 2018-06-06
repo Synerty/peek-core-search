@@ -16,6 +16,7 @@ from peek_plugin_search._private.storage.EncodedSearchObjectChunk import \
 from peek_plugin_search._private.storage.SearchObject import SearchObject
 from peek_plugin_search._private.storage.SearchObjectCompilerQueue import \
     SearchObjectCompilerQueue
+from peek_plugin_search._private.storage.SearchObjectRoute import SearchObjectRoute
 from peek_plugin_search._private.worker.CeleryApp import celeryApp
 from vortex.Payload import Payload
 
@@ -139,29 +140,48 @@ def _loadExistingHashes(conn, chunkKeys: List[str]) -> Dict[str, str]:
     return {result[0]: result[1] for result in results}
 
 
-def _buildIndex(conn, chunkKeys) -> Dict[str, bytes]:
-    indexTable = SearchObject.__table__
+def _buildIndex(chunkKeys) -> Dict[str, bytes]:
+    session = CeleryDbConn.getDbSession()
 
-    results = conn.execute(select(
-        columns=[indexTable.c.chunkKey, indexTable.c.id, indexTable.c.detailJson],
-        whereclause=indexTable.c.chunkKey.in_(chunkKeys)
-    ))
+    try:
+        indexQry = (
+            session.query(SearchObject.chunkKey, SearchObject.id, SearchObject.detailJson,
+                          SearchObjectRoute.routeTitle, SearchObjectRoute.routePath)
+                .join(SearchObject, SearchObject.id == SearchObjectRoute.objectId)
+                .filter(SearchObject.chunkKey.in_(chunkKeys))
+                .order_by(SearchObjectRoute.objectId, SearchObjectRoute.routeTitle)
+                .yield_per(1000)
+                .all()
+        )
 
-    encPayloadByChunkKey = {}
+        # Create the ChunkKey -> {id -> detailJson, id -> detailJson, ....]
+        propsJsonByObjIdByChunkKey = defaultdict(lambda: defaultdict(list))
 
-    # Create the ChunkKey -> {id -> detailJson, id -> detailJson, ....]
-    propsJsonByObjIdByChunkKey = defaultdict(dict)
+        for item in indexQry:
+            (
+                propsJsonByObjIdByChunkKey
+                [item.chunkKey]
+                [(item.id, item.detailJson)]
+                    .append((item.routeTitle, item.routePath))
+            )
 
-    for item in results:
-        propsJsonByObjIdByChunkKey[item.chunkKey][item.id] = item.detailJson
+        encPayloadByChunkKey = {}
 
-    # Sort each bucket by the key
-    for chunkKey, propsJsonByObjId in propsJsonByObjIdByChunkKey.items():
-        # Dump the chunk as sorted json so the encodedHash is comparable
-        data = json.dumps(propsJsonByObjId, sort_keys=True)
+        # Sort each bucket by the key
+        for chunkKey, idDetailJsonRoutes in propsJsonByObjIdByChunkKey.items():
+            objDataById = {}
+            for (id, detailJson), routes in idDetailJsonRoutes.items():
+                # TODO, This should be part of the load process
+                props = json.loads(detailJson)
+                props['_routes_'] = [list(route) for route in routes]
+                objDataById[id] = json.dumps(props, sort_keys=True)
 
-        # Create the blob data for this index.
-        # It will be searched by a binary sort
-        encPayloadByChunkKey[chunkKey] = Payload(tuples=data).toEncodedPayload()
+            # Create the blob data for this index.
+            # It will be searched by a binary sort
+            encPayloadByChunkKey[chunkKey] = Payload(
+                tuples=objDataById).toEncodedPayload()
 
-    return encPayloadByChunkKey
+        return encPayloadByChunkKey
+
+    finally:
+        session.close()

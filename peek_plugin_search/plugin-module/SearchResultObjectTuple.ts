@@ -1,7 +1,6 @@
 import {addTupleType, Tuple} from "@synerty/vortexjs";
 import {searchTuplePrefix} from "./_private/PluginNames";
-import {SearchIndexChunkTuple} from "./_private/tuples/search-index/SearchIndexChunkTuple";
-
+import {SearchResultObjectRouteTuple} from "./SearchResultObjectRouteTuple";
 
 
 @addTupleType
@@ -15,7 +14,10 @@ export class SearchResultObjectTuple extends Tuple {
     objectType: string;
 
     // The details of the search result
-    details: SearchIndexChunkTuple[] = [];
+    details: {} = {};
+
+    // The details of the search result
+    routes: SearchResultObjectRouteTuple[] = [];
 
     constructor() {
         super(SearchResultObjectTuple.tupleName)

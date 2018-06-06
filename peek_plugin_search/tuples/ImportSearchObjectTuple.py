@@ -18,6 +18,9 @@ class ImportSearchObjectTuple(Tuple):
     #:  The unique key for this object
     key: str = TupleField()
 
+    #:  The type of this object
+    objectType: str = TupleField()
+
     #:  The details to index.
     # Do not include "key", it will be indexed anyway.
     # The key of the property will match of create a new "SearchProperty"

@@ -6,11 +6,8 @@ import {searchTuplePrefix} from "./_private/PluginNames";
 export class SearchResultObjectRouteTuple extends Tuple {
     public static readonly tupleName = searchTuplePrefix + "SearchResultObjectRouteTuple";
 
-    // The key of a registered open handler
-    key: string;
-
     // The name of the open handler
-    name: string;
+    path: string;
 
     // The description of the open handlers action type
     title: string;

@@ -4,6 +4,7 @@ import logging
 from _collections import defaultdict
 from base64 import b64encode
 from datetime import datetime
+from functools import cmp_to_key
 from typing import List, Dict
 
 import pytz
@@ -16,6 +17,8 @@ from peek_plugin_search._private.storage.EncodedSearchIndexChunk import \
 from peek_plugin_search._private.storage.SearchIndex import SearchIndex
 from peek_plugin_search._private.storage.SearchIndexCompilerQueue import \
     SearchIndexCompilerQueue
+from peek_plugin_search._private.tuples.search_index.SearchIndexChunkTuple import \
+    SearchIndexChunkTuple
 from peek_plugin_search._private.worker.CeleryApp import celeryApp
 from vortex.Payload import Payload
 
@@ -164,20 +167,28 @@ def _buildIndex(conn, chunkKeys) -> Dict[str, bytes]:
                 .append(item.objectId)
         )
 
+    def _sortSearchIndex(o1: SearchIndexChunkTuple, o2: SearchIndexChunkTuple):
+        if o1[0] < o2[0]: return -1
+        if o1[0] > o2[0]: return 1
+        if o1[1] < o2[1]: return -1
+        if o1[1] > o2[1]: return 1
+        return 0
+
     # Sort each bucket by the key
     for chunkKey, objIdsByPropByKw in objIdsByPropByKwByChunkKey.items():
-        # Create a list of of key, [locationJson, locationJson, locationJson]
-        sortedKeySearchs = list(sorted(objIdsByPropByKw.items(), key=lambda i: i[0]))
+        compileSearchIndexChunks: List[SearchIndexChunkTuple] = []
 
-        # [even] is a key, [odd] is the locations json string
-        dataByKeyword = json.dumps({
-            keyword: json.dumps(objIdsByProp, sort_keys=True)
-            for keyword, objIdsByProp in sortedKeySearchs
-        }, sort_keys=True)
+        for keyword, objIdsByProp in objIdsByPropByKw.items():
+            for propertyName, objectIds in objIdsByPropByKw.items():
+                compileSearchIndexChunks.append(
+                    [keyword, propertyName, json.dumps(list(sorted(objectIds)))]
+                )
+
+        compileSearchIndexChunks.sort(key=cmp_to_key(_sortSearchIndex))
 
         # Create the blob data for this index.
         # It will be searched by a binary sort
         encKwPayloadByChunkKey[chunkKey] = Payload(
-            tuples=dataByKeyword).toEncodedPayload()
+            tuples=compileSearchIndexChunks).toEncodedPayload()
 
     return encKwPayloadByChunkKey

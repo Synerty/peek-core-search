@@ -1,10 +1,10 @@
 import {addTupleType, Tuple} from "@synerty/vortexjs";
-import {diagramTuplePrefix} from "@peek/peek_plugin_diagram/_private";
+import {searchTuplePrefix} from "../PluginNames";
 
 
 @addTupleType
 export class SearchIndexUpdateDateTuple extends Tuple {
-    public static readonly tupleName = diagramTuplePrefix + "SearchIndexUpdateDateTuple";
+    public static readonly tupleName = searchTuplePrefix + "SearchIndexUpdateDateTuple";
 
     initialLoadComplete: boolean = false;
     updateDateByChunkKey: {} = {};

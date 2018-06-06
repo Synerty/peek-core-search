@@ -12,16 +12,13 @@ import {
     VortexService,
     VortexStatusService
 } from "@synerty/vortexjs";
-import {searchFilt, searchIndexCacheStorageName} from "@peek/peek_plugin_search/_private";
+import {searchFilt, searchIndexCacheStorageName, searchTuplePrefix} from "../PluginNames";
 
 
 import {Subject} from "rxjs/Subject";
 import {Observable} from "rxjs/Observable";
-import {
-    EncodedSearchIndexChunkTuple,
-    SearchIndexChunkTuple,
-    SearchIndexUpdateDateTuple
-} from "../tuples/search-index";
+import {EncodedSearchIndexChunkTuple} from "./EncodedSearchIndexChunkTuple";
+import {SearchIndexUpdateDateTuple} from "./SearchIndexUpdateDateTuple";
 
 
 // ----------------------------------------------------------------------------
@@ -37,9 +34,11 @@ let clientSearchIndexWatchUpdateFromDeviceFilt = extend(
  * This is just a short cut for the tuple selector
  */
 
+// There is actually no tuple here, it's raw JSON,
+// so we don't have to construct a class to get the data
 class SearchIndexChunkTupleSelector extends TupleSelector {
     constructor(chunkKey: string) {
-        super(SearchIndexChunkTuple.tupleName, {key: chunkKey});
+        super(searchTuplePrefix + "SearchIndexChunkTuple", {key: chunkKey});
     }
 }
 
@@ -73,12 +72,21 @@ export class PrivateSearchIndexLoaderService extends ComponentLifecycleEventEmit
     private _hasLoaded = false;
 
     private _hasLoadedSubject = new Subject<void>();
+    private storage: TupleOfflineStorageService;
 
     constructor(private vortexService: VortexService,
                 private vortexStatusService: VortexStatusService,
-                private storage: TupleOfflineStorageService) {
+                storageFactory: TupleStorageFactoryService) {
         super();
+
+        this.storage = new TupleOfflineStorageService(
+            storageFactory,
+            new TupleOfflineStorageNameService(searchIndexCacheStorageName)
+        );
+
         this.initialLoad();
+
+
     }
 
     isReady(): boolean {

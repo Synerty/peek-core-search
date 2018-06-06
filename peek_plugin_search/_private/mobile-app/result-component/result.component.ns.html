@@ -1,0 +1,21 @@
+<StackLayout>
+    <GridLayout columns="1*, 4*" rows="auto" width="*">
+        <Label class="h3" col="0" text="key"></Label>
+        <Label class="h3" col="1" [text]="resultObject.details['key']"></Label>
+    </GridLayout>
+
+
+    <ListView [items]="resultObject.routes">
+        <ng-template let-item="item" let-i="index" let-odd="odd" let-even="even">
+            <StackLayout [class.odd]="odd" [class.even]="even">
+                <GridLayout columns="*" rows="auto" width="*">
+                    <!-- String -->
+                    <Label class="h3 peek-field-data-text" row="0" col="0"
+                           textWrap="true"
+                           [text]="item.title"></Label>
+
+                </GridLayout>
+            </StackLayout>
+        </ng-template>
+    </ListView>
+</StackLayout>

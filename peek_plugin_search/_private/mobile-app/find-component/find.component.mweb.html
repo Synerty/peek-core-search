@@ -1,0 +1,16 @@
+<div class="container">
+    <Button class="btn btn-default" (click)="find()">Find</Button>
+
+    <table class="table table-striped">
+        <thead>
+        <tr>
+            <th>Results</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr *ngFor="let item of resultObjects">
+            <td><plugin-search-result [resultObject]="item"></plugin-search-result></td>
+        </tr>
+        </tbody>
+    </table>
+</div>

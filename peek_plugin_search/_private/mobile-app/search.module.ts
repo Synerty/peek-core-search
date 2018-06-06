@@ -16,7 +16,9 @@ import {
 
 // Import the names we need for the
 import {
-    searchTupleOfflineServiceName
+    searchTupleOfflineServiceName,
+    searchObservableName,
+    searchFilt
 } from "@peek/peek_plugin_search/_private/PluginNames";
 
 // Import the required classes from VortexJS
@@ -28,12 +30,9 @@ import {
 
 // Import the names we need for the
 
-import {PropertyComponent} from "./search-component/search.component";
+import {FindComponent} from "./find-component/find.component";
+import {ResultComponent} from "./result-component/result.component";
 
-import {
-    searchObservableName,
-    searchFilt
-} from "@peek/peek_plugin_search/_private/PluginNames";
 
 // Import the required classes from VortexJS
 import {
@@ -64,10 +63,7 @@ export function tupleOfflineStorageNameServiceFactory() {
 
 // Define the child routes for this plugin
 export const pluginRoutes: Routes = [
-    {
-        path: 'stringint',
-        component: PropertyComponent
-    },
+
     {
         path: '',
         pathMatch: 'full',
@@ -101,7 +97,7 @@ export const pluginRoutes: Routes = [
             useFactory: tupleDataObservableNameServiceFactory
         },
     ],
-    declarations: [SearchComponent, PropertyComponent]
+    declarations: [SearchComponent, FindComponent, ResultComponent]
 })
 export class SearchModule {
 }

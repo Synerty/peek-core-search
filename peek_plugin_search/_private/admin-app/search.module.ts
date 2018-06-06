@@ -3,6 +3,7 @@ import {FormsModule} from "@angular/forms";
 import {NgModule} from "@angular/core";
 import {RouterModule, Routes} from "@angular/router";
 import {EditPropertyComponent} from "./edit-property-table/edit.component";
+import {EditObjectTypeComponent} from "./edit-object-type-table/edit.component";
 import {EditSettingComponent} from "./edit-setting-table/edit.component";
 import {SearchComponent} from "./search.component";
 import {StatusComponent} from "./status/status.component";
@@ -11,9 +12,9 @@ import {
     TupleActionPushService,
     TupleDataObservableNameService,
     TupleDataObserverService,
+    TupleDataOfflineObserverService,
     TupleOfflineStorageNameService,
-    TupleOfflineStorageService,
-    TupleDataOfflineObserverService
+    TupleOfflineStorageService
 } from "@synerty/vortexjs";
 
 import {
@@ -69,7 +70,7 @@ export const pluginRoutes: Routes = [
             useFactory: tupleDataObservableNameServiceFactory
         },
     ],
-    declarations: [SearchComponent, EditPropertyComponent, EditSettingComponent, StatusComponent]
+    declarations: [SearchComponent, EditPropertyComponent, EditSettingComponent, EditObjectTypeComponent, StatusComponent]
 })
 export class SearchModule {
 
