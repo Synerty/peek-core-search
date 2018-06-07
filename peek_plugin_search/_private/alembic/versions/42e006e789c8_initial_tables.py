@@ -2,14 +2,14 @@
 
 Peek Plugin Database Migration Script
 
-Revision ID: e9a2c1a824c2
+Revision ID: 42e006e789c8
 Revises: 
-Create Date: 2018-06-06 23:09:23.060481
+Create Date: 2018-06-07 21:14:07.459635
 
 """
 
 # revision identifiers, used by Alembic.
-revision = 'e9a2c1a824c2'
+revision = '42e006e789c8'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -42,13 +42,13 @@ def upgrade():
     )
     op.create_index('idx_EncodedSearchObject_chunkKey', 'EncodedSearchObjectChunk', ['chunkKey'], unique=True, schema='pl_search')
     op.create_table('SearchIndexCompilerQueue',
-    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('id', sa.Integer(), nullable=False, autoincrement=True),
     sa.Column('chunkKey', sa.String(), nullable=False),
     sa.PrimaryKeyConstraint('id', 'chunkKey'),
     schema='pl_search'
     )
     op.create_table('SearchObjectCompilerQueue',
-    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('id', sa.Integer(), nullable=False, autoincrement=True),
     sa.Column('chunkKey', sa.String(), nullable=False),
     sa.PrimaryKeyConstraint('id', 'chunkKey'),
     schema='pl_search'
@@ -78,7 +78,8 @@ def upgrade():
     sa.Column('objectTypeId', sa.Integer(), nullable=False),
     sa.Column('key', sa.String(), nullable=False),
     sa.Column('chunkKey', sa.String(), nullable=False),
-    sa.Column('detailJson', sa.String(), nullable=False),
+    sa.Column('propertiesJson', sa.String(), nullable=True),
+    sa.Column('packedJson', sa.String(), nullable=True),
     sa.ForeignKeyConstraint(['objectTypeId'], ['pl_search.SearchObjectType.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id'),
     schema='pl_search'

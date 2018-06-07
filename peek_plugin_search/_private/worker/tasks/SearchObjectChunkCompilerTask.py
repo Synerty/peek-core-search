@@ -1,8 +1,8 @@
 import hashlib
 import json
 import logging
-from _collections import defaultdict
 from base64 import b64encode
+from collections import defaultdict
 from datetime import datetime
 from typing import List, Dict
 
@@ -16,7 +16,6 @@ from peek_plugin_search._private.storage.EncodedSearchObjectChunk import \
 from peek_plugin_search._private.storage.SearchObject import SearchObject
 from peek_plugin_search._private.storage.SearchObjectCompilerQueue import \
     SearchObjectCompilerQueue
-from peek_plugin_search._private.storage.SearchObjectRoute import SearchObjectRoute
 from peek_plugin_search._private.worker.CeleryApp import celeryApp
 from vortex.Payload import Payload
 
@@ -61,7 +60,7 @@ def compileSearchObjectChunk(self, queueItems) -> List[str]:
 
         total = 0
         existingHashes = _loadExistingHashes(conn, chunkKeys)
-        encKwPayloadByChunkKey = _buildIndex(conn, chunkKeys)
+        encKwPayloadByChunkKey = _buildIndex(chunkKeys)
         chunksToDelete = []
 
         inserts = []
@@ -145,41 +144,28 @@ def _buildIndex(chunkKeys) -> Dict[str, bytes]:
 
     try:
         indexQry = (
-            session.query(SearchObject.chunkKey, SearchObject.id, SearchObject.detailJson,
-                          SearchObjectRoute.routeTitle, SearchObjectRoute.routePath)
-                .join(SearchObject, SearchObject.id == SearchObjectRoute.objectId)
+            session.query(SearchObject.chunkKey, SearchObject.id, SearchObject.packedJson)
                 .filter(SearchObject.chunkKey.in_(chunkKeys))
-                .order_by(SearchObjectRoute.objectId, SearchObjectRoute.routeTitle)
+                .order_by(SearchObject.id)
                 .yield_per(1000)
                 .all()
         )
 
-        # Create the ChunkKey -> {id -> detailJson, id -> detailJson, ....]
-        propsJsonByObjIdByChunkKey = defaultdict(lambda: defaultdict(list))
+        # Create the ChunkKey -> {id -> packedJson, id -> packedJson, ....]
+        packagedJsonByObjIdByChunkKey = defaultdict(dict)
 
         for item in indexQry:
-            (
-                propsJsonByObjIdByChunkKey
-                [item.chunkKey]
-                [(item.id, item.detailJson)]
-                    .append((item.routeTitle, item.routePath))
-            )
+            packagedJsonByObjIdByChunkKey[item.chunkKey][item.id] = item.packedJson
 
         encPayloadByChunkKey = {}
 
         # Sort each bucket by the key
-        for chunkKey, idDetailJsonRoutes in propsJsonByObjIdByChunkKey.items():
-            objDataById = {}
-            for (id, detailJson), routes in idDetailJsonRoutes.items():
-                # TODO, This should be part of the load process
-                props = json.loads(detailJson)
-                props['_routes_'] = [list(route) for route in routes]
-                objDataById[id] = json.dumps(props, sort_keys=True)
+        for chunkKey, packedJsonById in packagedJsonByObjIdByChunkKey.items():
+            tuples = json.dumps(packedJsonById, sort_keys=True)
 
             # Create the blob data for this index.
             # It will be searched by a binary sort
-            encPayloadByChunkKey[chunkKey] = Payload(
-                tuples=objDataById).toEncodedPayload()
+            encPayloadByChunkKey[chunkKey] = Payload(tuples=tuples).toEncodedPayload()
 
         return encPayloadByChunkKey
 

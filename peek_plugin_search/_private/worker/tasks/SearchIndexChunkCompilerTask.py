@@ -17,8 +17,6 @@ from peek_plugin_search._private.storage.EncodedSearchIndexChunk import \
 from peek_plugin_search._private.storage.SearchIndex import SearchIndex
 from peek_plugin_search._private.storage.SearchIndexCompilerQueue import \
     SearchIndexCompilerQueue
-from peek_plugin_search._private.tuples.search_index.SearchIndexChunkTuple import \
-    SearchIndexChunkTuple
 from peek_plugin_search._private.worker.CeleryApp import celeryApp
 from vortex.Payload import Payload
 
@@ -167,7 +165,7 @@ def _buildIndex(conn, chunkKeys) -> Dict[str, bytes]:
                 .append(item.objectId)
         )
 
-    def _sortSearchIndex(o1: SearchIndexChunkTuple, o2: SearchIndexChunkTuple):
+    def _sortSearchIndex(o1, o2):
         if o1[0] < o2[0]: return -1
         if o1[0] > o2[0]: return 1
         if o1[1] < o2[1]: return -1
@@ -176,7 +174,7 @@ def _buildIndex(conn, chunkKeys) -> Dict[str, bytes]:
 
     # Sort each bucket by the key
     for chunkKey, objIdsByPropByKw in objIdsByPropByKwByChunkKey.items():
-        compileSearchIndexChunks: List[SearchIndexChunkTuple] = []
+        compileSearchIndexChunks = []
 
         for keyword, objIdsByProp in objIdsByPropByKw.items():
             for propertyName, objectIds in objIdsByPropByKw.items():

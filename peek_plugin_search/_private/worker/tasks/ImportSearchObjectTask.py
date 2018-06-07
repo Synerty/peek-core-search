@@ -1,5 +1,6 @@
 import json
 import logging
+from collections import defaultdict
 from datetime import datetime
 from typing import List, Dict, Tuple, Set
 
@@ -91,25 +92,21 @@ def _prepareLookups(newSearchObjects: List[ImportSearchObjectTuple]) -> Dict[str
         dbProps = dbSession.query(SearchPropertyTuple).all()
         propertyNames -= set([o.name for o in dbProps])
 
-        if not propertyNames:
-            propertyIdsByName = {o.dbProps: o.id for o in dbProps}
-
-        else:
-
+        if propertyNames:
             for newPropName in propertyNames:
                 dbSession.add(SearchPropertyTuple(name=newPropName, title=newPropName))
 
             dbSession.commit()
 
-            dbProps = dbSession.query(SearchPropertyTuple).all()
-            propertyIdsByName = {o.dbProps: o.id for o in dbProps}
+        del dbProps
+        del propertyNames
 
         # Prepare Object Types
         dbObjectTypes = dbSession.query(SearchObjectTypeTuple).all()
         objectTypeNames -= set([o.name for o in dbObjectTypes])
 
         if not objectTypeNames:
-            objectTypeIdsByName = {o.dbObjectTypes: o.id for o in dbObjectTypes}
+            objectTypeIdsByName = {o.name: o.id for o in dbObjectTypes}
 
         else:
             for newPropName in objectTypeNames:
@@ -118,7 +115,7 @@ def _prepareLookups(newSearchObjects: List[ImportSearchObjectTuple]) -> Dict[str
             dbSession.commit()
 
             dbObjectTypes = dbSession.query(SearchObjectTypeTuple).all()
-            objectTypeIdsByName = {o.dbObjectTypes: o.id for o in dbObjectTypes}
+            objectTypeIdsByName = {o.name: o.id for o in dbObjectTypes}
 
         logger.debug("Prepared lookups in %s", (datetime.now(pytz.utc) - startTime))
 
@@ -153,7 +150,6 @@ def _insertOrUpdateObjects(newSearchObjects: List[ImportSearchObjectTuple],
     try:
         objectsToIndex: List[ObjectToIndexTuple] = []
         objectIdByKey: Dict[str, int] = {}
-        searchPropertiesSet = set()
 
         objectKeys = [o.key for o in newSearchObjects]
         chunkKeysForQueue = set()
@@ -161,7 +157,7 @@ def _insertOrUpdateObjects(newSearchObjects: List[ImportSearchObjectTuple],
         # Query existing objects
         results = list(conn.execute(select(
             columns=[searchObjectTable.c.id, searchObjectTable.c.key,
-                     searchObjectTable.c.chunkKey, searchObjectTable.c.detailJson],
+                     searchObjectTable.c.chunkKey, searchObjectTable.c.propertiesJson],
             whereclause=searchObjectTable.c.key.in_(objectKeys)
         )))
 
@@ -189,9 +185,8 @@ def _insertOrUpdateObjects(newSearchObjects: List[ImportSearchObjectTuple],
             if importObject.properties:
                 propsWithKey.update(importObject.properties)
 
-                if existingObject and existingObject.detailJson:
-                    existingProps = json.loads(existingObject.detailJson)
-                    propsWithKey.update(existingProps)
+                if existingObject and existingObject.propertiesJson:
+                    propsWithKey.update(json.loads(existingObject.propertiesJson))
 
                 propsStr = json.dumps(propsWithKey, sort_keys=True)
 
@@ -206,7 +201,7 @@ def _insertOrUpdateObjects(newSearchObjects: List[ImportSearchObjectTuple],
 
             # Work out if we need to update the existing object or create one
             if existingObject:
-                searchIndexUpdateNeeded = propsStr and existingObject.detailJson != propsStr
+                searchIndexUpdateNeeded = propsStr and existingObject.propertiesJson != propsStr
                 if searchIndexUpdateNeeded:
                     propUpdates.append(dict(b_id=existingObject.id, b_propsStr=propsStr))
 
@@ -217,14 +212,12 @@ def _insertOrUpdateObjects(newSearchObjects: List[ImportSearchObjectTuple],
                     id=id_,
                     key=importObject.key,
                     objectTypeId=importObjectTypeId,
-                    detailJson=propsStr,
+                    propertiesJson=propsStr,
                     chunkKey=makeChunkKeyFromInt(id_)
                 )
                 inserts.append(existingObject.tupleToSqlaBulkInsertDict())
 
             if searchIndexUpdateNeeded:
-                searchPropertiesSet.update(importObject.properties)
-
                 objectsToIndex.append(ObjectToIndexTuple(
                     id=existingObject.id,
                     key=existingObject.key,
@@ -242,7 +235,7 @@ def _insertOrUpdateObjects(newSearchObjects: List[ImportSearchObjectTuple],
             stmt = (
                 searchObjectTable.update()
                     .where(searchObjectTable.c.id == bindparam('b_id'))
-                    .values(detailJson=bindparam('b_propsStr'))
+                    .values(propertiesJson=bindparam('b_propsStr'))
             )
             conn.execute(stmt, propUpdates)
 
@@ -351,6 +344,7 @@ def _packObjectJson(newSearchObjects: List[ImportSearchObjectTuple],
     :return:
     """
 
+    searchObjectTable = SearchObject.__table__
     objectQueueTable = SearchObjectCompilerQueue.__table__
     dbSession = CeleryDbConn.getDbSession()
 
@@ -359,15 +353,44 @@ def _packObjectJson(newSearchObjects: List[ImportSearchObjectTuple],
     try:
 
         indexQry = (
-            session.query(SearchObject.id, SearchObject.detailJson,
-                          SearchObject.objectTypeId,
-                          SearchObjectRoute.routeTitle, SearchObjectRoute.routePath)
-                .join(SearchObject, SearchObject.id == SearchObjectRoute.objectId)
-                .filter(SearchObject.chunkKey.in_(chunkKeys))
-                .order_by(SearchObjectRoute.objectId, SearchObjectRoute.routeTitle)
+            dbSession.query(SearchObject.id, SearchObject.propertiesJson,
+                            SearchObject.objectTypeId,
+                            SearchObjectRoute.routeTitle, SearchObjectRoute.routePath)
+                .join(SearchObjectRoute, SearchObject.id == SearchObjectRoute.objectId)
+                .filter(SearchObject.chunkKey.in_([o.key for o in newSearchObjects]))
+                .filter(SearchObject.propertiesJson != None)
+                .filter(SearchObjectRoute.routePath != None)
+                .order_by(SearchObject.id, SearchObjectRoute.routeTitle)
                 .yield_per(1000)
                 .all()
         )
+
+        # I chose a simple name for this one.
+        qryDict = defaultdict(list)
+
+        for item in indexQry:
+            (
+                qryDict[(item.id, item.propertiesJson, item.objectTypeId)]
+                    .append([item.routeTitle, item.routePath])
+            )
+
+        packedJsonUpdates = []
+
+        # Sort each bucket by the key
+        for (id_, propertiesJson, objectTypeId), routes in qryDict.items():
+            props = json.loads(propertiesJson)
+            props['_r_'] = routes
+            props['_otid_'] = objectTypeId
+            packedJson = json.dumps(props, sort_keys=True)
+            packedJsonUpdates.append(dict(b_id=id_, b_packedJson=packedJson))
+
+        if packedJsonUpdates:
+            stmt = (
+                searchObjectTable.update()
+                    .where(searchObjectTable.c.id == bindparam('b_id'))
+                    .values(packedJson=bindparam('b_packedJson'))
+            )
+            dbSession.execute(stmt, packedJsonUpdates)
 
         if chunkKeysForQueue:
             dbSession.execute(
@@ -375,7 +398,7 @@ def _packObjectJson(newSearchObjects: List[ImportSearchObjectTuple],
                 [dict(chunkKey=v) for v in chunkKeysForQueue]
             )
 
-        if importHashSet or chunkKeysForQueue:
+        if packedJsonUpdates or chunkKeysForQueue:
             dbSession.commit()
         else:
             dbSession.rollback()

@@ -27,7 +27,9 @@ class SearchObject(Tuple, DeclarativeBase):
 
     chunkKey = Column(String, nullable=False)
 
-    detailJson = Column(String, nullable=False)
+    propertiesJson = Column(String, nullable=True)
+
+    packedJson = Column(String, nullable=True)
 
     __table_args__ = (
         Index("idx_SearchObject_objectTypeId", objectTypeId),
