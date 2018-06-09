@@ -29,9 +29,43 @@ import {SearchResultObjectTuple} from "./SearchResultObjectTuple";
  */
 @Injectable()
 export class SearchService {
+    // From python string.punctuation
+    private punctuation = "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~";
 
     constructor(private searchIndexLoader: PrivateSearchIndexLoaderService,
                 private searchObjectLoader: PrivateSearchObjectLoaderService) {
+
+
+    }
+
+    /** Split Keywords
+     *
+     * This MUST MATCH the code that runs in the worker
+     * peek_plugin_search/_private/worker/tasks/ImportSearchIndexTask.py
+     *
+     * @param {string} keywordStr: The keywords as one string
+     * @returns {string[]} The keywords as an array
+     */
+    private splitKeywords(keywordStr: string): string[] {
+        // Lowercase the string
+        keywordStr = keywordStr.toLowerCase();
+
+        // Remove punctuation
+        let nonPunct = '';
+        for (let char of keywordStr) {
+            if (this.punctuation.indexOf(char) == -1)
+                continue;
+            nonPunct += char;
+        }
+
+        // Split the stirng into words
+        let words = nonPunct.split(' ');
+
+        // Strip the words
+        words = words.map((w) => w.replace(/^\s+|\s+$/g, ''));
+
+        // Filter out the empty words
+        return words.filter((w) => w.length != 0);
 
 
     }
@@ -42,10 +76,11 @@ export class SearchService {
      * Get the objects with matching keywords from the index..
      *
      */
-    getObjects(keywords: string[]): Promise<SearchResultObjectTuple[]> {
+    getObjects(keywords: string): Promise<SearchResultObjectTuple[]> {
         let x: EncodedSearchIndexChunkTuple;
         let y: EncodedSearchObjectChunkTuple;
         return Promise.reject("Not implemented");
+
         /*
         if (dispKey == null || dispKey.length == 0) {
             let val: DispKeyLocationTuple[] = [];

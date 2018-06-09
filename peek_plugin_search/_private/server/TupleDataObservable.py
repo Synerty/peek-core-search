@@ -3,6 +3,10 @@ from peek_plugin_search._private.PluginNames import searchFilt
 from peek_plugin_search._private.PluginNames import searchObservableName
 from peek_plugin_search._private.server.tuple_providers.AdminStatusTupleProvider import \
     AdminStatusTupleProvider
+from peek_plugin_search._private.server.tuple_providers.SearchObjectTypeTupleProvider import \
+    SearchObjectTypeTupleProvider
+from peek_plugin_search._private.storage.SearchObjectTypeTuple import \
+    SearchObjectTypeTuple
 from peek_plugin_search._private.storage.SearchPropertyTuple import SearchPropertyTuple
 from peek_plugin_search._private.tuples.AdminStatusTuple import AdminStatusTuple
 from vortex.handler.TupleDataObservableHandler import TupleDataObservableHandler
@@ -27,11 +31,15 @@ def makeTupleDataObservableHandler(dbSessionCreator: DbSessionCreator,
         observableName=searchObservableName,
         additionalFilt=searchFilt)
 
-    # Register TupleProviders here
+    # Search Property
     tupleObservable.addTupleProvider(SearchPropertyTuple.tupleName(),
                                      SearchPropertyTupleProvider(dbSessionCreator))
 
-    # Register TupleProviders here
+    # Search Object Type
+    tupleObservable.addTupleProvider(SearchObjectTypeTuple.tupleName(),
+                                     SearchObjectTypeTupleProvider(dbSessionCreator))
+
+    # Admin status tuple
     tupleObservable.addTupleProvider(AdminStatusTuple.tupleName(),
                                      AdminStatusTupleProvider(statusController))
 

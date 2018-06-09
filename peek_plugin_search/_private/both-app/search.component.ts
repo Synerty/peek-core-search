@@ -1,4 +1,5 @@
 import {Component} from "@angular/core";
+import {TitleService} from "@synerty/peek-util";
 
 @Component({
     selector: 'plugin-search',
@@ -7,8 +8,8 @@ import {Component} from "@angular/core";
 })
 export class SearchComponent {
 
-    constructor() {
-
+    constructor(titleService:TitleService) {
+        titleService.setTitle("Unified Search");
     }
 
 }

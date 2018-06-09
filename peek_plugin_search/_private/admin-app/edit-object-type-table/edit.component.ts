@@ -6,7 +6,7 @@ import {
     ComponentLifecycleEventEmitter,
     TupleLoader
 } from "@synerty/vortexjs";
-import {SettingObjectTypeTuple, searchFilt} from "@peek/peek_plugin_search/_private";
+import {SearchObjectTypeTuple, searchFilt} from "@peek/peek_plugin_search/_private";
 
 
 @Component({
@@ -19,7 +19,7 @@ export class EditObjectTypeComponent extends ComponentLifecycleEventEmitter {
         "key": "admin.Edit.SearchObjectTypeTuple"
     };
 
-    items: SettingObjectTypeTuple[] = [];
+    items: SearchObjectTypeTuple[] = [];
 
     loader: TupleLoader;
 
@@ -32,7 +32,7 @@ export class EditObjectTypeComponent extends ComponentLifecycleEventEmitter {
         );
 
         this.loader.observable
-            .subscribe((tuples:SettingObjectTypeTuple[]) => this.items = tuples);
+            .subscribe((tuples:SearchObjectTypeTuple[]) => this.items = tuples);
     }
 
     save() {

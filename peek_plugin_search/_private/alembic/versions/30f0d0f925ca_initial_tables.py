@@ -2,14 +2,14 @@
 
 Peek Plugin Database Migration Script
 
-Revision ID: 42e006e789c8
+Revision ID: 30f0d0f925ca
 Revises: 
-Create Date: 2018-06-07 21:14:07.459635
+Create Date: 2018-06-09 20:19:50.662811
 
 """
 
 # revision identifiers, used by Alembic.
-revision = '42e006e789c8'
+revision = '30f0d0f925ca'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -42,13 +42,13 @@ def upgrade():
     )
     op.create_index('idx_EncodedSearchObject_chunkKey', 'EncodedSearchObjectChunk', ['chunkKey'], unique=True, schema='pl_search')
     op.create_table('SearchIndexCompilerQueue',
-    sa.Column('id', sa.Integer(), nullable=False, autoincrement=True),
+    sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('chunkKey', sa.String(), nullable=False),
     sa.PrimaryKeyConstraint('id', 'chunkKey'),
     schema='pl_search'
     )
     op.create_table('SearchObjectCompilerQueue',
-    sa.Column('id', sa.Integer(), nullable=False, autoincrement=True),
+    sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('chunkKey', sa.String(), nullable=False),
     sa.PrimaryKeyConstraint('id', 'chunkKey'),
     schema='pl_search'
@@ -60,6 +60,8 @@ def upgrade():
     sa.PrimaryKeyConstraint('id'),
     schema='pl_search'
     )
+    op.create_index('idx_SearchProp_name', 'SearchObjectType', ['name'], unique=True, schema='pl_search')
+    op.create_index('idx_SearchProp_title', 'SearchObjectType', ['title'], unique=True, schema='pl_search')
     op.create_table('SearchProperty',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(), nullable=False),
@@ -67,6 +69,8 @@ def upgrade():
     sa.PrimaryKeyConstraint('id'),
     schema='pl_search'
     )
+    op.create_index('idx_SearchProp_name', 'SearchProperty', ['name'], unique=True, schema='pl_search')
+    op.create_index('idx_SearchProp_title', 'SearchProperty', ['title'], unique=True, schema='pl_search')
     op.create_table('Setting',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(), nullable=True),
@@ -142,7 +146,11 @@ def downgrade():
     op.drop_index('idx_SearchObject_chunkKey', table_name='SearchObject', schema='pl_search')
     op.drop_table('SearchObject', schema='pl_search')
     op.drop_table('Setting', schema='pl_search')
+    op.drop_index('idx_SearchProp_title', table_name='SearchProperty', schema='pl_search')
+    op.drop_index('idx_SearchProp_name', table_name='SearchProperty', schema='pl_search')
     op.drop_table('SearchProperty', schema='pl_search')
+    op.drop_index('idx_SearchProp_title', table_name='SearchObjectType', schema='pl_search')
+    op.drop_index('idx_SearchProp_name', table_name='SearchObjectType', schema='pl_search')
     op.drop_table('SearchObjectType', schema='pl_search')
     op.drop_table('SearchObjectCompilerQueue', schema='pl_search')
     op.drop_table('SearchIndexCompilerQueue', schema='pl_search')

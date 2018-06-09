@@ -1,11 +1,24 @@
 <StackLayout class="p-20">
-    <Button text="Find" (tap)="find()"></Button>
+
+    <GridLayout columns="*, auto" rows="auto" width="*">
+        <TextField class="input input-border"
+                   autocorrect="false"
+                   hint="search" [(ngModel)]="keywords"
+                   returnKeyType="Find"
+                   returnPress="find()"/>
+
+        <Button col="1" text="Find" (tap)="find()"></Button>
+    </GridLayout>
+
 
     <GridLayout columns="*" rows="auto" width="*">
         <Label class="h3" col="0" text="Results"></Label>
     </GridLayout>
 
-    <ListView [items]="propertys">
+    <Label *ngIf="!resultObjects.length" text="No results.">
+
+    </Label>
+    <ListView [items]="resultObjects">
         <ng-template let-item="item" let-i="index" let-odd="odd" let-even="even">
             <GridLayout columns="*" rows="auto" [class.odd]="odd" [class.even]="even">
                 <plugin-search-result [resultObject]="item"></plugin-search-result>

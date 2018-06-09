@@ -6,7 +6,7 @@ import {
     ComponentLifecycleEventEmitter,
     TupleLoader
 } from "@synerty/vortexjs";
-import {SettingPropertyTuple, searchFilt} from "@peek/peek_plugin_search/_private";
+import {SearchPropertyTuple, searchFilt} from "@peek/peek_plugin_search/_private";
 
 
 @Component({
@@ -16,10 +16,10 @@ import {SettingPropertyTuple, searchFilt} from "@peek/peek_plugin_search/_privat
 export class EditPropertyComponent extends ComponentLifecycleEventEmitter {
     // This must match the dict defined in the admin_backend handler
     private readonly filt = {
-        "key": "admin.Edit.SearchSettingPropertyTuple"
+        "key": "admin.Edit.SearchPropertyTuple"
     };
 
-    items: SettingPropertyTuple[] = [];
+    items: SearchPropertyTuple[] = [];
 
     loader: TupleLoader;
 
@@ -32,7 +32,7 @@ export class EditPropertyComponent extends ComponentLifecycleEventEmitter {
         );
 
         this.loader.observable
-            .subscribe((tuples:SettingPropertyTuple[]) => this.items = tuples);
+            .subscribe((tuples:SearchPropertyTuple[]) => this.items = tuples);
     }
 
     save() {

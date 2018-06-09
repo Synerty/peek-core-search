@@ -39,7 +39,7 @@ class __ExtUpdateObservable(OrmCrudHandlerExtension):
 
 
 # This method creates an instance of the handler class.
-def makePropertyTableHandler(tupleObservable, dbSessionCreator):
+def makeSearchPropertyHandler(tupleObservable, dbSessionCreator):
     handler = __CrudHandler(dbSessionCreator, SearchPropertyTuple,
                             filtKey, retreiveAll=True)
 

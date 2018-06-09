@@ -1,5 +1,12 @@
 <div class="container">
-    <Button class="btn btn-default" (click)="find()">Find</Button>
+
+    <div class="input-group">
+        <input type="text" class="form-control"
+               placeholder="search" [(ngModel)]="keywords">
+        <span class="input-group-btn">
+            <Button class="btn" (click)="find()">Find</Button>
+        </span>
+    </div><!-- /input-group -->
 
     <table class="table table-striped">
         <thead>
@@ -8,9 +15,20 @@
         </tr>
         </thead>
         <tbody>
-        <tr *ngFor="let item of resultObjects">
-            <td><plugin-search-result [resultObject]="item"></plugin-search-result></td>
+        <tr *ngIf="!resultObjects.length">
+            <td>No results.</td>
+        </tr>
+        <tr *ngFor="let item of resultObjects; odd as odd; even as even">
+            <td [class.bg-odd]="odd" [class.bg-even]="even">
+                <plugin-search-result [resultObject]="item"></plugin-search-result>
+            </td>
         </tr>
         </tbody>
     </table>
+
+    searchProperties
+    <pre>{{searchProperties | json}}</pre>
+
+    searchObjectTypes
+    <pre>{{searchObjectTypes | json}}</pre>
 </div>

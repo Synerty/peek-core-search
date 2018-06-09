@@ -7,10 +7,10 @@ export class SearchPropertyTuple extends Tuple {
     public static readonly tupleName = searchTuplePrefix + "SearchPropertyTuple";
 
     //  The name of the search property
-    name : string;
+    name: string;
 
     //  The title of the search property
-    title : string;
+    title: string;
 
     constructor() {
         super(SearchPropertyTuple.tupleName)
