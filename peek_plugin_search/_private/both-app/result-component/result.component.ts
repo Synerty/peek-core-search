@@ -1,6 +1,6 @@
 import {Component, Input} from "@angular/core";
 import {Router} from "@angular/router";
-import {PropertyTuple, searchBaseUrl} from "@peek/peek_plugin_search/_private";
+import {SearchPropertyTuple, searchBaseUrl} from "@peek/peek_plugin_search/_private";
 
 import {
     ComponentLifecycleEventEmitter,
@@ -23,8 +23,8 @@ import {
 })
 export class ResultComponent extends ComponentLifecycleEventEmitter {
 
-    @Input("resultObjects")
-    resultObjects: SearchResultObjectTuple = new SearchResultObjectTuple();
+    @Input("resultObject")
+    resultObject: SearchResultObjectTuple = new SearchResultObjectTuple();
 
     constructor(private router: Router) {
         super();

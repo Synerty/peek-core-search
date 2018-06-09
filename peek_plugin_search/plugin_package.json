@@ -2,7 +2,7 @@
     "plugin": {
         "title": "Search Plugin",
         "packageName": "peek_plugin_search",
-    "version":"0.10.1",
+        "version": "0.10.1",
         "buildNumber": "#PLUGIN_BUILD#",
         "buildDate": "#BUILD_DATE#",
         "creator": "Synerty Pty Ltd",
@@ -14,7 +14,8 @@
         "storage",
         "admin",
         "client",
-        "mobile"
+        "mobile",
+        "desktop"
     ],
     "server": {
     },
@@ -25,21 +26,58 @@
         "showHomeLink": true,
         "appDir": "_private/admin-app",
         "appModule": "search.module#SearchModule",
-        "moduleDir": "plugin-module",
+        "moduleDir": "plugin-module"
     },
     "client": {
     },
     "mobile": {
         "showHomeLink": true,
-        "appDir": "_private/mobile-app",
+        "appDir": "_private/both-app",
         "appModule": "search.module#SearchModule",
-        "assetDir": "_private/mobile-assets",
+        "assetDir": "_private/both-assets",
         "icon": "/assets/peek_plugin_search/icon.png",
-        "moduleDir": "plugin-module"
+        "moduleDir": "plugin-module",
+        "rootServices": [
+            {
+                "file": "_private/search-index-loader/PrivateSearchIndexLoaderService",
+                "class": "PrivateSearchIndexLoaderService",
+                "persistent": true
+            },
+            {
+                "file": "_private/search-object-loader/PrivateSearchObjectLoaderService",
+                "class": "PrivateSearchObjectLoaderService",
+                "persistent": true
+            },
+            {
+                "file": "SearchService",
+                "class": "SearchService"
+            }
+        ]
     },
     "agent": {
     },
     "desktop": {
-        "moduleDir": "plugin-module"
+        "showHomeLink": true,
+        "appDir": "_private/both-app",
+        "appModule": "search.module#SearchModule",
+        "assetDir": "_private/both-assets",
+        "icon": "/assets/peek_plugin_search/icon.png",
+        "moduleDir": "plugin-module",
+        "rootServices": [
+            {
+                "file": "_private/search-index-loader/PrivateSearchIndexLoaderService",
+                "class": "PrivateSearchIndexLoaderService",
+                "persistent": true
+            },
+            {
+                "file": "_private/search-object-loader/PrivateSearchObjectLoaderService",
+                "class": "PrivateSearchObjectLoaderService",
+                "persistent": true
+            },
+            {
+                "file": "SearchService",
+                "class": "SearchService"
+            }
+        ]
     }
 }

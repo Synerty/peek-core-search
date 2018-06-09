@@ -100,7 +100,7 @@ class SearchIndexCacheHandler(object):
         self._uuidsObserving.add(vortexUuid)
 
         yield self._replyToObserve(payload.filt,
-                                   updateDatesTuples.indexBucketUpdateDates,
+                                   updateDatesTuples.updateDateByChunkKey,
                                    sendResponse)
 
     # ---------------

@@ -18,7 +18,7 @@ import {
 export class FindComponent extends ComponentLifecycleEventEmitter {
 
     keywords: string = '';
-    resultObjects: SearchResultObjectTuple = [];
+    resultObjects: SearchResultObjectTuple[] = [];
 
     constructor(private searchService: SearchService) {
         super();

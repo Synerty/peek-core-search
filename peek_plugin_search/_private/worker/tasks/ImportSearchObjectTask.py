@@ -60,8 +60,8 @@ def importSearchObjectTask(self, searchObjectsEncodedPayload: bytes) -> None:
         reindexSearchObject(objectsToIndex)
 
     except Exception as e:
-        logger.info("Retrying import search objects, %s", e)
-        raise  # self.retry(exc=e, countdown=3)
+        logger.debug("Retrying import search objects, %s", e)
+        raise self.retry(exc=e, countdown=3)
 
 
 def _prepareLookups(newSearchObjects: List[ImportSearchObjectTuple]) -> Dict[str, int]:
