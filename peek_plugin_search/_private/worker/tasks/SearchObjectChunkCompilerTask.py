@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 """ Search Index Compiler
 
-Compile the location indexes
+Compile the search indexes
 
 1) Query for queue
 2) Process queue

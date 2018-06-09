@@ -96,45 +96,45 @@ class ClientEntryHook(PluginClientEntryHookABC):
         # ----------------
         # Location Index Cache Controller
 
-        locationIndexCacheController = SearchIndexCacheController(
+        searchIndexCacheController = SearchIndexCacheController(
             self.platform.serviceId
         )
-        self._loadedObjects.append(locationIndexCacheController)
+        self._loadedObjects.append(searchIndexCacheController)
 
         # This is the custom handler for the client
-        locationIndexCacheHandler = SearchIndexCacheHandler(
-            cacheController=locationIndexCacheController,
+        searchIndexCacheHandler = SearchIndexCacheHandler(
+            cacheController=searchIndexCacheController,
             clientId=self.platform.serviceId
         )
-        self._loadedObjects.append(locationIndexCacheHandler)
+        self._loadedObjects.append(searchIndexCacheHandler)
 
-        locationIndexCacheController.setSearchIndexCacheHandler(
-            locationIndexCacheHandler
+        searchIndexCacheController.setSearchIndexCacheHandler(
+            searchIndexCacheHandler
         )
 
         # ----------------
         # Location Object Cache Controller
 
-        locationObjectCacheController = SearchObjectCacheController(
+        searchObjectCacheController = SearchObjectCacheController(
             self.platform.serviceId
         )
-        self._loadedObjects.append(locationObjectCacheController)
+        self._loadedObjects.append(searchObjectCacheController)
 
         # This is the custom handler for the client
-        locationObjectCacheHandler = SearchObjectCacheHandler(
-            cacheController=locationObjectCacheController,
+        searchObjectCacheHandler = SearchObjectCacheHandler(
+            cacheController=searchObjectCacheController,
             clientId=self.platform.serviceId
         )
-        self._loadedObjects.append(locationObjectCacheHandler)
+        self._loadedObjects.append(searchObjectCacheHandler)
 
-        locationObjectCacheController.setSearchObjectCacheHandler(
-            locationObjectCacheHandler
+        searchObjectCacheController.setSearchObjectCacheHandler(
+            searchObjectCacheHandler
         )
 
         # ----------------
         # Start the compiler controllers
-        yield locationIndexCacheController.start()
-        yield locationObjectCacheController.start()
+        yield searchIndexCacheController.start()
+        yield searchObjectCacheController.start()
 
         logger.debug("Started")
 

@@ -32,7 +32,7 @@ class SearchIndexCacheController:
         self._clientId = clientId
         self._webAppHandler = None
 
-        #: This stores the cache of locationIndex data for the clients
+        #: This stores the cache of searchIndex data for the clients
         self._cache: Dict[str, EncodedSearchIndexChunk] = {}
 
         self._endpoint = PayloadEndpoint(clientSearchIndexUpdateFromServerFilt,
@@ -56,7 +56,6 @@ class SearchIndexCacheController:
     @inlineCallbacks
     def reloadCache(self):
         self._cache = {}
-        self._locationKeysByModelSet = defaultdict(set)
 
         offset = 0
         while True:
@@ -76,8 +75,8 @@ class SearchIndexCacheController:
     @inlineCallbacks
     def _processSearchIndexPayload(self, payloadEnvelope: PayloadEnvelope, **kwargs):
         paylod = yield payloadEnvelope.decodePayloadDefer()
-        locationIndexTuples: List[EncodedSearchIndexChunk] = paylod.tuples
-        self._loadSearchIndexIntoCache(locationIndexTuples)
+        searchIndexTuples: List[EncodedSearchIndexChunk] = paylod.tuples
+        self._loadSearchIndexIntoCache(searchIndexTuples)
 
     def _loadSearchIndexIntoCache(self,
                                   encodedChunkTuples: List[EncodedSearchIndexChunk]):
@@ -90,7 +89,7 @@ class SearchIndexCacheController:
                 self._cache[t.chunkKey] = t
                 chunkKeysUpdated.append(t.chunkKey)
 
-        logger.debug("Received locationIndex updates from server, %s", chunkKeysUpdated)
+        logger.debug("Received searchIndex updates from server, %s", chunkKeysUpdated)
 
         self._webAppHandler.notifyOfSearchIndexUpdate(chunkKeysUpdated)
 

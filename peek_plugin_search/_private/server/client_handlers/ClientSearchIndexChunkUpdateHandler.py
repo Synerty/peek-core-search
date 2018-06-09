@@ -41,7 +41,7 @@ class ClientSearchIndexChunkUpdateHandler:
 
         Send grid updates to the client services
 
-        :param chunkKeys: A list of location index buckets that have been updated
+        :param chunkKeys: A list of search index buckets that have been updated
         :returns: Nothing
         """
 

@@ -32,7 +32,7 @@ class SearchObjectCacheController:
         self._clientId = clientId
         self._webAppHandler = None
 
-        #: This stores the cache of locationObject data for the clients
+        #: This stores the cache of searchObject data for the clients
         self._cache: Dict[str, EncodedSearchObjectChunk] = {}
 
         self._endpoint = PayloadEndpoint(clientSearchObjectUpdateFromServerFilt,
@@ -56,7 +56,6 @@ class SearchObjectCacheController:
     @inlineCallbacks
     def reloadCache(self):
         self._cache = {}
-        self._locationKeysByModelSet = defaultdict(set)
 
         offset = 0
         while True:
@@ -76,8 +75,8 @@ class SearchObjectCacheController:
     @inlineCallbacks
     def _processSearchObjectPayload(self, payloadEnvelope: PayloadEnvelope, **kwargs):
         paylod = yield payloadEnvelope.decodePayloadDefer()
-        locationObjectTuples: List[EncodedSearchObjectChunk] = paylod.tuples
-        self._loadSearchObjectIntoCache(locationObjectTuples)
+        searchObjectTuples: List[EncodedSearchObjectChunk] = paylod.tuples
+        self._loadSearchObjectIntoCache(searchObjectTuples)
 
     def _loadSearchObjectIntoCache(self,
                                   encodedChunkTuples: List[EncodedSearchObjectChunk]):
@@ -90,7 +89,7 @@ class SearchObjectCacheController:
                 self._cache[t.chunkKey] = t
                 chunkKeysUpdated.append(t.chunkKey)
 
-        logger.debug("Received locationObject updates from server, %s", chunkKeysUpdated)
+        logger.debug("Received searchObject updates from server, %s", chunkKeysUpdated)
 
         self._webAppHandler.notifyOfSearchObjectUpdate(chunkKeysUpdated)
 

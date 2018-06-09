@@ -39,7 +39,7 @@ export class SearchService {
 
     /** Get Locations
      *
-     * Get the location of a Disp.key from the index..
+     * Get the objects with matching keywords from the index..
      *
      */
     getObjects(keywords: string[]): Promise<SearchResultObjectTuple[]> {
