@@ -22,12 +22,6 @@ class StatusController(TupleActionProcessorDelegateABC):
     def shutdown(self):
         self._tupleObserver = None
 
-    def processTupleAction(self, tupleAction: TupleActionABC) -> Deferred:
-        # if isinstance(tupleAction, AddIntValueActionTuple):
-        #     return self._processAddIntValue(tupleAction)
-
-        raise NotImplementedError(tupleAction.tupleName())
-
     @property
     def status(self):
         return self._status
