@@ -33,7 +33,7 @@ class SearchObjectCacheController:
         self._webAppHandler = None
 
         #: This stores the cache of searchObject data for the clients
-        self._cache: Dict[str, EncodedSearchObjectChunk] = {}
+        self._cache: Dict[int, EncodedSearchObjectChunk] = {}
 
         self._endpoint = PayloadEndpoint(clientSearchObjectUpdateFromServerFilt,
                                          self._processSearchObjectPayload)
@@ -96,5 +96,5 @@ class SearchObjectCacheController:
     def searchObject(self, chunkKey) -> EncodedSearchObjectChunk:
         return self._cache.get(chunkKey)
 
-    def searchObjectKeys(self) -> List[str]:
+    def searchObjectKeys(self) -> List[int]:
         return list(self._cache)

@@ -1,4 +1,5 @@
 import {Injectable} from "@angular/core";
+import * as pako from "pako";
 
 import {
     ComponentLifecycleEventEmitter,
@@ -24,6 +25,8 @@ import {Subject} from "rxjs/Subject";
 import {Observable} from "rxjs/Observable";
 import {EncodedSearchObjectChunkTuple} from "./EncodedSearchObjectChunkTuple";
 import {SearchObjectUpdateDateTuple} from "./SearchObjectUpdateDateTuple";
+import {SearchResultObjectTuple} from "../../SearchResultObjectTuple";
+import {SearchResultObjectRouteTuple} from "../../SearchResultObjectRouteTuple";
 
 
 // ----------------------------------------------------------------------------
@@ -40,8 +43,13 @@ let clientSearchObjectWatchUpdateFromDeviceFilt = extend(
  */
 
 class SearchObjectChunkTupleSelector extends TupleSelector {
-    constructor(chunkKey: string) {
+
+    constructor(private chunkKey: number) {
         super(searchTuplePrefix + "SearchObjectChunkTuple", {key: chunkKey});
+    }
+
+    toOrderedJsonStr(): string {
+        return this.chunkKey.toString();
     }
 }
 
@@ -54,6 +62,30 @@ class UpdateDateTupleSelector extends TupleSelector {
     constructor() {
         super(SearchObjectUpdateDateTuple.tupleName, {});
     }
+}
+
+
+// ----------------------------------------------------------------------------
+/** hash method
+ */
+function objectIdChunk(objectId: number): number {
+    /** Object ID Chunk
+
+     This method creates an int from 0 to MAX, representing the hash bucket for this
+     object Id.
+
+     This is simple, and provides a reasonable distribution
+
+     @param objectId: The ID if the object to get the chunk key for
+
+     @return: The bucket / chunkKey where you'll find the object with this ID
+
+     */
+    if (objectId == null)
+        throw new Error("keyword is None or zero length");
+
+    // 1024 buckets
+    return objectId & 1023;
 }
 
 
@@ -147,11 +179,8 @@ export class PrivateSearchObjectLoaderService extends ComponentLifecycleEventEmi
         if (!this.vortexStatusService.snapshot.isOnline)
             return;
 
-        let tuple = new SearchObjectUpdateDateTuple();
-        tuple.updateDateByChunkKey = this.index.updateDateByChunkKey;
-
-        let payload = new Payload(clientSearchObjectWatchUpdateFromDeviceFilt, [tuple]);
-        this.vortexService.sendPayload(payload);
+        let pl = new Payload(clientSearchObjectWatchUpdateFromDeviceFilt, [this.index]);
+        this.vortexService.sendPayload(pl);
     }
 
 
@@ -191,7 +220,7 @@ export class PrivateSearchObjectLoaderService extends ComponentLifecycleEventEmi
 
         let encodedSearchObjectChunkTuples: EncodedSearchObjectChunkTuple[] = <EncodedSearchObjectChunkTuple[]>payload.tuples;
 
-        let tuplesToSave = [];
+        let tuplesToSave: EncodedSearchObjectChunkTuple[] = [];
 
         for (let item of encodedSearchObjectChunkTuples) {
             tuplesToSave.push(item);
@@ -240,6 +269,140 @@ export class PrivateSearchObjectLoaderService extends ComponentLifecycleEventEmi
                     .then(() => tx.close());
             });
         return retPromise;
+    }
+
+
+    /** Get Objects
+     *
+     * Get the objects with matching keywords from the index..
+     *
+     */
+    getObjects(objectTypeId: number | null, objectIds: number[]): Promise<SearchResultObjectTuple[]> {
+        if (objectIds == null || objectIds.length == 0) {
+            throw new Error("We've been passed a null/empty keywords");
+        }
+
+        if (this.isReady())
+            return this.getObjectsWhenReady(objectTypeId, objectIds);
+
+        return this.isReadyObservable()
+            .toPromise()
+            .then(() => this.getObjectsWhenReady(objectTypeId, objectIds));
+    }
+
+
+    /** Get Objects When Ready
+     *
+     * Get the objects with matching keywords from the index..
+     *
+     */
+    private getObjectsWhenReady(objectTypeId: number | null, objectIds: number[]): Promise<SearchResultObjectTuple[]> {
+
+        let objectIdsByChunkKey: { [key: string]: number[]; } = {};
+
+        for (let objectId of objectIds) {
+            let chunkKey: number = objectIdChunk(objectId);
+            if (objectIdsByChunkKey[chunkKey] == null)
+                objectIdsByChunkKey[chunkKey] = [];
+            objectIdsByChunkKey[chunkKey].push(objectId);
+        }
+
+
+        let promises = [];
+        for (let chunkKey of chunkKey) {
+            let objectIds = objectIdsByChunkKey[chunkKey];
+            promises.push(this.getObjectsForObjectIds(objectTypeId, objectIds, chunkKey));
+        }
+
+        return Promise.all(promises)
+            .then((results: SearchResultObjectTuple[][]) => {
+                let objects: SearchResultObjectTuple[] = [];
+                for (let result of  results) {
+                    objects.add(result);
+                }
+                return objects;
+            });
+    }
+
+
+    /** Get Objects for Object ID
+     *
+     * Get the objects with matching keywords from the index..
+     *
+     */
+    private getObjectsForObjectIds(objectTypeId: number | null,
+                                   objectIds: number[],
+                                   chunkKey: number): Promise<SearchResultObjectTuple[]> {
+
+        if (!this.index.updateDateByChunkKey.hasOwnProperty(chunkKey)) {
+            console.log(`ObjectIDs: ${objectIds} doesn't appear in the index`);
+            return Promise.resolve([]);
+        }
+
+        let retPromise: any;
+        retPromise = this.storage.loadTuplesEncoded(new SearchObjectChunkTupleSelector(chunkKey))
+            .then((vortexMsg: string) => {
+                if (vortexMsg == null) {
+                    return [];
+                }
+
+
+                return Payload.fromEncodedPayload(vortexMsg)
+                    .then((payload: Payload) => payload.tuples)
+                    .then((chunkData: { [key: number]: string; }) => {
+
+                        let foundObjects: SearchResultObjectTuple[] = [];
+
+                        for (let objectId of objectIds) {
+                            // Find the keyword, we're just iterating
+                            if (chunkData.hasOwnProperty(objectId)) {
+                                console.log(
+                                    `WARNING: ObjectID ${objectId} is missing from index,`
+                                    + ` chunkKey ${chunkKey}`
+                                );
+                                continue;
+                            }
+
+                            // Reconstruct the data
+                            let inflated = pako.inflate(chunkData[objectId], {to: "string"});
+                            let objectProps: {} = JSON.parse(inflated);
+
+                            // Get out the object type
+                            let thisObjectTypeId = objectProps['_otid_'];
+                            delete objectProps['_otid_'];
+
+                            // If the property is set, then make sure it matches
+                            if (objectTypeId != null && objectTypeId != thisObjectTypeId)
+                                continue;
+
+                            // Get out the routes
+                            let routes: string[][] = objectProps['_r_'];
+                            delete objectProps['_r_'];
+
+                            // Create the new object
+                            let newObject = new SearchResultObjectTuple();
+                            foundObjects.push(newObject);
+
+                            newObject.id = objectId;
+                            newObject.objectTypeId = thisObjectTypeId;
+                            newObject.properties = objectProps;
+
+                            for (let route of routes) {
+                                let newRoute = new SearchResultObjectRouteTuple();
+                                newObject.routes.push(newRoute);
+
+                                newRoute.path = route[0];
+                                newRoute.title = route[1];
+                            }
+                        }
+
+                        return foundObjects;
+
+                    });
+            });
+
+        return retPromise;
+
     }
 
 

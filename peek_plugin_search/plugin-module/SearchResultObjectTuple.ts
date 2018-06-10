@@ -8,13 +8,13 @@ export class SearchResultObjectTuple extends Tuple {
     public static readonly tupleName = searchTuplePrefix + "SearchResultObjectTuple";
 
     // The id of the object this search result is for
-    objectId: string;
+    id: number;
 
     // The type of this object in the search result
-    objectType: string;
+    objectTypeId: number;
 
     // The details of the search result
-    details: {} = {};
+    properties: { [key: string]: string; } = {};
 
     // The details of the search result
     routes: SearchResultObjectRouteTuple[] = [];

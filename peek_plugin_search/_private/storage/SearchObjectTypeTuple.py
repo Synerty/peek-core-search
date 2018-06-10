@@ -16,6 +16,6 @@ class SearchObjectTypeTuple(Tuple, DeclarativeBase):
     title = Column(String, nullable=False)
 
     __table_args__ = (
-        Index("idx_SearchProp_name", name, unique=True),
-        Index("idx_SearchProp_title", title, unique=True),
+        Index("idx_ObjType_name", name, unique=True),
+        Index("idx_ObjType_title", title, unique=True),
     )

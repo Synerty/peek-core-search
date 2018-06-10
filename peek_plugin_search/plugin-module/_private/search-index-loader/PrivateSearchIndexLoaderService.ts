@@ -17,6 +17,7 @@ import {searchFilt, searchIndexCacheStorageName, searchTuplePrefix} from "../Plu
 
 import {Subject} from "rxjs/Subject";
 import {Observable} from "rxjs/Observable";
+
 import {EncodedSearchIndexChunkTuple} from "./EncodedSearchIndexChunkTuple";
 import {SearchIndexUpdateDateTuple} from "./SearchIndexUpdateDateTuple";
 
@@ -37,8 +38,13 @@ let clientSearchIndexWatchUpdateFromDeviceFilt = extend(
 // There is actually no tuple here, it's raw JSON,
 // so we don't have to construct a class to get the data
 class SearchIndexChunkTupleSelector extends TupleSelector {
-    constructor(chunkKey: string) {
+
+    constructor(private chunkKey: number) {
         super(searchTuplePrefix + "SearchIndexChunkTuple", {key: chunkKey});
+    }
+
+    toOrderedJsonStr(): string {
+        return this.chunkKey.toString();
     }
 }
 
@@ -51,6 +57,38 @@ class UpdateDateTupleSelector extends TupleSelector {
     constructor() {
         super(SearchIndexUpdateDateTuple.tupleName, {});
     }
+}
+
+
+// ----------------------------------------------------------------------------
+/** hash method
+ */
+function keywordChunk(keyword: string): number {
+    /** keyword
+
+     This method creates an int from 0 to MAX, representing the hash bucket for this
+     keyword.
+
+     This is simple, and provides a reasonable distribution
+
+     @param keyword: The keyword to get the chunk key for
+
+     @return: The bucket / chunkKey where you'll find the keyword
+
+     */
+    if (keyword == null || keyword.length == 0)
+        throw new Error("keyword is None or zero length");
+
+    let bucket = 0;
+
+    for (let i = 0; i < keyword.length; i++) {
+        bucket = ((bucket << 5) - bucket) + keyword.charCodeAt(i);
+        bucket |= 0; // Convert to 32bit integer
+    }
+
+    bucket = bucket & 1023; // 1024 buckets
+
+    return bucket;
 }
 
 
@@ -146,11 +184,8 @@ export class PrivateSearchIndexLoaderService extends ComponentLifecycleEventEmit
         if (!this.vortexStatusService.snapshot.isOnline)
             return;
 
-        let tuple = new SearchIndexUpdateDateTuple();
-        tuple.updateDateByChunkKey = this.index.updateDateByChunkKey;
-
-        let payload = new Payload(clientSearchIndexWatchUpdateFromDeviceFilt, [tuple]);
-        this.vortexService.sendPayload(payload);
+        let pl = new Payload(clientSearchIndexWatchUpdateFromDeviceFilt, [this.index]);
+        this.vortexService.sendPayload(pl);
     }
 
 
@@ -190,12 +225,11 @@ export class PrivateSearchIndexLoaderService extends ComponentLifecycleEventEmit
 
         let encodedSearchIndexChunkTuples: EncodedSearchIndexChunkTuple[] = <EncodedSearchIndexChunkTuple[]>payload.tuples;
 
-        let tuplesToSave = [];
+        let tuplesToSave: EncodedSearchIndexChunkTuple[] = [];
 
         for (let item of encodedSearchIndexChunkTuples) {
             tuplesToSave.push(item);
         }
-
 
         // 2) Store the index
         this.storeSearchIndexChunkTuples(tuplesToSave)
@@ -230,7 +264,7 @@ export class PrivateSearchIndexLoaderService extends ComponentLifecycleEventEmit
                     promises.push(
                         tx.saveTuplesEncoded(
                             new SearchIndexChunkTupleSelector(encodedSearchIndexChunkTuple.chunkKey),
-                            encodedSearchIndexChunkTuple.encodedPayload
+                            encodedSearchIndexChunkTuple.encodedData
                         )
                     );
                 }
@@ -239,6 +273,103 @@ export class PrivateSearchIndexLoaderService extends ComponentLifecycleEventEmit
                     .then(() => tx.close());
             });
         return retPromise;
+    }
+
+
+    /** Get Object IDs
+     *
+     * Get the objects with matching keywords from the index..
+     *
+     */
+    getObjectIds(propertyName: string | null, keywords: string[]): Promise<number[]> {
+        if (keywords == null || keywords.length == 0) {
+            throw new Error("We've been passed a null/empty keywords");
+        }
+
+        if (this.isReady())
+            return this.getObjectIdsWhenReady(propertyName, keywords);
+
+        return this.isReadyObservable()
+            .toPromise()
+            .then(() => this.getObjectIdsWhenReady(propertyName, keywords));
+    }
+
+
+    /** Get Object IDs When Ready
+     *
+     * Get the objects with matching keywords from the index..
+     *
+     */
+    private getObjectIdsWhenReady(propertyName: string | null, keywords: string[]): Promise<number[]> {
+        let promises = [];
+        for (let keyword of keywords) {
+            promises.push(this.getObjectIdsForKeyword(propertyName, keyword));
+        }
+
+        return Promise.all(promises)
+            .then((results: number[][]) => {
+                let objectIds: number[] = [];
+                for (let result of results) {
+                    objectIds.add(result);
+                }
+                return objectIds;
+            });
+    }
+
+
+    /** Get Object IDs for Keyword
+     *
+     * Get the objects with matching keywords from the index..
+     *
+     */
+    private getObjectIdsForKeyword(propertyName: string | null, keyword: string): Promise<number[]> {
+        if (keyword == null || keyword.length == 0) {
+            throw new Error("We've been passed a null/empty keyword");
+        }
+
+        let chunkKey: number = keywordChunk(keyword);
+
+        if (!this.index.updateDateByChunkKey.hasOwnProperty(chunkKey)) {
+            console.log(`keyword: ${keyword} doesn't appear in the index`);
+            return Promise.resolve([]);
+        }
+
+        let retPromise: any;
+        retPromise = this.storage.loadTuplesEncoded(new SearchIndexChunkTupleSelector(chunkKey))
+            .then((vortexMsg: string) => {
+                if (vortexMsg == null) {
+                    return [];
+                }
+
+                return Payload.fromEncodedPayload(vortexMsg)
+                    .then((payload: Payload) => payload.tuples)
+                    .then((chunkData: string[][]) => {
+                        let objectIds = [];
+
+                        // TODO Binary Search, the data IS sorted
+                        for (let keywordIndex of chunkData) {
+                            // Find the keyword, we're just iterating
+                            if (keywordIndex[0] != keyword)
+                                continue;
+
+                            // If the property is set, then make sure it matches
+                            if (propertyName != null && keywordIndex[1] != propertyName)
+                                continue;
+
+                            // This is stored as a string, so we don't have to construct
+                            // so much data when deserialising the chunk
+                            let thisObjectIds = JSON.parse(keywordIndex[2]);
+                            for (let thisObjectId of thisObjectIds) {
+                                objectIds.push(thisObjectId);
+                            }
+                        }
+
+                        return objectIds;
+
+                    });
+            });
+        return retPromise;
+
     }
 
 

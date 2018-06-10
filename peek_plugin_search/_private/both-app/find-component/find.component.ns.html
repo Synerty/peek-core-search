@@ -10,6 +10,51 @@
         <Button col="1" text="Find" (tap)="find()"></Button>
     </GridLayout>
 
+    <!-- START SEARCH PROPERTY PICKER -->
+    <GridLayout columns="auto, *, auto" rows="auto">
+        <Label col="0" class="h3 p-15 text-left" text="Property:"></Label>
+        <ListPicker col="1"
+                    #propertyPicker class="p-15"
+                    *ngIf="searchPropertyNsPicking"
+                    [items]="searchPropertyStrings"
+                    (selectedIndexChange)="nsSelectProperty(propertyPicker.selectedIndex)">
+        </ListPicker>
+        <Label col="1"
+               class="h3 p-15"
+               *ngIf="!searchPropertyNsPicking"
+               [text]="searchProperty.title"></Label>
+        <!-- The edit / save buttons -->
+        <Button col="2"
+                row="0" col="1"
+                class="btn fa"
+                [text]="nsEditPropertyFonticon() | fonticon"
+                (tap)="searchPropertyNsPicking = !searchPropertyNsPicking">
+        </Button>
+    </GridLayout>
+    <!-- END SEARCH PROPERTY PICKER -->
+
+    <!-- START SEARCH OBJECT TYPE PICKER -->
+    <GridLayout columns="auto, *, auto" rows="auto">
+        <Label col="0" class="h3 p-15 text-left" text="Object Type:"></Label>
+        <ListPicker col="1"
+                    #objectTypePicker class="p-15"
+                    *ngIf="searchObjectTypesNsPicking"
+                    [items]="searchObjectTypeStrings"
+                    (selectedIndexChange)="nsSelectObjectType(objectTypePicker.selectedIndex)">
+        </ListPicker>
+        <Label col="1"
+               class="h3 p-15"
+               *ngIf="!searchObjectTypesNsPicking"
+               [text]="searchProperty.title"></Label>
+        <!-- The edit / save buttons -->
+        <Button col="2"
+                class="btn fa"
+                [text]="nsEditObjectTypeFonticon() | fonticon"
+                (tap)="searchObjectTypesNsPicking = !searchObjectTypesNsPicking">
+        </Button>
+    </GridLayout>
+    <!-- END SEARCH OBJECT TYPE PICKER -->
+
 
     <GridLayout columns="*" rows="auto" width="*">
         <Label class="h3" col="0" text="Results"></Label>

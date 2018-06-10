@@ -14,7 +14,7 @@ class EncodedSearchIndexChunk(Tuple, DeclarativeBase):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
 
-    chunkKey = Column(String, primary_key=True)
+    chunkKey = Column(Integer, primary_key=True)
     encodedData = Column(LargeBinary, nullable=False)
     encodedHash = Column(String, nullable=False)
     lastUpdate = Column(String, nullable=False)

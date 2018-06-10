@@ -6,7 +6,40 @@
         <span class="input-group-btn">
             <Button class="btn" (click)="find()">Find</Button>
         </span>
-    </div><!-- /input-group -->
+    </div>
+    <!-- /input-group -->
+
+
+    <!-- START SEARCH PROPERTY PICKER -->
+    <div class="form-group">
+        <label for="searchPropertyId">Property:</label>
+        <select id="searchPropertyId"
+                class="form-control dialog-selector"
+                name="searchPropertyId"
+                [(ngModel)]="searchProperty">
+            <option [ngValue]="option"
+                    *ngFor="let option of searchProperties">
+                {{option.title}}
+            </option>
+        </select>
+    </div>
+    <!-- END SEARCH PROPERTY PICKER -->
+
+
+    <!-- START SEARCH OBJECT TYPE PICKER -->
+    <div class="form-group">
+        <label for="searchObjectTypesId">Object Type:</label>
+        <select id="searchObjectTypesId"
+                class="form-control dialog-selector"
+                name="searchObjectTypesId"
+                [(ngModel)]="searchObjectType">
+            <option [ngValue]="option"
+                    *ngFor="let option of searchObjectTypes">
+                {{option.title}}
+            </option>
+        </select>
+    </div>
+    <!-- END SEARCH OBJECT TYPE PICKER -->
 
     <table class="table table-striped">
         <thead>
@@ -26,9 +59,5 @@
         </tbody>
     </table>
 
-    searchProperties
-    <pre>{{searchProperties | json}}</pre>
 
-    searchObjectTypes
-    <pre>{{searchObjectTypes | json}}</pre>
 </div>

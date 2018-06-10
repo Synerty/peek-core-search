@@ -1,5 +1,6 @@
 import json
 import logging
+import zlib
 from collections import defaultdict
 from datetime import datetime
 from typing import List, Dict, Tuple, Set
@@ -42,11 +43,22 @@ def removeSearchObjectTask(self, importGroupHashes: List[str]) -> None:
 @DeferrableTask
 @celeryApp.task(bind=True)
 def importSearchObjectTask(self, searchObjectsEncodedPayload: bytes) -> None:
-    try:
-        newSearchObjects: List[ImportSearchObjectTuple] = (
-            Payload().fromEncodedPayload(searchObjectsEncodedPayload).tuples
-        )
+    # Decode arguments
+    newSearchObjects: List[ImportSearchObjectTuple] = (
+        Payload().fromEncodedPayload(searchObjectsEncodedPayload).tuples
+    )
 
+    # Cleanup some of the input data
+    for o in newSearchObjects:
+        if not o.objectType:
+            o.objectType = 'none'
+
+        o.objectType = o.objectType.lower()
+
+        if o.properties:
+            o.properties = {k.lower(): v for k, v in o.properties.items()}
+
+    try:
         objectTypeIdsByName = _prepareLookups(newSearchObjects)
 
         objectsToIndex, objectIdByKey, chunkKeysForQueue = _insertOrUpdateObjects(
@@ -77,12 +89,10 @@ def _prepareLookups(newSearchObjects: List[ImportSearchObjectTuple]) -> Dict[str
 
     try:
 
-        objectTypeNames = set()
-        propertyNames = set()
+        objectTypeNames = {'none'}
+        propertyNames = {'key'}
 
         for o in newSearchObjects:
-            if not o.objectType:
-                o.objectType = 'None'
             objectTypeNames.add(o.objectType)
 
             if o.properties:
@@ -357,7 +367,7 @@ def _packObjectJson(newSearchObjects: List[ImportSearchObjectTuple],
                             SearchObject.objectTypeId,
                             SearchObjectRoute.routeTitle, SearchObjectRoute.routePath)
                 .join(SearchObjectRoute, SearchObject.id == SearchObjectRoute.objectId)
-                .filter(SearchObject.chunkKey.in_([o.key for o in newSearchObjects]))
+                .filter(SearchObject.chunkKey.in_(chunkKeysForQueue))
                 .filter(SearchObject.propertiesJson != None)
                 .filter(SearchObjectRoute.routePath != None)
                 .order_by(SearchObject.id, SearchObjectRoute.routeTitle)
@@ -382,7 +392,10 @@ def _packObjectJson(newSearchObjects: List[ImportSearchObjectTuple],
             props['_r_'] = routes
             props['_otid_'] = objectTypeId
             packedJson = json.dumps(props, sort_keys=True)
-            packedJsonUpdates.append(dict(b_id=id_, b_packedJson=packedJson))
+
+            # Compress this, with millions of objects it will add up. EG 163 VS 132
+            packedJsonZip = zlib.compress(packedJson.encode(), level=9)
+            packedJsonUpdates.append(dict(b_id=id_, b_packedJson=packedJsonZip))
 
         if packedJsonUpdates:
             stmt = (

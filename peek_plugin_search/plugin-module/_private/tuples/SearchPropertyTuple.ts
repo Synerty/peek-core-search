@@ -6,6 +6,9 @@ import {searchTuplePrefix} from "../PluginNames";
 export class SearchPropertyTuple extends Tuple {
     public static readonly tupleName = searchTuplePrefix + "SearchPropertyTuple";
 
+    //  The id
+    id: number;
+
     //  The name of the search property
     name: string;
 

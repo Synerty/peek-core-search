@@ -224,9 +224,19 @@ class ServerEntryHook(PluginServerEntryHookABC,
         # This should do nothing
         so2v2 = ImportSearchObjectTuple(
             key="so2key",
-            properties=None
+            properties=None,
+            objectType='Equipment'
         )
         searchObjects.append(so2v2)
+        searchObjects.append(so1v2)
+
+        # This should do nothing
+        so3v2 = ImportSearchObjectTuple(
+            key="so3key",
+            properties=None,
+            objectType='Job'
+        )
+        searchObjects.append(so3v2)
 
         d = Payload(tuples=searchObjects).toEncodedPayloadDefer()
         d.addCallback(self._api.importSearchObjects)

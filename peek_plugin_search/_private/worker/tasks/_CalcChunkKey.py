@@ -3,7 +3,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def makeChunkKeyFromString(key: str) -> str:
+def makeChunkKeyFromString(key: str) -> int:
     """ Make Chunk Key
 
     This is simple, and provides a reasonable distribution
@@ -17,17 +17,17 @@ def makeChunkKeyFromString(key: str) -> str:
     if not key:
         raise Exception("key is None or zero length")
 
-    hash = 0
+    bucket = 0
     for char in key:
-        hash = ((hash << 5) - hash) + ord(char)
-        hash = hash | 0  # This is in the javascript code.
+        bucket = ((bucket << 5) - bucket) + ord(char)
+        bucket = bucket | 0  # This is in the javascript code.
 
-    hash = hash & 1023  # 1024 buckets
+    bucket = bucket & 1023  # 1024 buckets
 
-    return str(hash)
+    return bucket
 
 
-def makeChunkKeyFromInt(key: int) -> str:
+def makeChunkKeyFromInt(key: int) -> int:
     """ Make Chunk Key
 
     This is simple, and provides a reasonable distribution
@@ -41,6 +41,6 @@ def makeChunkKeyFromInt(key: int) -> str:
     if key is None:
         raise Exception("key is None")
 
-    hash = key & 1023  # 1024 buckets
+    bucket = key & 1023  # 1024 buckets
 
-    return str(hash)
+    return bucket

@@ -8,7 +8,7 @@ export class EncodedSearchIndexChunkTuple extends Tuple {
 
     chunkKey: string;
     lastUpdate: string;
-    encodedPayload: string;
+    encodedData: string;
 
     constructor() {
         super(EncodedSearchIndexChunkTuple.tupleName)

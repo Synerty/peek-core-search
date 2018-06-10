@@ -25,7 +25,7 @@ class SearchObject(Tuple, DeclarativeBase):
 
     key = Column(String, nullable=False)
 
-    chunkKey = Column(String, nullable=False)
+    chunkKey = Column(Integer, nullable=False)
 
     propertiesJson = Column(String, nullable=True)
 

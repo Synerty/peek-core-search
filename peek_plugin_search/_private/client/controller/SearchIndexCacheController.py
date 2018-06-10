@@ -33,7 +33,7 @@ class SearchIndexCacheController:
         self._webAppHandler = None
 
         #: This stores the cache of searchIndex data for the clients
-        self._cache: Dict[str, EncodedSearchIndexChunk] = {}
+        self._cache: Dict[int, EncodedSearchIndexChunk] = {}
 
         self._endpoint = PayloadEndpoint(clientSearchIndexUpdateFromServerFilt,
                                          self._processSearchIndexPayload)
@@ -96,5 +96,5 @@ class SearchIndexCacheController:
     def searchIndex(self, chunkKey) -> EncodedSearchIndexChunk:
         return self._cache.get(chunkKey)
 
-    def searchIndexKeys(self) -> List[str]:
+    def searchIndexKeys(self) -> List[int]:
         return list(self._cache)

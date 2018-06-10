@@ -19,7 +19,7 @@ class SearchIndex(Tuple, DeclarativeBase):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
 
-    chunkKey = Column(String, nullable=False)
+    chunkKey = Column(Integer, nullable=False)
     keyword = Column(String, nullable=False)
     propertyName = Column(String, nullable=False)
 

@@ -16,6 +16,6 @@ class SearchObjectCompilerQueue(Tuple, DeclarativeBase):
     __tupleType__ = searchTuplePrefix + 'SearchObjectCompilerQueueTable'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    chunkKey = Column(String, primary_key=True)
+    chunkKey = Column(Integer, primary_key=True)
 
 

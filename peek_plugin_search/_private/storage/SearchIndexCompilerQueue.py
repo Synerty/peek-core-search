@@ -17,4 +17,4 @@ class SearchIndexCompilerQueue(Tuple, DeclarativeBase):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
 
-    chunkKey = Column(String, primary_key=True)
+    chunkKey = Column(Integer, primary_key=True)

@@ -54,18 +54,20 @@ export class SearchService {
         let nonPunct = '';
         for (let char of keywordStr) {
             if (this.punctuation.indexOf(char) == -1)
-                continue;
-            nonPunct += char;
+                nonPunct += char;
         }
 
         // Split the stirng into words
         let words = nonPunct.split(' ');
 
         // Strip the words
-        words = words.map((w) => w.replace(/^\s+|\s+$/g, ''));
+        words = words.map((w: string) => w.replace(/^\s+|\s+$/g, ''));
 
         // Filter out the empty words
-        return words.filter((w) => w.length != 0);
+        words.filter((w: string) => w.length != 0);
+
+        // return - nicely commented
+        return words;
 
 
     }
@@ -76,10 +78,21 @@ export class SearchService {
      * Get the objects with matching keywords from the index..
      *
      */
-    getObjects(keywords: string): Promise<SearchResultObjectTuple[]> {
-        let x: EncodedSearchIndexChunkTuple;
-        let y: EncodedSearchObjectChunkTuple;
-        return Promise.reject("Not implemented");
+    getObjects(propertyName: string | null,
+               objectTypeId: number | null,
+               keywordsString: string): Promise<SearchResultObjectTuple[]> {
+
+        let keywords = this.splitKeywords(keywordsString);
+        console.log(keywords);
+
+        return this.searchIndexLoader.getObjectIds(propertyName, keywords)
+            .then((objectIds: number[]) => {
+                console.log(objectIds);
+
+                let x: EncodedSearchIndexChunkTuple;
+                let y: EncodedSearchObjectChunkTuple;
+                return Promise.reject("Not implemented, " + JSON.stringify(keywords) + JSON.stringify(objectIds));
+            })
 
         /*
         if (dispKey == null || dispKey.length == 0) {

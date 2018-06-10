@@ -1,7 +1,10 @@
 import {Component} from "@angular/core";
 import {Router} from "@angular/router";
 import {SearchResultObjectTuple, SearchService} from "@peek/peek_plugin_search";
-import {SearchPropertyTuple, SearchObjectTypeTuple} from "@peek/peek_plugin_search/_private";
+import {
+    SearchObjectTypeTuple,
+    SearchPropertyTuple
+} from "@peek/peek_plugin_search/_private";
 
 import {
     ComponentLifecycleEventEmitter,
@@ -21,24 +24,45 @@ import {Ng2BalloonMsgService} from "@synerty/ng2-balloon-msg";
 export class FindComponent extends ComponentLifecycleEventEmitter {
 
     keywords: string = '';
+
     resultObjects: SearchResultObjectTuple[] = [];
 
     searchProperties: SearchPropertyTuple[] = [];
+    searchPropertyStrings: string[] = [];
+    searchProperty: SearchPropertyTuple = new SearchPropertyTuple();
+    searchPropertyNsPicking = false;
+
 
     searchObjectTypes: SearchObjectTypeTuple[] = [];
+    searchObjectTypeStrings: string[] = [];
+    searchObjectType: SearchObjectTypeTuple = new SearchObjectTypeTuple();
+    searchObjectTypesNsPicking = false;
 
     constructor(private searchService: SearchService,
                 private balloonMsg: Ng2BalloonMsgService,
                 private tupleObserver: TupleDataOfflineObserverService) {
         super();
+        this.searchProperty.title = "All";
+        this.searchObjectType.title = "All";
 
         let propTs = new TupleSelector(SearchPropertyTuple.tupleName, {});
         this.tupleObserver
             .subscribeToTupleSelector(propTs)
             .takeUntil(this.onDestroyEvent)
             .subscribe((v: SearchPropertyTuple[]) => {
+                // Create the empty item
+                let all = new SearchPropertyTuple();
+                all.title = "All";
 
-                this.searchProperties = v
+                // Update the search objects
+                this.searchProperties = v;
+                this.searchProperties.splice(0, 0, all);
+
+                // Set the string array
+                this.searchPropertyStrings = [];
+                for (let item of this.searchProperties) {
+                    this.searchPropertyStrings.push(item.title);
+                }
             });
 
 
@@ -46,13 +70,48 @@ export class FindComponent extends ComponentLifecycleEventEmitter {
         this.tupleObserver
             .subscribeToTupleSelector(objectTypeTs)
             .takeUntil(this.onDestroyEvent)
-            .subscribe((v: SearchObjectTypeTuple[]) => this.searchObjectTypes = v);
+            .subscribe((v: SearchObjectTypeTuple[]) => {
+                // Create the empty item
+                let all = new SearchObjectTypeTuple();
+                all.title = "All";
+
+                // Update the search objects
+                this.searchObjectTypes = v;
+                this.searchObjectTypes.splice(0, 0, all);
+
+                // Set the string array
+                this.searchObjectTypeStrings = [];
+                for (let item of this.searchObjectTypes) {
+                    this.searchObjectTypeStrings.push(item.title);
+                }
+            });
 
     }
 
+    nsSelectProperty(index: number): void {
+        this.searchProperty = this.searchProperties[index];
+    }
+
+    nsEditPropertyFonticon(): string {
+        return this.searchPropertyNsPicking ? 'fa-pencil' : 'fa-check';
+    }
+
+    nsSelectObjectType(index: number): void {
+        this.searchObjectType = this.searchObjectTypes[index];
+    }
+
+    nsEditObjectTypeFonticon(): string {
+        return this.searchPropertyNsPicking ? 'fa-pencil' : 'fa-check';
+    }
+
     find() {
+        if (this.keywords == null || this.keywords.length == 0){
+            this.balloonMsg.showWarning("Please enter some search keywords");
+            return;
+        }
+
         this.searchService
-            .getObjects(this.keywords)
+            .getObjects(this.searchProperty.name, this.searchObjectType.id, this.keywords)
             .then((results: SearchResultObjectTuple[]) => this.resultObjects = results)
             .catch((e: string) => this.balloonMsg.showError(`Find Failed:${e}`));
     }
