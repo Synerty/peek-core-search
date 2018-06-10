@@ -67,7 +67,7 @@ def importSearchObjectTask(self, searchObjectsEncodedPayload: bytes) -> None:
 
         _insertObjectRoutes(newSearchObjects, objectIdByKey)
 
-        _packObjectJson(newSearchObjects, chunkKeysForQueue)
+        _packObjectJson(list(objectIdByKey.values()), chunkKeysForQueue)
 
         reindexSearchObject(objectsToIndex)
 
@@ -342,7 +342,7 @@ def _insertObjectRoutes(newSearchObjects: List[ImportSearchObjectTuple],
         conn.close()
 
 
-def _packObjectJson(newSearchObjects: List[ImportSearchObjectTuple],
+def _packObjectJson(updatedIds: List[int],
                     chunkKeysForQueue: Set[int]):
     """ Pack Object Json
 
@@ -350,7 +350,7 @@ def _packObjectJson(newSearchObjects: List[ImportSearchObjectTuple],
 
     Doing this takes longer to bulk load, but quicker to make incremental changes
 
-    :param newSearchObjects:
+    :param updatedIds:
     :param chunkKeysForQueue:
     :return:
     """
@@ -368,7 +368,7 @@ def _packObjectJson(newSearchObjects: List[ImportSearchObjectTuple],
                             SearchObject.objectTypeId,
                             SearchObjectRoute.routeTitle, SearchObjectRoute.routePath)
                 .join(SearchObjectRoute, SearchObject.id == SearchObjectRoute.objectId)
-                .filter(SearchObject.chunkKey.in_(chunkKeysForQueue))
+                .filter(SearchObject.id.in_(updatedIds))
                 .filter(SearchObject.propertiesJson != None)
                 .filter(SearchObjectRoute.routePath != None)
                 .order_by(SearchObject.id, SearchObjectRoute.routeTitle)
@@ -415,7 +415,7 @@ def _packObjectJson(newSearchObjects: List[ImportSearchObjectTuple],
             dbSession.rollback()
 
         logger.debug("Packed JSON for %s SearchObjects",
-                     len(newSearchObjects),
+                     len(updatedIds),
                      (datetime.now(pytz.utc) - startTime))
 
     except Exception as e:
