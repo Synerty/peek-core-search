@@ -18,7 +18,7 @@ import {Ng2BalloonMsgService} from "@synerty/ng2-balloon-msg";
 
 @Component({
     selector: 'plugin-search-find',
-    templateUrl: 'find.component.mweb.html',
+    templateUrl: 'find.component.web.html',
     moduleId: module.id
 })
 export class FindComponent extends ComponentLifecycleEventEmitter {
@@ -32,11 +32,17 @@ export class FindComponent extends ComponentLifecycleEventEmitter {
     searchProperty: SearchPropertyTuple = new SearchPropertyTuple();
     searchPropertyNsPicking = false;
 
+    // Passed to each of the results
+    propertiesByName: { [key: string]: SearchPropertyTuple; } = {};
+
 
     searchObjectTypes: SearchObjectTypeTuple[] = [];
     searchObjectTypeStrings: string[] = [];
     searchObjectType: SearchObjectTypeTuple = new SearchObjectTypeTuple();
     searchObjectTypesNsPicking = false;
+
+    // Passed to each of the results
+    objectTypesById: { [key: number]: SearchObjectTypeTuple; } = {};
 
     constructor(private searchService: SearchService,
                 private balloonMsg: Ng2BalloonMsgService,
@@ -58,10 +64,13 @@ export class FindComponent extends ComponentLifecycleEventEmitter {
                 this.searchProperties = v;
                 this.searchProperties.splice(0, 0, all);
 
-                // Set the string array
+                // Set the string array and lookup by id
                 this.searchPropertyStrings = [];
+                this.propertiesByName = {};
+
                 for (let item of this.searchProperties) {
                     this.searchPropertyStrings.push(item.title);
+                    this.propertiesByName[item.name] = item;
                 }
             });
 
@@ -79,10 +88,13 @@ export class FindComponent extends ComponentLifecycleEventEmitter {
                 this.searchObjectTypes = v;
                 this.searchObjectTypes.splice(0, 0, all);
 
-                // Set the string array
+                // Set the string array, and object type lookup
                 this.searchObjectTypeStrings = [];
+                this.objectTypesById = {};
+
                 for (let item of this.searchObjectTypes) {
                     this.searchObjectTypeStrings.push(item.title);
+                    this.objectTypesById[item.id] = item;
                 }
             });
 
@@ -93,7 +105,7 @@ export class FindComponent extends ComponentLifecycleEventEmitter {
     }
 
     nsEditPropertyFonticon(): string {
-        return this.searchPropertyNsPicking ? 'fa-pencil' : 'fa-check';
+        return this.searchPropertyNsPicking ? 'fa-check' : 'fa-pencil';
     }
 
     nsSelectObjectType(index: number): void {
@@ -101,11 +113,15 @@ export class FindComponent extends ComponentLifecycleEventEmitter {
     }
 
     nsEditObjectTypeFonticon(): string {
-        return this.searchPropertyNsPicking ? 'fa-pencil' : 'fa-check';
+        return this.searchPropertyNsPicking ? 'fa-check' : 'fa-pencil';
+    }
+
+    objectTypeNameForResult(item: SearchResultObjectTuple) {
+        return this.objectTypesById[item.objectTypeId].title;
     }
 
     find() {
-        if (this.keywords == null || this.keywords.length == 0){
+        if (this.keywords == null || this.keywords.length == 0) {
             this.balloonMsg.showWarning("Please enter some search keywords");
             return;
         }

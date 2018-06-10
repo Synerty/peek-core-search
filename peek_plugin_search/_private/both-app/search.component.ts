@@ -3,7 +3,7 @@ import {TitleService} from "@synerty/peek-util";
 
 @Component({
     selector: 'plugin-search',
-    templateUrl: 'search.component.mweb.html',
+    templateUrl: 'search.component.web.html',
     moduleId: module.id
 })
 export class SearchComponent {

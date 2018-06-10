@@ -298,20 +298,24 @@ export class PrivateSearchObjectLoaderService extends ComponentLifecycleEventEmi
      */
     private getObjectsWhenReady(objectTypeId: number | null, objectIds: number[]): Promise<SearchResultObjectTuple[]> {
 
-        let objectIdsByChunkKey: { [key: string]: number[]; } = {};
+        let objectIdsByChunkKey: { [key: number]: number[]; } = {};
+        let chunkKeys: number[] = [];
 
         for (let objectId of objectIds) {
             let chunkKey: number = objectIdChunk(objectId);
             if (objectIdsByChunkKey[chunkKey] == null)
                 objectIdsByChunkKey[chunkKey] = [];
             objectIdsByChunkKey[chunkKey].push(objectId);
+            chunkKeys.push(chunkKey);
         }
 
 
         let promises = [];
-        for (let chunkKey of chunkKey) {
+        for (let chunkKey of chunkKeys) {
             let objectIds = objectIdsByChunkKey[chunkKey];
-            promises.push(this.getObjectsForObjectIds(objectTypeId, objectIds, chunkKey));
+            promises.push(
+                this.getObjectsForObjectIds(objectTypeId, objectIds, chunkKey)
+            );
         }
 
         return Promise.all(promises)
@@ -348,14 +352,14 @@ export class PrivateSearchObjectLoaderService extends ComponentLifecycleEventEmi
 
 
                 return Payload.fromEncodedPayload(vortexMsg)
-                    .then((payload: Payload) => payload.tuples)
+                    .then((payload: Payload) => JSON.parse(<any>payload.tuples))
                     .then((chunkData: { [key: number]: string; }) => {
 
                         let foundObjects: SearchResultObjectTuple[] = [];
 
                         for (let objectId of objectIds) {
                             // Find the keyword, we're just iterating
-                            if (chunkData.hasOwnProperty(objectId)) {
+                            if (!chunkData.hasOwnProperty(objectId)) {
                                 console.log(
                                     `WARNING: ObjectID ${objectId} is missing from index,`
                                     + ` chunkKey ${chunkKey}`
@@ -364,8 +368,7 @@ export class PrivateSearchObjectLoaderService extends ComponentLifecycleEventEmi
                             }
 
                             // Reconstruct the data
-                            let inflated = pako.inflate(chunkData[objectId], {to: "string"});
-                            let objectProps: {} = JSON.parse(inflated);
+                            let objectProps: {} = JSON.parse(chunkData[objectId]);
 
                             // Get out the object type
                             let thisObjectTypeId = objectProps['_otid_'];
@@ -379,11 +382,16 @@ export class PrivateSearchObjectLoaderService extends ComponentLifecycleEventEmi
                             let routes: string[][] = objectProps['_r_'];
                             delete objectProps['_r_'];
 
+                            // Get out the key
+                            let objectKey: string = objectProps['key'];
+                            delete objectProps['key'];
+
                             // Create the new object
                             let newObject = new SearchResultObjectTuple();
                             foundObjects.push(newObject);
 
                             newObject.id = objectId;
+                            newObject.key = objectKey;
                             newObject.objectTypeId = thisObjectTypeId;
                             newObject.properties = objectProps;
 

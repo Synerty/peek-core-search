@@ -177,7 +177,7 @@ def _buildIndex(conn, chunkKeys) -> Dict[str, bytes]:
         compileSearchIndexChunks = []
 
         for keyword, objIdsByProp in objIdsByPropByKw.items():
-            for propertyName, objectIds in objIdsByPropByKw.items():
+            for propertyName, objectIds in objIdsByProp.items():
                 compileSearchIndexChunks.append(
                     [keyword, propertyName, json.dumps(list(sorted(objectIds)))]
                 )

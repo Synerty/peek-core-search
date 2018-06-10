@@ -1,11 +1,12 @@
 <StackLayout class="p-20">
 
-    <GridLayout columns="*, auto" rows="auto" width="*">
+    <GridLayout columns="*, auto" rows="auto">
         <TextField class="input input-border"
                    autocorrect="false"
                    hint="search" [(ngModel)]="keywords"
-                   returnKeyType="Find"
-                   returnPress="find()"/>
+                   returnKeyType="search"
+                   returnPress="find()">
+        </TextField>
 
         <Button col="1" text="Find" (tap)="find()"></Button>
     </GridLayout>
@@ -25,7 +26,6 @@
                [text]="searchProperty.title"></Label>
         <!-- The edit / save buttons -->
         <Button col="2"
-                row="0" col="1"
                 class="btn fa"
                 [text]="nsEditPropertyFonticon() | fonticon"
                 (tap)="searchPropertyNsPicking = !searchPropertyNsPicking">
@@ -45,7 +45,7 @@
         <Label col="1"
                class="h3 p-15"
                *ngIf="!searchObjectTypesNsPicking"
-               [text]="searchProperty.title"></Label>
+               [text]="searchObjectType.title"></Label>
         <!-- The edit / save buttons -->
         <Button col="2"
                 class="btn fa"
@@ -56,7 +56,7 @@
     <!-- END SEARCH OBJECT TYPE PICKER -->
 
 
-    <GridLayout columns="*" rows="auto" width="*">
+    <GridLayout columns="*" rows="auto">
         <Label class="h3" col="0" text="Results"></Label>
     </GridLayout>
 
@@ -66,7 +66,10 @@
     <ListView [items]="resultObjects">
         <ng-template let-item="item" let-i="index" let-odd="odd" let-even="even">
             <GridLayout columns="*" rows="auto" [class.odd]="odd" [class.even]="even">
-                <plugin-search-result [resultObject]="item"></plugin-search-result>
+                <plugin-search-result
+                        [propertiesByName]="propertiesByName"
+                        [objectTypeName]="objectTypeNameForResult(item)"
+                        [resultObject]="item"></plugin-search-result>
             </GridLayout>
         </ng-template>
     </ListView>

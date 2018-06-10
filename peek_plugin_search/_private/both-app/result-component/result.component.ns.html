@@ -1,14 +1,30 @@
 <StackLayout>
-    <GridLayout columns="1*, 4*" rows="auto" width="*">
+    <GridLayout columns="1*, 4*, *" rows="auto">
         <Label class="h3" col="0" text="key"></Label>
-        <Label class="h3" col="1" [text]="resultObject.details['key']"></Label>
+        <Label class="h3" col="1" [text]="resultObject.key"></Label>
+        <Label class="h3" col="2" [text]="objectTypeName"></Label>
     </GridLayout>
 
+    <ListView [items]="properties">
+        <ng-template let-item="item" let-i="index" let-odd="odd" let-even="even">
+            <GridLayout [class.odd]="odd" [class.even]="even" columns="*, *" rows="auto">
+                <!-- Title -->
+                <Label class="h3 peek-field-data-text" row="0" col="0"
+                       textWrap="true"
+                       [text]="item.title"></Label>
+                <!-- Valie -->
+                <Label class="h3 peek-field-data-text" row="0" col="1"
+                       textWrap="true"
+                       [text]="item.value"></Label>
+
+            </GridLayout>
+        </ng-template>
+    </ListView>
 
     <ListView [items]="resultObject.routes">
         <ng-template let-item="item" let-i="index" let-odd="odd" let-even="even">
             <StackLayout [class.odd]="odd" [class.even]="even">
-                <GridLayout columns="*" rows="auto" width="*">
+                <GridLayout columns="*" rows="auto">
                     <!-- String -->
                     <Label class="h3 peek-field-data-text" row="0" col="0"
                            textWrap="true"

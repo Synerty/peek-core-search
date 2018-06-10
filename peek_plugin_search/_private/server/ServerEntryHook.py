@@ -193,7 +193,7 @@ class ServerEntryHook(PluginServerEntryHookABC,
         so2 = ImportSearchObjectTuple(
             key="so2key",
             properties={
-                "name": "69 Sheep Farmers Rd Sub TX",
+                "name": "69 Sheep Farmers Rd Sub TX breaker",
                 "alias": "SO2ALIAS"
             }
         )

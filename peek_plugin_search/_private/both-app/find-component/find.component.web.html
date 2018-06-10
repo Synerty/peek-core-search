@@ -53,7 +53,10 @@
         </tr>
         <tr *ngFor="let item of resultObjects; odd as odd; even as even">
             <td [class.bg-odd]="odd" [class.bg-even]="even">
-                <plugin-search-result [resultObject]="item"></plugin-search-result>
+                <plugin-search-result
+                        [propertiesByName]="propertiesByName"
+                        [objectTypeName]="objectTypeNameForResult(item)"
+                        [resultObject]="item"></plugin-search-result>
             </td>
         </tr>
         </tbody>

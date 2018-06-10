@@ -6,7 +6,7 @@ import {searchTuplePrefix} from "../PluginNames";
 export class EncodedSearchIndexChunkTuple extends Tuple {
     public static readonly tupleName = searchTuplePrefix + "EncodedSearchIndexChunkTuple";
 
-    chunkKey: string;
+    chunkKey: number;
     lastUpdate: string;
     encodedData: string;
 

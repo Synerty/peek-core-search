@@ -141,7 +141,7 @@ def _prepareLookups(newSearchObjects: List[ImportSearchObjectTuple]) -> Dict[str
 
 def _insertOrUpdateObjects(newSearchObjects: List[ImportSearchObjectTuple],
                            objectTypeIdsByName: Dict[str, int]) -> Tuple[
-    List[ObjectToIndexTuple], Dict[str, int], Set[str]]:
+    List[ObjectToIndexTuple], Dict[str, int], Set[int]]:
     """ Insert or Update Objects
 
     1) Find objects and update them
@@ -158,11 +158,11 @@ def _insertOrUpdateObjects(newSearchObjects: List[ImportSearchObjectTuple],
     transaction = conn.begin()
 
     try:
-        objectsToIndex: List[ObjectToIndexTuple] = []
+        objectsToIndex: Dict[int, List[ObjectToIndexTuple]] = {}
         objectIdByKey: Dict[str, int] = {}
 
         objectKeys = [o.key for o in newSearchObjects]
-        chunkKeysForQueue = set()
+        chunkKeysForQueue: Set[int] = set()
 
         # Query existing objects
         results = list(conn.execute(select(
@@ -193,10 +193,11 @@ def _insertOrUpdateObjects(newSearchObjects: List[ImportSearchObjectTuple],
             propsWithKey = dict(key=importObject.key)
 
             if importObject.properties:
-                propsWithKey.update(importObject.properties)
-
                 if existingObject and existingObject.propertiesJson:
                     propsWithKey.update(json.loads(existingObject.propertiesJson))
+
+                # Add the data we're importing second
+                propsWithKey.update(importObject.properties)
 
                 propsStr = json.dumps(propsWithKey, sort_keys=True)
 
@@ -228,11 +229,11 @@ def _insertOrUpdateObjects(newSearchObjects: List[ImportSearchObjectTuple],
                 inserts.append(existingObject.tupleToSqlaBulkInsertDict())
 
             if searchIndexUpdateNeeded:
-                objectsToIndex.append(ObjectToIndexTuple(
+                objectsToIndex[existingObject.id] = ObjectToIndexTuple(
                     id=existingObject.id,
                     key=existingObject.key,
                     props=propsWithKey
-                ))
+                )
 
             objectIdByKey[existingObject.key] = existingObject.id
             chunkKeysForQueue.add(existingObject.chunkKey)
@@ -266,7 +267,7 @@ def _insertOrUpdateObjects(newSearchObjects: List[ImportSearchObjectTuple],
                      len(inserts), len(propUpdates),
                      (datetime.now(pytz.utc) - startTime))
 
-        return objectsToIndex, objectIdByKey, chunkKeysForQueue
+        return list(objectsToIndex.values()), objectIdByKey, chunkKeysForQueue
 
     except Exception as e:
         transaction.rollback()
@@ -342,7 +343,7 @@ def _insertObjectRoutes(newSearchObjects: List[ImportSearchObjectTuple],
 
 
 def _packObjectJson(newSearchObjects: List[ImportSearchObjectTuple],
-                    chunkKeysForQueue: Set[str]):
+                    chunkKeysForQueue: Set[int]):
     """ Pack Object Json
 
     1) Create JSON and update object.
@@ -392,10 +393,7 @@ def _packObjectJson(newSearchObjects: List[ImportSearchObjectTuple],
             props['_r_'] = routes
             props['_otid_'] = objectTypeId
             packedJson = json.dumps(props, sort_keys=True)
-
-            # Compress this, with millions of objects it will add up. EG 163 VS 132
-            packedJsonZip = zlib.compress(packedJson.encode(), level=9)
-            packedJsonUpdates.append(dict(b_id=id_, b_packedJson=packedJsonZip))
+            packedJsonUpdates.append(dict(b_id=id_, b_packedJson=packedJson))
 
         if packedJsonUpdates:
             stmt = (

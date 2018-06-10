@@ -10,6 +10,9 @@ export class SearchResultObjectTuple extends Tuple {
     // The id of the object this search result is for
     id: number;
 
+    // The key of the object
+    key: string;
+
     // The type of this object in the search result
     objectTypeId: number;
 
