@@ -1,6 +1,6 @@
 {
     "plugin": {
-        "title": "Search Plugin",
+        "title": "Search",
         "packageName": "peek_plugin_search",
         "version": "0.10.1",
         "buildNumber": "#PLUGIN_BUILD#",
