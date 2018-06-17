@@ -11,7 +11,7 @@ from vortex.handler.TupleDataObservableHandler import TupleDataObservableHandler
 logger = logging.getLogger(__name__)
 
 
-class StatusController(TupleActionProcessorDelegateABC):
+class StatusController:
     def __init__(self):
         self._status = AdminStatusTuple()
         self._tupleObservable = None
