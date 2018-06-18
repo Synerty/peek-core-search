@@ -1,6 +1,5 @@
 import json
 import logging
-import zlib
 from collections import defaultdict
 from datetime import datetime
 from typing import List, Dict, Tuple, Set
@@ -158,7 +157,7 @@ def _insertOrUpdateObjects(newSearchObjects: List[ImportSearchObjectTuple],
     transaction = conn.begin()
 
     try:
-        objectsToIndex: Dict[int, List[ObjectToIndexTuple]] = {}
+        objectsToIndex: Dict[int, ObjectToIndexTuple] = {}
         objectIdByKey: Dict[str, int] = {}
 
         objectKeys = [o.key for o in newSearchObjects]
