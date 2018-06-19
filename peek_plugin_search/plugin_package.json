@@ -11,6 +11,7 @@
     "requiresServices": [
         "server",
         "worker",
+        "agent",
         "storage",
         "admin",
         "client",

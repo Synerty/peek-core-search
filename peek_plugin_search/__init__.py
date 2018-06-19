@@ -1,4 +1,4 @@
-
+from peek_plugin_base.agent.PluginAgentEntryHookABC import PluginAgentEntryHookABC
 from peek_plugin_base.server.PluginServerEntryHookABC import PluginServerEntryHookABC
 from peek_plugin_base.client.PluginClientEntryHookABC import PluginClientEntryHookABC
 from peek_plugin_base.worker.PluginWorkerEntryHookABC import PluginWorkerEntryHookABC
@@ -20,3 +20,8 @@ def peekClientEntryHook() -> Type[PluginClientEntryHookABC]:
 def peekWorkerEntryHook() -> Type[PluginWorkerEntryHookABC]:
     from ._private.worker.WorkerEntryHook import WorkerEntryHook
     return WorkerEntryHook
+
+
+def peekAgentEntryHook() -> Type[PluginAgentEntryHookABC]:
+    from ._private.agent.AgentEntryHook import AgentEntryHook
+    return AgentEntryHook
