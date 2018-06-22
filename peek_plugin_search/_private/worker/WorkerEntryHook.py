@@ -1,14 +1,20 @@
 import logging
 
 from peek_plugin_base.worker.PluginWorkerEntryHookABC import PluginWorkerEntryHookABC
+from peek_plugin_search._private.storage.DeclarativeBase import loadStorageTuples
+from peek_plugin_search._private.tuples import loadPrivateTuples
 from peek_plugin_search._private.worker.tasks import SearchIndexChunkCompilerTask, \
     ImportSearchObjectTask, SearchObjectChunkCompilerTask
+from peek_plugin_search.tuples import loadPublicTuples
 
 logger = logging.getLogger(__name__)
 
 
 class WorkerEntryHook(PluginWorkerEntryHookABC):
     def load(self):
+        loadPrivateTuples()
+        loadStorageTuples()
+        loadPublicTuples()
         logger.debug("loaded")
 
     def start(self):

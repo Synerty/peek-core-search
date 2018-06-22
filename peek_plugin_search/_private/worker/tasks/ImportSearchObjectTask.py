@@ -198,10 +198,7 @@ def _insertOrUpdateObjects(newSearchObjects: List[ImportSearchObjectTuple],
                 # Add the data we're importing second
                 propsWithKey.update(importObject.properties)
 
-                propsStr = json.dumps(propsWithKey, sort_keys=True)
-
-            else:
-                propsStr = None
+            propsStr = json.dumps(propsWithKey, sort_keys=True)
 
             # Work out if we need to update the object type
             if importObject.objectType != 'None' and existingObject:

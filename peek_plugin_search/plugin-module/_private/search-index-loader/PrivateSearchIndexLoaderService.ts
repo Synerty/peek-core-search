@@ -308,9 +308,30 @@ export class PrivateSearchIndexLoaderService extends ComponentLifecycleEventEmit
 
         return Promise.all(promises)
             .then((results: number[][]) => {
+                let keywordCount = results.length;
+
+                // Create a list of objectIds
                 let objectIds: number[] = [];
                 for (let result of results) {
                     objectIds.add(result);
+                }
+
+                // Create RANK dict
+                let matchesByObjectId = {};
+                for (let objectId of objectIds) {
+                    if (matchesByObjectId[objectId] == null)
+                        matchesByObjectId[objectId] = 1;
+                    else
+                        matchesByObjectId[objectId] = matchesByObjectId[objectId] + 1;
+                }
+
+                objectIds = [];
+
+                // Find object ids where all keywords match
+                for (let objectId of Object.keys(matchesByObjectId)) {
+                    if (matchesByObjectId[objectId] == results.length) {
+                        objectIds.push(parseInt(objectId));
+                    }
                 }
                 return objectIds;
             });

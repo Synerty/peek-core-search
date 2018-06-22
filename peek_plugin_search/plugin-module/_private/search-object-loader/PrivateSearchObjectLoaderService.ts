@@ -82,7 +82,7 @@ function objectIdChunk(objectId: number): number {
 
      */
     if (objectId == null)
-        throw new Error("keyword is None or zero length");
+        throw new Error("objectId None or zero length");
 
     // 1024 buckets
     return objectId & 1023;
@@ -279,7 +279,7 @@ export class PrivateSearchObjectLoaderService extends ComponentLifecycleEventEmi
      */
     getObjects(objectTypeId: number | null, objectIds: number[]): Promise<SearchResultObjectTuple[]> {
         if (objectIds == null || objectIds.length == 0) {
-            throw new Error("We've been passed a null/empty keywords");
+            throw new Error("We've been passed a null/empty objectIds");
         }
 
         if (this.isReady())
@@ -399,8 +399,8 @@ export class PrivateSearchObjectLoaderService extends ComponentLifecycleEventEmi
                                 let newRoute = new SearchResultObjectRouteTuple();
                                 newObject.routes.push(newRoute);
 
-                                newRoute.path = route[0];
-                                newRoute.title = route[1];
+                                newRoute.title = route[0];
+                                newRoute.path = route[1];
                             }
                         }
 

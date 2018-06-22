@@ -58,7 +58,7 @@ export class SearchService {
         words = words.map((w: string) => w.replace(/^\s+|\s+$/g, ''));
 
         // Filter out the empty words
-        words.filter((w: string) => w.length != 0);
+        words = words.filter((w: string) => w.length != 0);
 
         // return - nicely commented
         return words;
@@ -81,6 +81,13 @@ export class SearchService {
 
         return this.searchIndexLoader.getObjectIds(propertyName, keywords)
             .then((objectIds: number[]) => {
+                if (objectIds.length == 0) {
+                    console.log("There were no keyword search results for : " + keywords);
+                    return [];
+                }
+
+                // Limit to 20 results
+                objectIds = objectIds.slice(0, 20);
 
                 return this.searchObjectLoader.getObjects(objectTypeId, objectIds);
             })
