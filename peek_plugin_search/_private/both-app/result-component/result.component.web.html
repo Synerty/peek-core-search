@@ -1,26 +1,21 @@
-<table class="table table-striped">
-    <thead>
-    <tr>
-        <th>Key</th>
-    </tr>
-    </thead>
-    <tbody>
-    <tr>
-        <td>Key</td>
-        <td>{{resultObject.key}}</td>
-        <td>{{objectTypeName}}</td>
-    </tr>
-    <tr *ngFor="let prop of properties">
-        <td>{{prop.title}}</td>
-        <td>{{prop.value}}</td>
-    </tr>
-    </tbody>
-</table>
-
-<table class="table table-striped">
-    <tbody>
-    <tr *ngFor="let item of resultObject.routes">
-        <td>{{item.title}}</td>
-    </tr>
-    </tbody>
-</table>
+<div class="peek-tables-section">
+    <table class="table">
+        <thead>
+        <tr class="tr">
+            <th class="tr">Key</th>
+            <th class="tr">{{resultObject.key}}</th>
+            <th class="tr">{{objectTypeName}}</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr *ngFor="let prop of properties" class="tr">
+            <td class="tr">{{prop.title}}</td>
+            <td class="tr" colspan="2">{{prop.value}}</td>
+        </tr>
+        <tr *ngFor="let item of resultObject.routes" class="tr">
+            <td (click)="navTo(item)"
+                class="tr" colspan="3">{{item.title}}</td>
+        </tr>
+        </tbody>
+    </table>
+</div>

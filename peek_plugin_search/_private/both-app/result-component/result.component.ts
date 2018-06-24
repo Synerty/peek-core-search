@@ -62,5 +62,9 @@ export class ResultComponent extends ComponentLifecycleEventEmitter implements O
         return this.propertiesByName[propKey].title;
     }
 
+    navTo(objectRoute: SearchResultObjectRouteTuple): void {
+        this.router.navigate([objectRoute.path]);
+    }
+
 
 }

@@ -24,7 +24,7 @@ class ImportSearchObjectTuple(Tuple):
     #:  The details to index.
     # Do not include "key", it will be indexed anyway.
     # The key of the property will match of create a new "SearchProperty"
-    properties: Dict[str, str] = TupleField()
+    properties: Dict[str, str] = TupleField({})
 
     #:  The color
     routes: List[ImportSearchObjectRouteTuple] = TupleField([])
