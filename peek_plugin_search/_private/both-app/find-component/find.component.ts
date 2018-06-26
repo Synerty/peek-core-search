@@ -61,7 +61,8 @@ export class FindComponent extends ComponentLifecycleEventEmitter {
                 all.title = "All";
 
                 // Update the search objects
-                this.searchProperties = v;
+                this.searchProperties = [];
+                this.searchProperties.add(v);
                 this.searchProperties.splice(0, 0, all);
 
                 // Set the string array and lookup by id
@@ -85,7 +86,8 @@ export class FindComponent extends ComponentLifecycleEventEmitter {
                 all.title = "All";
 
                 // Update the search objects
-                this.searchObjectTypes = v;
+                this.searchObjectTypes = [];
+                this.searchObjectTypes.add(v);
                 this.searchObjectTypes.splice(0, 0, all);
 
                 // Set the string array, and object type lookup

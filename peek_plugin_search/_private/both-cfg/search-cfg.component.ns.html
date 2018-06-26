@@ -1,0 +1,17 @@
+<StackLayout class="p-10">
+
+
+    <GridLayout class="peek-nav-section"
+                rows="auto" columns="auto, *, auto">
+        <!--
+        -->
+    </GridLayout>
+    <StackLayout class="hr"></StackLayout>
+
+    <StackLayout class="peek-information-section">
+
+        <button class="btn" text="Cache All Grids" (tap)="cacheAllClicked()"></button>
+        <label [text]="lastStatus" textWrap="true"></label>
+
+    </StackLayout>
+</StackLayout>

@@ -63,7 +63,22 @@ export class ResultComponent extends ComponentLifecycleEventEmitter implements O
     }
 
     navTo(objectRoute: SearchResultObjectRouteTuple): void {
-        this.router.navigate([objectRoute.path]);
+        let parts = objectRoute.path.split('?');
+        let path = parts[0];
+
+        if (parts.length == 1) {
+            this.router.navigate([path]);
+            return;
+        }
+
+
+        let params = {};
+        objectRoute.path.replace(
+            /[?&]+([^=&]+)=([^&]*)/gi,
+            (m, key, value) => params[key] = value
+        );
+        this.router.navigate([path, params]);
+
     }
 
 

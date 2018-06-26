@@ -161,7 +161,7 @@ class ServerEntryHook(PluginServerEntryHookABC,
         searchIndexChunkCompilerQueueController.start()
         searchObjectChunkCompilerQueueController.start()
 
-        self._test()
+        # self._test()
 
         logger.debug("Started")
 

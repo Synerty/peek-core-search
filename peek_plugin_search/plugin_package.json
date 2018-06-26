@@ -32,6 +32,8 @@
     "client": {
     },
     "mobile": {
+        "cfgDir": "_private/both-cfg",
+        "cfgModule": "search-cfg.module#SearchCfgModule",
         "showHomeLink": true,
         "appDir": "_private/both-app",
         "appModule": "search.module#SearchModule",
