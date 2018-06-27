@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import List, Dict, Tuple, Set
 
 import pytz
-from sqlalchemy import select, bindparam
+from sqlalchemy import select, bindparam, and_
 from txcelery.defer import DeferrableTask
 
 from peek_plugin_base.worker import CeleryDbConn
@@ -298,22 +298,58 @@ def _insertObjectRoutes(newSearchObjects: List[ImportSearchObjectTuple],
     try:
         importHashSet = set()
         inserts = []
+        objectIdSet = set()
 
+        # Make some lists to work out the existing routes
         for importObject in newSearchObjects:
-            for importRoute in importObject.routes:
-                importHashSet.add(importRoute.importGroupHash)
-                inserts.append(dict(
-                    objectId=objectIdByKey[importObject.key],
-                    importGroupHash=importRoute.importGroupHash,
-                    routeTitle=importRoute.routeTitle,
-                    routePath=importRoute.routePath
-                ))
+            for impRoute in importObject.routes:
+                importHashSet.add(impRoute.importGroupHash)
+                objectIdSet.add(objectIdByKey[importObject.key])
+
+        # Query for existing routes
+        results = list(conn.execute(select(
+            columns=[searchObjectRoute.c.objectId,
+                     searchObjectRoute.c.routeTitle,
+                     searchObjectRoute.c.importGroupHash],
+            whereclause=and_(searchObjectRoute.c.objectId.in_(objectIdSet),
+                             ~searchObjectRoute.c.importGroupHash.in_(importHashSet))
+        )))
+
+        existingRoutes = {'%s.%s' % (o.objectId, o.routeTitle): dict(o) for o in results}
+        newRoutes = {}
+        del results
+
+        # Now create the inserts
+        for importObject in newSearchObjects:
+            for impRoute in importObject.routes:
+                objectId = objectIdByKey[importObject.key]
+                routeInsert = dict(
+                    objectId=objectId,
+                    importGroupHash=impRoute.importGroupHash,
+                    routeTitle=impRoute.routeTitle,
+                    routePath=impRoute.routePath
+                )
+
+                uniqueRouteStr = '%s.%s' % (objectId, impRoute.routeTitle)
+
+                if uniqueRouteStr in existingRoutes:
+                    logger.warning("A duplicate route exists in another"
+                                   " import group\n%s\n%s",
+                                   existingRoutes[uniqueRouteStr], routeInsert)
+
+                elif uniqueRouteStr in newRoutes:
+                    logger.warning("Duplicate route titles defined in this"
+                                   " import group\n%s\n%s",
+                                   newRoutes[uniqueRouteStr], routeInsert)
+
+                else:
+                    inserts.append(routeInsert)
+                    newRoutes[uniqueRouteStr] = routeInsert
 
         if importHashSet:
             conn.execute(
                 searchObjectRoute
-                    .delete()
-                    .where(searchObjectRoute.c.importGroupHash.in_(list(importHashSet)))
+                    .delete(searchObjectRoute.c.importGroupHash.in_(importHashSet))
             )
 
         # Insert the Search Object routes
@@ -321,7 +357,8 @@ def _insertObjectRoutes(newSearchObjects: List[ImportSearchObjectTuple],
             conn.execute(searchObjectRoute.insert(), inserts)
 
         if importHashSet or inserts:
-            transaction.commit()
+            pass
+            # transaction.commit()
         else:
             transaction.rollback()
 
