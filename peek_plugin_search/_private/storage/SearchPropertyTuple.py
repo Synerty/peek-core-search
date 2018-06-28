@@ -14,6 +14,7 @@ class SearchPropertyTuple(Tuple, DeclarativeBase):
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String, nullable=False)
     title = Column(String, nullable=False)
+    order = Column(Integer, nullable=False, server_default='0')
 
     __table_args__ = (
         Index("idx_SearchProp_name", name, unique=True),

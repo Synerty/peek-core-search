@@ -66,6 +66,7 @@ def upgrade():
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(), nullable=False),
     sa.Column('title', sa.String(), nullable=False),
+    sa.Column('order', sa.Integer(), server_default='0', nullable=False),
     sa.PrimaryKeyConstraint('id'),
     schema='pl_search'
     )

@@ -119,7 +119,8 @@ export class FindComponent extends ComponentLifecycleEventEmitter {
     }
 
     objectTypeNameForResult(item: SearchResultObjectTuple) {
-        return this.objectTypesById[item.objectTypeId].title;
+        let objType = this.objectTypesById[item.objectTypeId];
+        return objType == null ? '' : objType.title;
     }
 
     find() {

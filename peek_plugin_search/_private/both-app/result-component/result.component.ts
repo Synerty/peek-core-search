@@ -22,6 +22,7 @@ import {
 interface PropT {
     title: string;
     value: string;
+    order: number;
 }
 
 @Component({
@@ -52,9 +53,11 @@ export class ResultComponent extends ComponentLifecycleEventEmitter implements O
         for (let name of Object.keys(this.resultObject.properties)) {
             this.properties.push({
                 title: this.propertiesByName[name].title,
+                order: this.propertiesByName[name].order,
                 value: this.resultObject.properties[name]
             });
         }
+        this.properties.sort((a, b) => a.order - b.order);
     }
 
 

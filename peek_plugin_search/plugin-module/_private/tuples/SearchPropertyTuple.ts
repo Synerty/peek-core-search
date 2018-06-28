@@ -15,6 +15,9 @@ export class SearchPropertyTuple extends Tuple {
     //  The title of the search property
     title: string;
 
+    //  The order of the search property
+    order: number;
+
     constructor() {
         super(SearchPropertyTuple.tupleName)
     }
