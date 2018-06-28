@@ -90,10 +90,6 @@ class ClientEntryHook(PluginClientEntryHookABC):
         self._loadedObjects.append(serverTupleObserver)
 
         # ----------------
-        # Create the Tuple Observer
-        makeClientTupleDataObservableHandler(tupleDataObservableProxyHandler)
-
-        # ----------------
         # Location Index Cache Controller
 
         searchIndexCacheController = SearchIndexCacheController(
@@ -129,6 +125,14 @@ class ClientEntryHook(PluginClientEntryHookABC):
 
         searchObjectCacheController.setSearchObjectCacheHandler(
             searchObjectCacheHandler
+        )
+
+        # ----------------
+        # Create the Tuple Observer
+        makeClientTupleDataObservableHandler(
+            tupleDataObservableProxyHandler,
+            searchIndexCacheController,
+            searchObjectCacheController
         )
 
         # ----------------

@@ -1,6 +1,18 @@
 import {Injectable} from "@angular/core";
 
-import {Payload} from "@synerty/vortexjs";
+
+import {
+    ComponentLifecycleEventEmitter,
+    extend,
+    Payload,
+    PayloadEnvelope,
+    TupleOfflineStorageNameService,
+    TupleOfflineStorageService,
+    TupleSelector,
+    TupleStorageFactoryService,
+    VortexService,
+    VortexStatusService
+} from "@synerty/vortexjs";
 
 
 import {Subject} from "rxjs/Subject";
@@ -9,6 +21,8 @@ import {PrivateSearchIndexLoaderService} from "./_private/search-index-loader";
 import {PrivateSearchObjectLoaderService} from "./_private/search-object-loader";
 
 import {SearchResultObjectTuple} from "./SearchResultObjectTuple";
+import {SearchTupleService} from "./_private/SearchTupleService";
+import {OfflineConfigTuple} from "./_private/tuples/OfflineConfigTuple";
 
 
 // ----------------------------------------------------------------------------
@@ -22,13 +36,26 @@ import {SearchResultObjectTuple} from "./SearchResultObjectTuple";
  *
  */
 @Injectable()
-export class SearchService {
+export class SearchService extends ComponentLifecycleEventEmitter {
     // From python string.punctuation
     private punctuation = "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~";
 
-    constructor(private searchIndexLoader: PrivateSearchIndexLoaderService,
-                private searchObjectLoader: PrivateSearchObjectLoaderService) {
+    private offlineConfig: OfflineConfigTuple = new OfflineConfigTuple();
 
+    constructor(private vortexStatusService: VortexStatusService,
+                private tupleService: SearchTupleService,
+                private searchIndexLoader: PrivateSearchIndexLoaderService,
+                private searchObjectLoader: PrivateSearchObjectLoaderService) {
+        super();
+
+
+        this.tupleService.offlineObserver
+            .subscribeToTupleSelector(new TupleSelector(OfflineConfigTuple.tupleName, {}))
+            .takeUntil(this.onDestroyEvent)
+            .filter(v => v.length != 0)
+            .subscribe((tuples: OfflineConfigTuple[]) => {
+                this.offlineConfig = tuples[0];
+            });
 
     }
 
@@ -78,6 +105,21 @@ export class SearchService {
 
         let keywords = this.splitKeywords(keywordsString);
         console.log(keywords);
+
+        if (!this.offlineConfig.cacheChunksForOffline) {
+            let ts = new TupleSelector(SearchResultObjectTuple.tupleName, {
+                "propertyName": propertyName,
+                "objectTypeId": objectTypeId,
+                "keywords": keywords
+            });
+
+            let isOnlinePromise: any = this.vortexStatusService.snapshot.isOnline ?
+                Promise.resolve() :
+                this.vortexStatusService.isOnline.filter(online => online).toPromise();
+
+            return isOnlinePromise
+                .then(() => this.tupleService.offlineObserver.pollForTuples(ts, false));
+        }
 
         return this.searchIndexLoader.getObjectIds(propertyName, keywords)
             .then((objectIds: number[]) => {

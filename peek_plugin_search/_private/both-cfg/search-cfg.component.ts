@@ -1,10 +1,14 @@
 import {Component, Input} from "@angular/core";
+import {ComponentLifecycleEventEmitter, TupleSelector} from "@synerty/vortexjs";
 import {
-    PrivateDiagramCacheStatusService
-} from "@peek/peek_plugin_diagram/_private/services/PrivateDiagramCacheStatusService";
-
-import {ComponentLifecycleEventEmitter} from "@synerty/vortexjs";
-import {GridLoaderA} from "peek_plugin_diagram/cache/GridLoader";
+    PrivateSearchIndexLoaderService,
+    PrivateSearchIndexLoaderStatusTuple
+} from "@peek/peek_plugin_search/_private/search-index-loader";
+import {
+    PrivateSearchObjectLoaderService,
+    PrivateSearchObjectLoaderStatusTuple
+} from "@peek/peek_plugin_search/_private/search-object-loader";
+import {OfflineConfigTuple, SearchTupleService} from "@peek/peek_plugin_search/_private";
 
 
 @Component({
@@ -14,22 +18,45 @@ import {GridLoaderA} from "peek_plugin_diagram/cache/GridLoader";
 })
 export class SearchCfgComponent extends ComponentLifecycleEventEmitter {
 
-    lastStatus: string = "Not Running";
+    indexStatus: PrivateSearchIndexLoaderStatusTuple = new PrivateSearchIndexLoaderStatusTuple();
+    objectStatus: PrivateSearchObjectLoaderStatusTuple = new PrivateSearchObjectLoaderStatusTuple();
+
+    offlineConfig: OfflineConfigTuple = new OfflineConfigTuple();
+
+    private offlineTs = new TupleSelector(OfflineConfigTuple.tupleName, {});
 
 
-    constructor(private gridLoader: GridLoaderA,
-                private gridCachingStatus: PrivateDiagramCacheStatusService) {
+    constructor(private searchIndexLoader: PrivateSearchIndexLoaderService,
+                private searchObjectLoader: PrivateSearchObjectLoaderService,
+                private tupleService: SearchTupleService) {
         super();
 
-        this.gridCachingStatus.cacheProgressObservable
+        this.searchIndexLoader.statusObservable()
             .takeUntil(this.onDestroyEvent)
-            .subscribe( value => this.lastStatus = value);
+            .subscribe( value => this.indexStatus = value);
+
+        this.searchObjectLoader.statusObservable()
+            .takeUntil(this.onDestroyEvent)
+            .subscribe( value => this.objectStatus = value);
+
+        this.tupleService.offlineObserver.subscribeToTupleSelector(this.offlineTs)
+            .takeUntil(this.onDestroyEvent)
+            .subscribe((tuples: OfflineConfigTuple[]) => {
+                if (tuples.length == 0) {
+                    this.tupleService.offlineObserver.updateOfflineState(
+                        this.offlineTs, [this.offlineConfig]
+                    );
+                    return;
+                }
+            });
 
     }
 
-    cacheAllClicked(): void {
-        this.gridLoader.cacheAll();
-        alert("CACHING has started");
+    toggleOfflineMode(): void {
+        this.offlineConfig.cacheChunksForOffline = !this.offlineConfig.cacheChunksForOffline;
+        this.tupleService.offlineObserver.updateOfflineState(
+            this.offlineTs, [this.offlineConfig]
+        );
     }
 
 }

@@ -20,6 +20,9 @@ import {Observable} from "rxjs/Observable";
 
 import {EncodedSearchIndexChunkTuple} from "./EncodedSearchIndexChunkTuple";
 import {SearchIndexUpdateDateTuple} from "./SearchIndexUpdateDateTuple";
+import {OfflineConfigTuple} from "../tuples/OfflineConfigTuple";
+import {SearchTupleService} from "../SearchTupleService";
+import {PrivateSearchIndexLoaderStatusTuple} from "./PrivateSearchIndexLoaderStatusTuple";
 
 
 // ----------------------------------------------------------------------------
@@ -63,6 +66,8 @@ class UpdateDateTupleSelector extends TupleSelector {
 // ----------------------------------------------------------------------------
 /** hash method
  */
+let BUCKET_COUNT = 1024;
+
 function keywordChunk(keyword: string): number {
     /** keyword
 
@@ -86,7 +91,7 @@ function keywordChunk(keyword: string): number {
         bucket |= 0; // Convert to 32bit integer
     }
 
-    bucket = bucket & 1023; // 1024 buckets
+    bucket = bucket & (BUCKET_COUNT - 1); // 1024 buckets
 
     return bucket;
 }
@@ -112,18 +117,32 @@ export class PrivateSearchIndexLoaderService extends ComponentLifecycleEventEmit
     private _hasLoadedSubject = new Subject<void>();
     private storage: TupleOfflineStorageService;
 
+    private _statusSubject = new Subject<PrivateSearchIndexLoaderStatusTuple>();
+    private _status = new PrivateSearchIndexLoaderStatusTuple();
+
+    private offlineConfig: OfflineConfigTuple = new OfflineConfigTuple();
+
     constructor(private vortexService: VortexService,
                 private vortexStatusService: VortexStatusService,
-                storageFactory: TupleStorageFactoryService) {
+                storageFactory: TupleStorageFactoryService,
+                private tupleService: SearchTupleService) {
         super();
+
+        this.tupleService.offlineObserver
+            .subscribeToTupleSelector(new TupleSelector(OfflineConfigTuple.tupleName, {}))
+            .takeUntil(this.onDestroyEvent)
+            .filter(v => v.length != 0)
+            .subscribe((tuples: OfflineConfigTuple[]) => {
+                this.offlineConfig = tuples[0];
+                if (this.offlineConfig.cacheChunksForOffline)
+                    this.initialLoad();
+                this._notifyStatus();
+            });
 
         this.storage = new TupleOfflineStorageService(
             storageFactory,
             new TupleOfflineStorageNameService(searchIndexCacheStorageName)
         );
-
-        this.initialLoad();
-
 
     }
 
@@ -134,6 +153,19 @@ export class PrivateSearchIndexLoaderService extends ComponentLifecycleEventEmit
     isReadyObservable(): Observable<void> {
         return this._hasLoadedSubject;
     }
+
+    statusObservable(): Observable<PrivateSearchIndexLoaderStatusTuple> {
+        return this._statusSubject;
+    }
+
+    private _notifyStatus(): void {
+        this._status.cacheForOfflineEnabled = this.offlineConfig.cacheChunksForOffline;
+        this._status.initialLoadComplete = this.index.initialLoadComplete;
+        this._status.loadProgress = Object.keys(this.index.updateDateByChunkKey).length;
+        this._status.loadTotal = BUCKET_COUNT;
+        this._statusSubject.next(this._status);
+    }
+
 
     /** Initial load
      *
@@ -153,11 +185,13 @@ export class PrivateSearchIndexLoaderService extends ComponentLifecycleEventEmit
 
                 }
 
+                this._notifyStatus();
+
                 this.setupVortexSubscriptions();
                 this.askServerForUpdates();
-
             });
 
+        this._notifyStatus();
     }
 
     private setupVortexSubscriptions(): void {
@@ -177,9 +211,16 @@ export class PrivateSearchIndexLoaderService extends ComponentLifecycleEventEmit
 
     }
 
-
-    //
+    /** Ask Server For Updates
+     *
+     * Tell the server the state of the chunks in our index and ask if there
+     * are updates.
+     *
+     */
     private askServerForUpdates() {
+        if (!this.offlineConfig.cacheChunksForOffline)
+            return;
+
         // There is no point talking to the server if it's offline
         if (!this.vortexStatusService.snapshot.isOnline)
             return;
@@ -206,6 +247,7 @@ export class PrivateSearchIndexLoaderService extends ComponentLifecycleEventEmit
                 .then(() => {
                     this._hasLoaded = true;
                     this._hasLoadedSubject.next();
+                    this._notifyStatus();
                 })
                 .catch(err => console.log(`ERROR : ${err}`));
 
@@ -308,7 +350,6 @@ export class PrivateSearchIndexLoaderService extends ComponentLifecycleEventEmit
 
         return Promise.all(promises)
             .then((results: number[][]) => {
-                let keywordCount = results.length;
 
                 // Create a list of objectIds
                 let objectIds: number[] = [];

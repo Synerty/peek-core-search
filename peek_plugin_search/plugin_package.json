@@ -52,6 +52,10 @@
                 "persistent": true
             },
             {
+                "file": "_private/SearchTupleService",
+                "class": "SearchTupleService"
+            },
+            {
                 "file": "SearchService",
                 "class": "SearchService"
             }
@@ -76,6 +80,10 @@
                 "file": "_private/search-object-loader/PrivateSearchObjectLoaderService",
                 "class": "PrivateSearchObjectLoaderService",
                 "persistent": true
+            },
+            {
+                "file": "_private/SearchTupleService",
+                "class": "SearchTupleService"
             },
             {
                 "file": "SearchService",
