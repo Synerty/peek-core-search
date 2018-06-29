@@ -26,6 +26,7 @@ export class FindComponent extends ComponentLifecycleEventEmitter {
     keywords: string = '';
 
     resultObjects: SearchResultObjectTuple[] = [];
+    searchInProgress: boolean = false;
 
     searchProperties: SearchPropertyTuple[] = [];
     searchPropertyStrings: string[] = [];
@@ -118,6 +119,11 @@ export class FindComponent extends ComponentLifecycleEventEmitter {
         return this.searchPropertyNsPicking ? 'fa-check' : 'fa-pencil';
     }
 
+    noResults(): boolean {
+        return this.resultObjects.length == 0 && !this.searchInProgress;
+
+    }
+
     objectTypeNameForResult(item: SearchResultObjectTuple) {
         let objType = this.objectTypesById[item.objectTypeId];
         return objType == null ? '' : objType.title;
@@ -129,10 +135,15 @@ export class FindComponent extends ComponentLifecycleEventEmitter {
             return;
         }
 
+        this.searchInProgress = true;
+
         this.searchService
             .getObjects(this.searchProperty.name, this.searchObjectType.id, this.keywords)
-            .then((results: SearchResultObjectTuple[]) => this.resultObjects = results)
-            .catch((e: string) => this.balloonMsg.showError(`Find Failed:${e}`));
+            .then((results: SearchResultObjectTuple[]) => {
+                this.resultObjects = results;
+            })
+            .catch((e: string) => this.balloonMsg.showError(`Find Failed:${e}`))
+            .then(() => this.searchInProgress = false);
     }
 
 

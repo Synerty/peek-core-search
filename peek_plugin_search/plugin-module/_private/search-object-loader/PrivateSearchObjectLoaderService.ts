@@ -29,6 +29,7 @@ import {SearchResultObjectRouteTuple} from "../../SearchResultObjectRouteTuple";
 import {OfflineConfigTuple} from "../tuples/OfflineConfigTuple";
 import {SearchTupleService} from "../SearchTupleService";
 import {PrivateSearchObjectLoaderStatusTuple} from "./PrivateSearchObjectLoaderStatusTuple";
+import {PrivateSearchIndexLoaderStatusTuple} from "../search-index-loader/PrivateSearchIndexLoaderStatusTuple";
 
 
 // ----------------------------------------------------------------------------
@@ -154,6 +155,10 @@ export class PrivateSearchObjectLoaderService extends ComponentLifecycleEventEmi
         return this._statusSubject;
     }
 
+    status(): PrivateSearchObjectLoaderStatusTuple {
+        return this._status;
+    }
+
     private _notifyStatus(): void {
         this._status.cacheForOfflineEnabled = this.offlineConfig.cacheChunksForOffline;
         this._status.initialLoadComplete = this.index.initialLoadComplete;
@@ -231,6 +236,9 @@ export class PrivateSearchObjectLoaderService extends ComponentLifecycleEventEmi
      * Process the grids the server has sent us.
      */
     private processSearchObjectesFromServer(payloadEnvelope: PayloadEnvelope) {
+
+        this._status.lastCheck = new Date();
+
         if (payloadEnvelope.result != null && payloadEnvelope.result != true) {
             console.log(`ERROR: ${payloadEnvelope.result}`);
             return;

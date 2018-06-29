@@ -158,6 +158,10 @@ export class PrivateSearchIndexLoaderService extends ComponentLifecycleEventEmit
         return this._statusSubject;
     }
 
+    status(): PrivateSearchIndexLoaderStatusTuple {
+        return this._status;
+    }
+
     private _notifyStatus(): void {
         this._status.cacheForOfflineEnabled = this.offlineConfig.cacheChunksForOffline;
         this._status.initialLoadComplete = this.index.initialLoadComplete;
@@ -235,6 +239,9 @@ export class PrivateSearchIndexLoaderService extends ComponentLifecycleEventEmit
      * Process the grids the server has sent us.
      */
     private processSearchIndexesFromServer(payloadEnvelope: PayloadEnvelope) {
+
+        this._status.lastCheck = new Date();
+
         if (payloadEnvelope.result != null && payloadEnvelope.result != true) {
             console.log(`ERROR: ${payloadEnvelope.result}`);
             return;

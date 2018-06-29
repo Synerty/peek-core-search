@@ -31,10 +31,12 @@ export class SearchCfgComponent extends ComponentLifecycleEventEmitter {
                 private tupleService: SearchTupleService) {
         super();
 
+        this.indexStatus = this.searchIndexLoader.status();
         this.searchIndexLoader.statusObservable()
             .takeUntil(this.onDestroyEvent)
             .subscribe( value => this.indexStatus = value);
 
+        this.objectStatus = this.searchObjectLoader.status();
         this.searchObjectLoader.statusObservable()
             .takeUntil(this.onDestroyEvent)
             .subscribe( value => this.objectStatus = value);

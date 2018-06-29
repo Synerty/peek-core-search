@@ -8,7 +8,9 @@
                    returnPress="find()">
         </TextField>
 
-        <Button col="1" text="Find" (tap)="find()"></Button>
+        <Button col="1" text="Find" (tap)="find()"
+                [isEnabled]="!searchInProgress"
+                [class.nav-section-btn-disabled]="searchInProgress"></Button>
     </GridLayout>
 
     <!-- START SEARCH PROPERTY PICKER -->
@@ -60,9 +62,11 @@
         <Label class="h3" col="0" text="Results"></Label>
     </GridLayout>
 
-    <Label *ngIf="!resultObjects.length" text="No results.">
+    <Label *ngIf="noResults()" text="No results."></Label>
 
-    </Label>
+    <Label *ngIf="searchInProgress" text="Search in progress."></Label>
+    <ActivityIndicator *ngIf="searchInProgress" [busy]="1"></ActivityIndicator>
+
     <ListView [items]="resultObjects">
         <ng-template let-item="item" let-i="index" let-odd="odd" let-even="even">
             <GridLayout columns="*" rows="auto" [class.odd]="odd" [class.even]="even">

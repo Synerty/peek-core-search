@@ -53,7 +53,7 @@ class ClientSearchObjectResultTupleProvider(TuplesProviderABC):
 
         # Return all the object IDs that have the most keyword matches
         foundObjectIds: List[int] = []
-        maxCount = max(foundObjectIdCounts.values())
+        maxCount = max(foundObjectIdCounts.values()) if foundObjectIdCounts else 0
 
         for objectId, maxObjectNum in foundObjectIdCounts.items():
             if maxObjectNum == maxCount:
@@ -70,7 +70,7 @@ class ClientSearchObjectResultTupleProvider(TuplesProviderABC):
         foundObjects: List[SearchResultObjectTuple] = []
         for chunkKey, subObjectIds in objectIdsByChunkKey.items():
             encodedChunk = self._searchObjectCacheHandler.searchObject(chunkKey)
-            foundObjects + self._getObjects(
+            foundObjects += self._getObjects(
                 encodedChunk, objectTypeId, subObjectIds
             )
 
@@ -81,7 +81,7 @@ class ClientSearchObjectResultTupleProvider(TuplesProviderABC):
                       propertyName: Optional[str],
                       keywords: List[str]) -> List[int]:
 
-        chunkData = Payload().fromEncodedPayload(chunk.encodedData).tuples[0]
+        chunkData = Payload().fromEncodedPayload(chunk.encodedData).tuples
 
         indexByKeyword = {item[0]: item for item in chunkData}
         foundObjectIds: List[int] = []
@@ -116,7 +116,7 @@ class ClientSearchObjectResultTupleProvider(TuplesProviderABC):
         foundObjects: List[SearchResultObjectTuple] = []
 
         for objectId in objectIds:
-            if objectId not in objectPropsById:
+            if str(objectId) not in objectPropsById:
                 logger.warning(
                     "Search object id %s is missing from index, chunkKey %s",
                     objectId, chunk.chunkKey
@@ -124,7 +124,7 @@ class ClientSearchObjectResultTupleProvider(TuplesProviderABC):
                 continue
 
             # Reconstruct the data
-            objectProps: {} = json.loads(objectPropsById[objectId])
+            objectProps: {} = json.loads(objectPropsById[str(objectId)])
 
             # Get out the object type
             thisObjectTypeId = objectProps['_otid_']

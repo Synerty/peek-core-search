@@ -42,6 +42,10 @@
         "moduleDir": "plugin-module",
         "rootServices": [
             {
+                "file": "_private/SearchTupleService",
+                "class": "SearchTupleService"
+            },
+            {
                 "file": "_private/search-index-loader/PrivateSearchIndexLoaderService",
                 "class": "PrivateSearchIndexLoaderService",
                 "persistent": true
@@ -50,10 +54,6 @@
                 "file": "_private/search-object-loader/PrivateSearchObjectLoaderService",
                 "class": "PrivateSearchObjectLoaderService",
                 "persistent": true
-            },
-            {
-                "file": "_private/SearchTupleService",
-                "class": "SearchTupleService"
             },
             {
                 "file": "SearchService",
@@ -72,6 +72,10 @@
         "moduleDir": "plugin-module",
         "rootServices": [
             {
+                "file": "_private/SearchTupleService",
+                "class": "SearchTupleService"
+            },
+            {
                 "file": "_private/search-index-loader/PrivateSearchIndexLoaderService",
                 "class": "PrivateSearchIndexLoaderService",
                 "persistent": true
@@ -80,10 +84,6 @@
                 "file": "_private/search-object-loader/PrivateSearchObjectLoaderService",
                 "class": "PrivateSearchObjectLoaderService",
                 "persistent": true
-            },
-            {
-                "file": "_private/SearchTupleService",
-                "class": "SearchTupleService"
             },
             {
                 "file": "SearchService",
