@@ -1,10 +1,6 @@
 import {Component, Input, OnInit} from "@angular/core";
 import {Router} from "@angular/router";
-import {
-    searchBaseUrl,
-    SearchObjectTypeTuple,
-    SearchPropertyTuple
-} from "@peek/peek_plugin_search/_private";
+import {searchBaseUrl, SearchPropertyTuple} from "@peek/peek_plugin_search/_private";
 
 import {
     ComponentLifecycleEventEmitter,
@@ -14,6 +10,7 @@ import {
 } from "@synerty/vortexjs";
 
 import {
+    SearchObjectTypeTuple,
     SearchResultObjectRouteTuple,
     SearchResultObjectTuple,
     SearchService
@@ -35,52 +32,21 @@ export class ResultComponent extends ComponentLifecycleEventEmitter implements O
     @Input("resultObject")
     resultObject: SearchResultObjectTuple = new SearchResultObjectTuple();
 
-    @Input("propertiesByName")
-    propertiesByName: { [key: string]: SearchPropertyTuple; } = {};
-
-    @Input("objectTypeName")
-    objectTypeName: string = '';
-
     properties: PropT[] = [];
 
-    constructor(private router: Router) {
+    constructor(private router: Router,
+                private searchService: SearchService) {
         super();
-
 
     }
 
     ngOnInit() {
-        for (let name of Object.keys(this.resultObject.properties)) {
-            this.properties.push({
-                title: this.propertiesByName[name].title,
-                order: this.propertiesByName[name].order,
-                value: this.resultObject.properties[name]
-            });
-        }
-        this.properties.sort((a, b) => a.order - b.order);
+        this.properties = this.searchService.getNiceOrderedProperties(this.resultObject);
     }
 
-
-    titleForProperty(propKey: string): string {
-        return this.propertiesByName[propKey].title;
-    }
 
     navTo(objectRoute: SearchResultObjectRouteTuple): void {
-        let parts = objectRoute.path.split('?');
-        let path = parts[0];
-
-        if (parts.length == 1) {
-            this.router.navigate([path]);
-            return;
-        }
-
-
-        let params = {};
-        objectRoute.path.replace(
-            /[?&]+([^=&]+)=([^&]*)/gi,
-            (m, key, value) => params[key] = value
-        );
-        this.router.navigate([path, params]);
+        objectRoute.navTo(this.router);
 
     }
 

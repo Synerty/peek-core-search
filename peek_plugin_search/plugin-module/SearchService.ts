@@ -21,8 +21,15 @@ import {PrivateSearchIndexLoaderService} from "./_private/search-index-loader";
 import {PrivateSearchObjectLoaderService} from "./_private/search-object-loader";
 
 import {SearchResultObjectTuple} from "./SearchResultObjectTuple";
-import {SearchTupleService} from "./_private/SearchTupleService";
-import {OfflineConfigTuple} from "./_private/tuples/OfflineConfigTuple";
+import {SearchObjectTypeTuple} from "./SearchObjectTypeTuple";
+import {OfflineConfigTuple, SearchPropertyTuple, SearchTupleService} from "./_private";
+
+
+export interface SearchPropT {
+    title: string;
+    value: string;
+    order: number;
+}
 
 
 // ----------------------------------------------------------------------------
@@ -42,6 +49,12 @@ export class SearchService extends ComponentLifecycleEventEmitter {
 
     private offlineConfig: OfflineConfigTuple = new OfflineConfigTuple();
 
+    // Passed to each of the results
+    private propertiesByName: { [key: string]: SearchPropertyTuple; } = {};
+
+    // Passed to each of the results
+    private objectTypesById: { [key: number]: SearchObjectTypeTuple; } = {};
+
     constructor(private vortexStatusService: VortexStatusService,
                 private tupleService: SearchTupleService,
                 private searchIndexLoader: PrivateSearchIndexLoaderService,
@@ -57,6 +70,35 @@ export class SearchService extends ComponentLifecycleEventEmitter {
                 this.offlineConfig = tuples[0];
             });
 
+        this._loadPropsAndObjs();
+
+    }
+
+    private _loadPropsAndObjs(): void {
+
+        let propTs = new TupleSelector(SearchPropertyTuple.tupleName, {});
+        this.tupleService.offlineObserver
+            .subscribeToTupleSelector(propTs)
+            .takeUntil(this.onDestroyEvent)
+            .subscribe((tuples: SearchPropertyTuple[]) => {
+                this.propertiesByName = {};
+
+                for (let item of tuples) {
+                    this.propertiesByName[item.name] = item;
+                }
+            });
+
+        let objectTypeTs = new TupleSelector(SearchObjectTypeTuple.tupleName, {});
+        this.tupleService.offlineObserver
+            .subscribeToTupleSelector(objectTypeTs)
+            .takeUntil(this.onDestroyEvent)
+            .subscribe((tuples: SearchObjectTypeTuple[]) => {
+                this.objectTypesById = {};
+
+                for (let item of tuples) {
+                    this.objectTypesById[item.id] = item;
+                }
+            });
     }
 
     /** Split Keywords
@@ -118,7 +160,8 @@ export class SearchService extends ComponentLifecycleEventEmitter {
                 this.vortexStatusService.isOnline.filter(online => online).toPromise();
 
             return isOnlinePromise
-                .then(() => this.tupleService.offlineObserver.pollForTuples(ts, false));
+                .then(() => this.tupleService.offlineObserver.pollForTuples(ts, false))
+                .then(v => this._loadObjectTypes(v));
         }
 
         return this.searchIndexLoader.getObjectIds(propertyName, keywords)
@@ -131,9 +174,45 @@ export class SearchService extends ComponentLifecycleEventEmitter {
                 // Limit to 20 results
                 objectIds = objectIds.slice(0, 20);
 
-                return this.searchObjectLoader.getObjects(objectTypeId, objectIds);
+                return this.searchObjectLoader.getObjects(objectTypeId, objectIds)
+                    .then(v => this._loadObjectTypes(v));
             })
 
+    }
+
+    /** Get Nice Ordered Properties
+     *
+     * @param {SearchResultObjectTuple} obj
+     * @returns {SearchPropT[]}
+     */
+    getNiceOrderedProperties(obj: SearchResultObjectTuple): SearchPropT[] {
+        let props: SearchPropT[] = [];
+
+        for (let name of Object.keys(obj.properties)) {
+            let prop = this.propertiesByName[name.toLowerCase()] || new SearchPropertyTuple();
+            props.push({
+                title: prop.title,
+                order: prop.order,
+                value: obj.properties[name]
+            });
+        }
+        props.sort((a, b) => a.order - b.order);
+
+        return props;
+    }
+
+    /** Load Object Types
+     *
+     * Relinks the object types for search results.
+     *
+     * @param {SearchResultObjectTuple} searchObjects
+     * @returns {SearchResultObjectTuple[]}
+     */
+    private _loadObjectTypes(searchObjects: SearchResultObjectTuple []): SearchResultObjectTuple[] {
+        for (let searchObject of searchObjects) {
+            searchObject.objectType = this.objectTypesById[searchObject.objectType.id];
+        }
+        return searchObjects;
     }
 
 }

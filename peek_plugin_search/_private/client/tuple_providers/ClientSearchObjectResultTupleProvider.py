@@ -13,6 +13,8 @@ from peek_plugin_search._private.storage.EncodedSearchIndexChunk import \
     EncodedSearchIndexChunk
 from peek_plugin_search._private.storage.EncodedSearchObjectChunk import \
     EncodedSearchObjectChunk
+from peek_plugin_search._private.storage.SearchObjectTypeTuple import \
+    SearchObjectTypeTuple
 from peek_plugin_search._private.tuples.search_object.SearchResultObjectRouteTuple import \
     SearchResultObjectRouteTuple
 from peek_plugin_search._private.tuples.search_object.SearchResultObjectTuple import \
@@ -148,7 +150,7 @@ class ClientSearchObjectResultTupleProvider(TuplesProviderABC):
 
             newObject.id = objectId
             newObject.key = objectKey
-            newObject.objectTypeId = thisObjectTypeId
+            newObject.objectType = SearchObjectTypeTuple(id=thisObjectTypeId)
             newObject.properties = objectProps
 
             for route in routes:

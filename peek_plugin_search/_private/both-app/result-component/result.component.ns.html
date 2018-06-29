@@ -1,7 +1,7 @@
 <StackLayout>
     <GridLayout columns="1*, 4*" rows="auto">
         <Label class="h3" col="1" [text]="resultObject.key"></Label>
-        <Label class="h3" col="2" [text]="objectTypeName"></Label>
+        <Label class="h3" col="2" [text]="resultObject.objectType.title"></Label>
     </GridLayout>
 
     <ListView [items]="properties">

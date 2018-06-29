@@ -1,10 +1,11 @@
 import {Component} from "@angular/core";
 import {Router} from "@angular/router";
-import {SearchResultObjectTuple, SearchService} from "@peek/peek_plugin_search";
 import {
     SearchObjectTypeTuple,
-    SearchPropertyTuple
-} from "@peek/peek_plugin_search/_private";
+    SearchResultObjectTuple,
+    SearchService
+} from "@peek/peek_plugin_search";
+import {SearchPropertyTuple, SearchTupleService} from "@peek/peek_plugin_search/_private";
 
 import {
     ComponentLifecycleEventEmitter,
@@ -33,27 +34,20 @@ export class FindComponent extends ComponentLifecycleEventEmitter {
     searchProperty: SearchPropertyTuple = new SearchPropertyTuple();
     searchPropertyNsPicking = false;
 
-    // Passed to each of the results
-    propertiesByName: { [key: string]: SearchPropertyTuple; } = {};
-
-
     searchObjectTypes: SearchObjectTypeTuple[] = [];
     searchObjectTypeStrings: string[] = [];
     searchObjectType: SearchObjectTypeTuple = new SearchObjectTypeTuple();
     searchObjectTypesNsPicking = false;
 
-    // Passed to each of the results
-    objectTypesById: { [key: number]: SearchObjectTypeTuple; } = {};
-
     constructor(private searchService: SearchService,
                 private balloonMsg: Ng2BalloonMsgService,
-                private tupleObserver: TupleDataOfflineObserverService) {
+                private tupleService: SearchTupleService) {
         super();
         this.searchProperty.title = "All";
         this.searchObjectType.title = "All";
 
         let propTs = new TupleSelector(SearchPropertyTuple.tupleName, {});
-        this.tupleObserver
+        this.tupleService.offlineObserver
             .subscribeToTupleSelector(propTs)
             .takeUntil(this.onDestroyEvent)
             .subscribe((v: SearchPropertyTuple[]) => {
@@ -68,17 +62,15 @@ export class FindComponent extends ComponentLifecycleEventEmitter {
 
                 // Set the string array and lookup by id
                 this.searchPropertyStrings = [];
-                this.propertiesByName = {};
 
                 for (let item of this.searchProperties) {
                     this.searchPropertyStrings.push(item.title);
-                    this.propertiesByName[item.name] = item;
                 }
             });
 
 
         let objectTypeTs = new TupleSelector(SearchObjectTypeTuple.tupleName, {});
-        this.tupleObserver
+        this.tupleService.offlineObserver
             .subscribeToTupleSelector(objectTypeTs)
             .takeUntil(this.onDestroyEvent)
             .subscribe((v: SearchObjectTypeTuple[]) => {
@@ -93,11 +85,9 @@ export class FindComponent extends ComponentLifecycleEventEmitter {
 
                 // Set the string array, and object type lookup
                 this.searchObjectTypeStrings = [];
-                this.objectTypesById = {};
 
                 for (let item of this.searchObjectTypes) {
                     this.searchObjectTypeStrings.push(item.title);
-                    this.objectTypesById[item.id] = item;
                 }
             });
 
@@ -124,11 +114,6 @@ export class FindComponent extends ComponentLifecycleEventEmitter {
 
     }
 
-    objectTypeNameForResult(item: SearchResultObjectTuple) {
-        let objType = this.objectTypesById[item.objectTypeId];
-        return objType == null ? '' : objType.title;
-    }
-
     find() {
         if (this.keywords == null || this.keywords.length == 0) {
             this.balloonMsg.showWarning("Please enter some search keywords");
@@ -139,9 +124,7 @@ export class FindComponent extends ComponentLifecycleEventEmitter {
 
         this.searchService
             .getObjects(this.searchProperty.name, this.searchObjectType.id, this.keywords)
-            .then((results: SearchResultObjectTuple[]) => {
-                this.resultObjects = results;
-            })
+            .then((results: SearchResultObjectTuple[]) => this.resultObjects = results)
             .catch((e: string) => this.balloonMsg.showError(`Find Failed:${e}`))
             .then(() => this.searchInProgress = false);
     }

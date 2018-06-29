@@ -1,12 +1,13 @@
 import {Component, OnInit} from "@angular/core";
 import {Ng2BalloonMsgService} from "@synerty/ng2-balloon-msg";
 import {
-    extend,
-    VortexService,
     ComponentLifecycleEventEmitter,
-    TupleLoader
+    extend,
+    TupleLoader,
+    VortexService
 } from "@synerty/vortexjs";
-import {SearchObjectTypeTuple, searchFilt} from "@peek/peek_plugin_search/_private";
+import {searchFilt} from "@peek/peek_plugin_search/_private";
+import {SearchObjectTypeTuple} from "@peek/peek_plugin_search";
 
 
 @Component({
@@ -32,7 +33,7 @@ export class EditObjectTypeComponent extends ComponentLifecycleEventEmitter {
         );
 
         this.loader.observable
-            .subscribe((tuples:SearchObjectTypeTuple[]) => this.items = tuples);
+            .subscribe((tuples: SearchObjectTypeTuple[]) => this.items = tuples);
     }
 
     save() {

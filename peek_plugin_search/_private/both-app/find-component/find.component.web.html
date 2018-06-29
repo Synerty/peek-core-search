@@ -50,10 +50,7 @@
         <fa name="cog" animation="spin"></fa>
     </p>
     <div *ngFor="let item of resultObjects; odd as odd; even as even">
-        <plugin-search-result
-                [propertiesByName]="propertiesByName"
-                [objectTypeName]="objectTypeNameForResult(item)"
-                [resultObject]="item"></plugin-search-result>
+        <plugin-search-result [resultObject]="item"></plugin-search-result>
     </div>
 
 </div>

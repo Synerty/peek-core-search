@@ -1,6 +1,8 @@
 from typing import List, Dict
 
 from peek_plugin_search._private.PluginNames import searchTuplePrefix
+from peek_plugin_search._private.storage.SearchObjectTypeTuple import \
+    SearchObjectTypeTuple
 from peek_plugin_search.tuples.ImportSearchObjectRouteTuple import \
     ImportSearchObjectRouteTuple
 from vortex.Tuple import Tuple, addTupleType, TupleField
@@ -22,7 +24,7 @@ class SearchResultObjectTuple(Tuple):
     key: str = TupleField()
 
     #:  The type of this object
-    objectTypeId: int = TupleField()
+    objectType: SearchObjectTypeTuple = TupleField()
 
     #:  The details to index.
     # Do not include "key", it will be indexed anyway.

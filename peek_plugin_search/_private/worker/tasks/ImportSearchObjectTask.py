@@ -154,7 +154,6 @@ def _insertOrUpdateObjects(newSearchObjects: List[ImportSearchObjectTuple],
 
     engine = CeleryDbConn.getDbEngine()
     conn = engine.connect()
-    transaction = conn.begin()
 
     try:
         objectsToIndex: Dict[int, ObjectToIndexTuple] = {}
@@ -173,10 +172,17 @@ def _insertOrUpdateObjects(newSearchObjects: List[ImportSearchObjectTuple],
         foundObjectByKey = {o.key: o for o in results}
         del results
 
-        # Get the IDs that we need
-        newIdGen = CeleryDbConn.prefetchDeclarativeIds(
-            SearchObject, len(newSearchObjects) - len(foundObjectByKey)
-        )
+    finally:
+        conn.close()
+
+    # Get the IDs that we need
+    newIdGen = CeleryDbConn.prefetchDeclarativeIds(
+        SearchObject, len(newSearchObjects) - len(foundObjectByKey)
+    )
+
+    conn = engine.connect()
+    transaction = conn.begin()
+    try:
 
         # Create state arrays
         inserts = []

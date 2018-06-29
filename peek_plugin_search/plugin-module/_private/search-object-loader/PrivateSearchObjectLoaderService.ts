@@ -29,7 +29,7 @@ import {SearchResultObjectRouteTuple} from "../../SearchResultObjectRouteTuple";
 import {OfflineConfigTuple} from "../tuples/OfflineConfigTuple";
 import {SearchTupleService} from "../SearchTupleService";
 import {PrivateSearchObjectLoaderStatusTuple} from "./PrivateSearchObjectLoaderStatusTuple";
-import {PrivateSearchIndexLoaderStatusTuple} from "../search-index-loader/PrivateSearchIndexLoaderStatusTuple";
+import {SearchObjectTypeTuple} from "../../SearchObjectTypeTuple";
 
 
 // ----------------------------------------------------------------------------
@@ -443,7 +443,8 @@ export class PrivateSearchObjectLoaderService extends ComponentLifecycleEventEmi
 
                             newObject.id = objectId;
                             newObject.key = objectKey;
-                            newObject.objectTypeId = thisObjectTypeId;
+                            newObject.objectType = new SearchObjectTypeTuple();
+                            newObject.objectType.id = thisObjectTypeId;
                             newObject.properties = objectProps;
 
                             for (let route of routes) {

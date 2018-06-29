@@ -1,6 +1,7 @@
 import {addTupleType, Tuple} from "@synerty/vortexjs";
 import {searchTuplePrefix} from "./_private/PluginNames";
 import {SearchResultObjectRouteTuple} from "./SearchResultObjectRouteTuple";
+import {SearchObjectTypeTuple} from "./SearchObjectTypeTuple";
 
 
 @addTupleType
@@ -14,7 +15,7 @@ export class SearchResultObjectTuple extends Tuple {
     key: string;
 
     // The type of this object in the search result
-    objectTypeId: number;
+    objectType: SearchObjectTypeTuple = new SearchObjectTypeTuple();
 
     // The details of the search result
     properties: { [key: string]: string; } = {};

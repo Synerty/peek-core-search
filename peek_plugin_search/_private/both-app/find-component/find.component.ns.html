@@ -71,8 +71,6 @@
         <ng-template let-item="item" let-i="index" let-odd="odd" let-even="even">
             <GridLayout columns="*" rows="auto" [class.odd]="odd" [class.even]="even">
                 <plugin-search-result
-                        [propertiesByName]="propertiesByName"
-                        [objectTypeName]="objectTypeNameForResult(item)"
                         [resultObject]="item"></plugin-search-result>
             </GridLayout>
         </ng-template>

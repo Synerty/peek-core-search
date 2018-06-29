@@ -47,19 +47,7 @@ import {
 } from "@peek/peek_plugin_search/_private";
 
 
-export function tupleActionPushNameServiceFactory() {
-    return new TupleActionPushNameService(
-        searchActionProcessorName, searchFilt);
-}
 
-export function tupleDataObservableNameServiceFactory() {
-    return new TupleDataObservableNameService(
-        searchObservableName, searchFilt);
-}
-
-export function tupleOfflineStorageNameServiceFactory() {
-    return new TupleOfflineStorageNameService(searchTupleOfflineServiceName);
-}
 
 // Define the child routes for this plugin
 export const pluginRoutes: Routes = [
@@ -84,18 +72,6 @@ export const pluginRoutes: Routes = [
     ],
     exports: [],
     providers: [
-        TupleActionPushOfflineService, TupleActionPushService, {
-            provide: TupleActionPushNameService,
-            useFactory: tupleActionPushNameServiceFactory
-        },
-        TupleOfflineStorageService, {
-            provide: TupleOfflineStorageNameService,
-            useFactory: tupleOfflineStorageNameServiceFactory
-        },
-        TupleDataObserverService, TupleDataOfflineObserverService, {
-            provide: TupleDataObservableNameService,
-            useFactory: tupleDataObservableNameServiceFactory
-        },
     ],
     declarations: [SearchComponent, FindComponent, ResultComponent]
 })
