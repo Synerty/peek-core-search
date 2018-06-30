@@ -1,7 +1,7 @@
 import logging
 
 from peek_plugin_search._private.PluginNames import searchTuplePrefix
-from sqlalchemy import Column
+from sqlalchemy import Column, BigInteger
 from sqlalchemy import Integer, String
 from sqlalchemy.sql.schema import Index, ForeignKey
 
@@ -17,7 +17,7 @@ class SearchIndex(Tuple, DeclarativeBase):
     __tablename__ = 'SearchIndex'
     __tupleType__ = searchTuplePrefix + 'SearchIndexTable'
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
 
     chunkKey = Column(Integer, nullable=False)
     keyword = Column(String, nullable=False)

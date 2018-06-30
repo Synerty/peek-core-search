@@ -34,6 +34,7 @@ def reindexSearchObject(objectsToIndex: List[ObjectToIndexTuple]) -> None:
     queueTable = SearchIndexCompilerQueue.__table__
 
     startTime = datetime.now(pytz.utc)
+
     newSearchIndexes = []
     objectIds = []
     searchIndexChunksToQueue = set()
@@ -42,8 +43,8 @@ def reindexSearchObject(objectsToIndex: List[ObjectToIndexTuple]) -> None:
         newSearchIndexes.extend(_indexObject(objectToIndex))
         objectIds.append(objectToIndex.id)
 
+    newIdGen = CeleryDbConn.prefetchDeclarativeIds(SearchIndex, len(newSearchIndexes))
     for newSearchIndex in newSearchIndexes:
-        newIdGen = CeleryDbConn.prefetchDeclarativeIds(SearchIndex, len(newSearchIndexes))
         newSearchIndex.id = next(newIdGen)
         searchIndexChunksToQueue.add(newSearchIndex.chunkKey)
 
@@ -60,17 +61,9 @@ def reindexSearchObject(objectsToIndex: List[ObjectToIndexTuple]) -> None:
         for result in results:
             searchIndexChunksToQueue.add(result.chunkKey)
 
-        for newSearchIndex in newSearchIndexes:
-            newIdGen = CeleryDbConn.prefetchDeclarativeIds(SearchIndex,
-                                                           len(newSearchIndexes))
-            newSearchIndex.id = next(newIdGen)
-            searchIndexChunksToQueue.add(newSearchIndex.chunkKey)
-
         if objectIds:
-            conn.execute(searchIndexTable.delete()
-                         .where(searchIndexTable.c.objectId.in_(objectIds)))
-            transaction.commit()
-            transaction = conn.begin()
+            conn.execute(searchIndexTable
+                         .delete(searchIndexTable.c.objectId.in_(objectIds)))
 
         if newSearchIndexes:
             logger.debug("Inserting %s SearchIndex", len(newSearchIndexes))
@@ -83,7 +76,7 @@ def reindexSearchObject(objectsToIndex: List[ObjectToIndexTuple]) -> None:
                 [dict(chunkKey=k) for k in searchIndexChunksToQueue]
             )
 
-        if newSearchIndexes or searchIndexChunksToQueue:
+        if newSearchIndexes or searchIndexChunksToQueue or objectIds:
             transaction.commit()
         else:
             transaction.rollback()
