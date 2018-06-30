@@ -338,6 +338,7 @@ export class PrivateSearchObjectLoaderService extends ComponentLifecycleEventEmi
             return this.getObjectsWhenReady(objectTypeId, objectIds);
 
         return this.isReadyObservable()
+            .first()
             .toPromise()
             .then(() => this.getObjectsWhenReady(objectTypeId, objectIds));
     }

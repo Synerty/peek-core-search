@@ -157,7 +157,10 @@ export class SearchService extends ComponentLifecycleEventEmitter {
 
             let isOnlinePromise: any = this.vortexStatusService.snapshot.isOnline ?
                 Promise.resolve() :
-                this.vortexStatusService.isOnline.filter(online => online).toPromise();
+                this.vortexStatusService.isOnline
+                    .filter(online => online)
+                    .first()
+                    .toPromise();
 
             return isOnlinePromise
                 .then(() => this.tupleService.offlineObserver.pollForTuples(ts, false))

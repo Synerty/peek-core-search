@@ -340,6 +340,7 @@ export class PrivateSearchIndexLoaderService extends ComponentLifecycleEventEmit
             return this.getObjectIdsWhenReady(propertyName, keywords);
 
         return this.isReadyObservable()
+            .first()
             .toPromise()
             .then(() => this.getObjectIdsWhenReady(propertyName, keywords));
     }
