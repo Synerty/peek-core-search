@@ -32,8 +32,8 @@ class SearchObjectChunkCompilerQueueController:
     FETCH_SIZE = 4
     PERIOD = 0.200
 
-    QUEUE_MAX = 12
-    QUEUE_MIN = 0
+    QUEUE_MAX = 20
+    QUEUE_MIN = 8
 
     def __init__(self, dbSessionCreator,
                  statusController: StatusController,

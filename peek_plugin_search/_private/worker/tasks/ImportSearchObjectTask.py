@@ -363,8 +363,7 @@ def _insertObjectRoutes(newSearchObjects: List[ImportSearchObjectTuple],
             conn.execute(searchObjectRoute.insert(), inserts)
 
         if importHashSet or inserts:
-            pass
-            # transaction.commit()
+            transaction.commit()
         else:
             transaction.rollback()
 
