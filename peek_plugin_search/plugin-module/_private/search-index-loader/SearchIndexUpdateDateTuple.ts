@@ -6,6 +6,9 @@ import {searchTuplePrefix} from "../PluginNames";
 export class SearchIndexUpdateDateTuple extends Tuple {
     public static readonly tupleName = searchTuplePrefix + "SearchIndexUpdateDateTuple";
 
+    // Improve performance of the JSON serialisation
+    protected _rawJonableFields = ['updateDateByChunkKey'];
+
     initialLoadComplete: boolean = false;
     updateDateByChunkKey: {} = {};
 
