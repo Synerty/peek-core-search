@@ -1,4 +1,4 @@
-import json
+import logging
 import logging
 import string
 from collections import namedtuple
@@ -34,30 +34,35 @@ def reindexSearchObject(objectsToIndex: List[ObjectToIndexTuple]) -> None:
     queueTable = SearchIndexCompilerQueue.__table__
 
     startTime = datetime.now(pytz.utc)
+    newSearchIndexes = []
+    objectIds = []
+    searchIndexChunksToQueue = set()
+
+    for objectToIndex in objectsToIndex:
+        newSearchIndexes.extend(_indexObject(objectToIndex))
+        objectIds.append(objectToIndex.id)
+
+    for newSearchIndex in newSearchIndexes:
+        newIdGen = CeleryDbConn.prefetchDeclarativeIds(SearchIndex, len(newSearchIndexes))
+        newSearchIndex.id = next(newIdGen)
+        searchIndexChunksToQueue.add(newSearchIndex.chunkKey)
 
     engine = CeleryDbConn.getDbEngine()
     conn = engine.connect()
     transaction = conn.begin()
     try:
-        newSearchIndexes = []
-        objectIds = []
-        searchIndexChunksToQueue = set()
-
-        for objectToIndex in objectsToIndex:
-            newSearchIndexes.extend(_indexObject(objectToIndex))
-            objectIds.append(objectToIndex.id)
 
         results = conn.execute(select(
             columns=[searchIndexTable.c.chunkKey],
             whereclause=searchIndexTable.c.objectId.in_(objectIds)
         ))
 
-
         for result in results:
             searchIndexChunksToQueue.add(result.chunkKey)
 
         for newSearchIndex in newSearchIndexes:
-            newIdGen = CeleryDbConn.prefetchDeclarativeIds(SearchIndex, len(newSearchIndexes))
+            newIdGen = CeleryDbConn.prefetchDeclarativeIds(SearchIndex,
+                                                           len(newSearchIndexes))
             newSearchIndex.id = next(newIdGen)
             searchIndexChunksToQueue.add(newSearchIndex.chunkKey)
 
