@@ -34,14 +34,15 @@ export class SearchCfgComponent extends ComponentLifecycleEventEmitter {
         this.indexStatus = this.searchIndexLoader.status();
         this.searchIndexLoader.statusObservable()
             .takeUntil(this.onDestroyEvent)
-            .subscribe( value => this.indexStatus = value);
+            .subscribe(value => this.indexStatus = value);
 
         this.objectStatus = this.searchObjectLoader.status();
         this.searchObjectLoader.statusObservable()
             .takeUntil(this.onDestroyEvent)
-            .subscribe( value => this.objectStatus = value);
+            .subscribe(value => this.objectStatus = value);
 
-        this.tupleService.offlineObserver.subscribeToTupleSelector(this.offlineTs)
+        this.tupleService.offlineObserver
+            .subscribeToTupleSelector(this.offlineTs, false, false, true)
             .takeUntil(this.onDestroyEvent)
             .subscribe((tuples: OfflineConfigTuple[]) => {
                 if (tuples.length == 0) {

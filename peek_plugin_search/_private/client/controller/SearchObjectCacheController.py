@@ -26,7 +26,7 @@ class SearchObjectCacheController:
 
     """
 
-    LOAD_CHUNK = 50
+    LOAD_CHUNK = 32
 
     def __init__(self, clientId: str):
         self._clientId = clientId
