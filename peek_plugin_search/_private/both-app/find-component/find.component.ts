@@ -19,7 +19,7 @@ import {Ng2BalloonMsgService} from "@synerty/ng2-balloon-msg";
 
 @Component({
     selector: 'plugin-search-find',
-    templateUrl: 'find.component.web.html',
+    templateUrl: 'find.component.mweb.html',
     moduleId: module.id
 })
 export class FindComponent extends ComponentLifecycleEventEmitter {

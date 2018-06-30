@@ -1,0 +1,26 @@
+<div class="peek-tables-section">
+    <table class="table">
+        <thead>
+        <tr class="tr">
+            <th class="tr">{{resultObject.key}}</th>
+            <th class="tr">{{resultObject.objectType.title}}</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr *ngFor="let prop of properties; odd as odd; even as even"
+            [class.bg-odd]="odd"
+            [class.bg-even]="even">
+            <td [class.bg-odd]="odd" [class.bg-even]="even">{{prop.title}}
+            </td>
+            <td [class.bg-odd]="odd" [class.bg-even]="even" colspan="2">{{prop.value}}
+            </td>
+        </tr>
+        <tr *ngFor="let item of resultObject.routes" class="tr">
+            <td class="td" colspan="3">
+                <button class="btn btn-block" (click)="navTo(item)">{{item.title}}
+                </button>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</div>

@@ -24,7 +24,7 @@ interface PropT {
 
 @Component({
     selector: 'plugin-search-result',
-    templateUrl: 'result.component.web.html',
+    templateUrl: 'result.component.mweb.html',
     moduleId: module.id
 })
 export class ResultComponent extends ComponentLifecycleEventEmitter implements OnInit {
