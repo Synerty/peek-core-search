@@ -7,7 +7,7 @@ export class SearchIndexUpdateDateTuple extends Tuple {
     public static readonly tupleName = searchTuplePrefix + "SearchIndexUpdateDateTuple";
 
     // Improve performance of the JSON serialisation
-    protected _rawJonableFields = ['updateDateByChunkKey'];
+    protected _rawJonableFields = ['initialLoadComplete', 'updateDateByChunkKey'];
 
     initialLoadComplete: boolean = false;
     updateDateByChunkKey: {} = {};

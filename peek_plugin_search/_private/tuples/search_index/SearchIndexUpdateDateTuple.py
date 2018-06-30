@@ -14,5 +14,8 @@ class SearchIndexUpdateDateTuple(Tuple):
     """
     __tupleType__ = searchTuplePrefix + "SearchIndexUpdateDateTuple"
 
+    # Improve performance of the JSON serialisation
+    __rawJonableFields__ = ('initialLoadComplete', 'updateDateByChunkKey')
+
     initialLoadComplete: bool = TupleField()
     updateDateByChunkKey: Dict[str, str] = TupleField({})
