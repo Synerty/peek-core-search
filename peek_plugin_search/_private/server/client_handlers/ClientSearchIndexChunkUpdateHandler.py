@@ -48,6 +48,11 @@ class ClientSearchIndexChunkUpdateHandler:
         if not chunkKeys:
             return
 
+        if peekClientName not in VortexFactory.getRemoteVortexName():
+            logger.debug("No clients are online to send the search index chunk to, %s",
+                         chunkKeys)
+            return
+
         def send(vortexMsg: bytes):
             if vortexMsg:
                 VortexFactory.sendVortexMsg(
@@ -58,11 +63,12 @@ class ClientSearchIndexChunkUpdateHandler:
         d.addCallback(send)
         d.addErrback(self._sendErrback, chunkKeys)
 
-    def _sendErrback(self, failure, indexBucket):
+    def _sendErrback(self, failure, chunkKeys):
 
         if failure.check(NoVortexException):
             logger.debug(
-                "No clients are online to send the grid to, %s", indexBucket)
+                "No clients are online to send the search index chunk to, %s",
+                chunkKeys)
             return
 
         vortexLogFailure(failure, logger)
