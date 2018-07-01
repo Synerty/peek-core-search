@@ -16,7 +16,7 @@ from peek_plugin_search._private.worker.tasks._CalcChunkKey import makeChunkKeyF
 
 logger = logging.getLogger(__name__)
 
-ObjectToIndexTuple = namedtuple("ObjectToIndexTuple", ["id", "key", "props"])
+ObjectToIndexTuple = namedtuple("ObjectToIndexTuple", ["id", "props"])
 
 
 def removeObjectIdsFromSearchIndex(deletedObjectIds: List[int]) -> None:

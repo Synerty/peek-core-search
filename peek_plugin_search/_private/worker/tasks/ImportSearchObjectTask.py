@@ -154,12 +154,13 @@ def _insertOrUpdateObjects(newSearchObjects: List[ImportSearchObjectTuple],
 
     engine = CeleryDbConn.getDbEngine()
     conn = engine.connect()
+    transaction = conn.begin()
 
     try:
-        objectsToIndex: Dict[int, ObjectToIndexTuple] = {}
-        objectIdByKey: Dict[str, int] = {}
-
-        objectKeys = [o.key for o in newSearchObjects]
+        objectKeys = set(
+            [o.key for o in newSearchObjects]
+            + [o.key.lower() for o in newSearchObjects]
+        )
         chunkKeysForQueue: Set[int] = set()
 
         # Query existing objects
@@ -169,33 +170,33 @@ def _insertOrUpdateObjects(newSearchObjects: List[ImportSearchObjectTuple],
             whereclause=searchObjectTable.c.key.in_(objectKeys)
         )))
 
-        foundObjectByKey = {o.key: o for o in results}
+        createdObjectByKey = {o.key.lower(): o for o in results}
         del results
-
-    finally:
-        conn.close()
-
-    # Get the IDs that we need
-    newIdGen = CeleryDbConn.prefetchDeclarativeIds(
-        SearchObject, len(newSearchObjects) - len(foundObjectByKey)
-    )
-
-    conn = engine.connect()
-    transaction = conn.begin()
-    try:
+        del objectKeys
 
         # Create state arrays
+        objectsToIndex: Dict[int, ObjectToIndexTuple] = {}
+        objectIdByKey: Dict[str, int] = {}
         inserts = []
         propUpdates = []
         objectTypeUpdates = []
 
+        # Get the IDs that we need
+        newSearchObjectUniqueCount = len(set([o.key.lower() for o in newSearchObjects]))
+        newIdGen = CeleryDbConn.prefetchDeclarativeIds(
+            SearchObject, newSearchObjectUniqueCount - len(createdObjectByKey)
+        )
+
         # Work out which objects have been updated or need inserting
         for importObject in newSearchObjects:
+            originalImportObjectKey = importObject.key
+            importObject.key = importObject.key.lower()
+            loweredObjectKey = importObject.key
 
-            existingObject = foundObjectByKey.get(importObject.key)
+            existingObject = createdObjectByKey.get(loweredObjectKey)
             importObjectTypeId = objectTypeIdsByName[importObject.objectType]
 
-            propsWithKey = dict(key=importObject.key)
+            propsWithKey = dict(key=originalImportObjectKey)
 
             if importObject.properties:
                 if existingObject and existingObject.propertiesJson:
@@ -223,21 +224,24 @@ def _insertOrUpdateObjects(newSearchObjects: List[ImportSearchObjectTuple],
                 id_ = next(newIdGen)
                 existingObject = SearchObject(
                     id=id_,
-                    key=importObject.key,
+                    key=originalImportObjectKey,
                     objectTypeId=importObjectTypeId,
                     propertiesJson=propsStr,
                     chunkKey=makeChunkKeyFromInt(id_)
                 )
                 inserts.append(existingObject.tupleToSqlaBulkInsertDict())
 
+                # Add our made up object to the created list, the logic of this loop
+                # will merge and subsequent objects if they contain prop updates, etc
+                createdObjectByKey[loweredObjectKey] = existingObject
+
             if searchIndexUpdateNeeded:
                 objectsToIndex[existingObject.id] = ObjectToIndexTuple(
                     id=existingObject.id,
-                    key=existingObject.key,
                     props=propsWithKey
                 )
 
-            objectIdByKey[existingObject.key] = existingObject.id
+            objectIdByKey[loweredObjectKey] = existingObject.id
             chunkKeysForQueue.add(existingObject.chunkKey)
 
         # Insert the Search Objects
