@@ -29,11 +29,11 @@ class SearchObjectChunkCompilerQueueController:
 
     """
 
-    FETCH_SIZE = 4
-    PERIOD = 0.200
+    FETCH_SIZE = 10
+    PERIOD = 5.000
 
-    QUEUE_MAX = 20
-    QUEUE_MIN = 8
+    QUEUE_MAX = 10
+    QUEUE_MIN = 0
 
     def __init__(self, dbSessionCreator,
                  statusController: StatusController,
