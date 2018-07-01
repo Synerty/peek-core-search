@@ -154,14 +154,12 @@ def _insertOrUpdateObjects(newSearchObjects: List[ImportSearchObjectTuple],
 
     engine = CeleryDbConn.getDbEngine()
     conn = engine.connect()
-    transaction = conn.begin()
 
     try:
         objectKeys = set(
             [o.key for o in newSearchObjects]
             + [o.key.lower() for o in newSearchObjects]
         )
-        chunkKeysForQueue: Set[int] = set()
 
         # Query existing objects
         results = list(conn.execute(select(
@@ -174,18 +172,28 @@ def _insertOrUpdateObjects(newSearchObjects: List[ImportSearchObjectTuple],
         del results
         del objectKeys
 
+    finally:
+        conn.close()
+
+    # Get the IDs that we need
+    newSearchObjectUniqueCount = len(set([o.key.lower() for o in newSearchObjects]))
+    newIdGen = CeleryDbConn.prefetchDeclarativeIds(
+        SearchObject, newSearchObjectUniqueCount - len(createdObjectByKey)
+    )
+    del newSearchObjectUniqueCount
+
+    conn = engine.connect()
+    transaction = conn.begin()
+
+    try:
+
         # Create state arrays
         objectsToIndex: Dict[int, ObjectToIndexTuple] = {}
         objectIdByKey: Dict[str, int] = {}
         inserts = []
         propUpdates = []
         objectTypeUpdates = []
-
-        # Get the IDs that we need
-        newSearchObjectUniqueCount = len(set([o.key.lower() for o in newSearchObjects]))
-        newIdGen = CeleryDbConn.prefetchDeclarativeIds(
-            SearchObject, newSearchObjectUniqueCount - len(createdObjectByKey)
-        )
+        chunkKeysForQueue: Set[int] = set()
 
         # Work out which objects have been updated or need inserting
         for importObject in newSearchObjects:
@@ -343,12 +351,12 @@ def _insertObjectRoutes(newSearchObjects: List[ImportSearchObjectTuple],
                 uniqueRouteStr = '%s.%s' % (objectId, impRoute.routeTitle)
 
                 if uniqueRouteStr in existingRoutes:
-                    logger.warning("A duplicate route exists in another"
+                    logger.debug("A duplicate route exists in another"
                                    " import group\n%s\n%s",
                                    existingRoutes[uniqueRouteStr], routeInsert)
 
                 elif uniqueRouteStr in newRoutes:
-                    logger.warning("Duplicate route titles defined in this"
+                    logger.debug("Duplicate route titles defined in this"
                                    " import group\n%s\n%s",
                                    newRoutes[uniqueRouteStr], routeInsert)
 

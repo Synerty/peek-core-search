@@ -32,4 +32,5 @@ class SearchIndex(Tuple, DeclarativeBase):
         Index("idx_SearchIndex_quick_query",
               chunkKey, keyword, propertyName, objectId,
               unique=True),
+        Index("idx_SearchIndex_objectId", objectId), # For foreign key
     )

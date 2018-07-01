@@ -50,8 +50,9 @@ class ClientSearchObjectResultTupleProvider(TuplesProviderABC):
         foundObjectIdCounts: Dict[int, int] = defaultdict(lambda: 0)
         for chunkKey, subKeys in keysByChunkKey.items():
             encodedChunk = self._searchIndexCacheHandler.searchIndex(chunkKey)
-            for objId in self._getObjectIds(encodedChunk, propertyName, subKeys):
-                foundObjectIdCounts[objId] += 1
+            if encodedChunk:
+                for objId in self._getObjectIds(encodedChunk, propertyName, subKeys):
+                    foundObjectIdCounts[objId] += 1
 
         # Return all the object IDs that have the most keyword matches
         foundObjectIds: List[int] = []
@@ -72,9 +73,10 @@ class ClientSearchObjectResultTupleProvider(TuplesProviderABC):
         foundObjects: List[SearchResultObjectTuple] = []
         for chunkKey, subObjectIds in objectIdsByChunkKey.items():
             encodedChunk = self._searchObjectCacheHandler.searchObject(chunkKey)
-            foundObjects += self._getObjects(
-                encodedChunk, objectTypeId, subObjectIds
-            )
+            if encodedChunk:
+                foundObjects += self._getObjects(
+                    encodedChunk, objectTypeId, subObjectIds
+                )
 
         # Create the vortex message
         return Payload(filt, tuples=foundObjects).makePayloadEnvelope().toVortexMsg()
