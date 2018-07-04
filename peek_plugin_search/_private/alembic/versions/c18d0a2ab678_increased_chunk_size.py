@@ -53,7 +53,7 @@ def upgrade():
     session.commit()
 
     for item in session.query(__SearchObject):
-        item.chunkKey = makeSearchObjectChunkKey(item.key)
+        item.chunkKey = makeSearchObjectChunkKey(item.id)
 
     session.commit()
 
