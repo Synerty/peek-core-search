@@ -2,8 +2,11 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+INDEX_BUCKET_COUNT = 8192
+OBJECT_BUCKET_COUNT = 8192
 
-def makeChunkKeyFromString(key: str) -> int:
+
+def makeSearchIndexChunkKey(key: str) -> int:
     """ Make Chunk Key
 
     This is simple, and provides a reasonable distribution
@@ -22,12 +25,12 @@ def makeChunkKeyFromString(key: str) -> int:
         bucket = ((bucket << 5) - bucket) + ord(char)
         bucket = bucket | 0  # This is in the javascript code.
 
-    bucket = bucket & 1023  # 1024 buckets
+    bucket = bucket & (INDEX_BUCKET_COUNT - 1)
 
     return bucket
 
 
-def makeChunkKeyFromInt(key: int) -> int:
+def makeSearchObjectChunkKey(key: int) -> int:
     """ Make Chunk Key
 
     This is simple, and provides a reasonable distribution
@@ -41,6 +44,6 @@ def makeChunkKeyFromInt(key: int) -> int:
     if key is None:
         raise Exception("key is None")
 
-    bucket = key & 1023  # 1024 buckets
+    bucket = key & (OBJECT_BUCKET_COUNT - 1)
 
     return bucket

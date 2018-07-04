@@ -19,7 +19,7 @@ from peek_plugin_search._private.storage.SearchPropertyTuple import SearchProper
 from peek_plugin_search._private.worker.CeleryApp import celeryApp
 from peek_plugin_search._private.worker.tasks.ImportSearchIndexTask import \
     ObjectToIndexTuple, reindexSearchObject
-from peek_plugin_search._private.worker.tasks._CalcChunkKey import makeChunkKeyFromInt
+from peek_plugin_search._private.worker.tasks._CalcChunkKey import makeSearchObjectChunkKey
 from peek_plugin_search.tuples.ImportSearchObjectTuple import ImportSearchObjectTuple
 from vortex.Payload import Payload
 
@@ -235,7 +235,7 @@ def _insertOrUpdateObjects(newSearchObjects: List[ImportSearchObjectTuple],
                     key=originalImportObjectKey,
                     objectTypeId=importObjectTypeId,
                     propertiesJson=propsStr,
-                    chunkKey=makeChunkKeyFromInt(id_)
+                    chunkKey=makeSearchObjectChunkKey(id_)
                 )
                 inserts.append(existingObject.tupleToSqlaBulkInsertDict())
 

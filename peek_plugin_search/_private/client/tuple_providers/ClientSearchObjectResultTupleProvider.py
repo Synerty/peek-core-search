@@ -19,8 +19,8 @@ from peek_plugin_search._private.tuples.search_object.SearchResultObjectRouteTup
     SearchResultObjectRouteTuple
 from peek_plugin_search._private.tuples.search_object.SearchResultObjectTuple import \
     SearchResultObjectTuple
-from peek_plugin_search._private.worker.tasks._CalcChunkKey import makeChunkKeyFromString, \
-    makeChunkKeyFromInt
+from peek_plugin_search._private.worker.tasks._CalcChunkKey import makeSearchIndexChunkKey, \
+    makeSearchObjectChunkKey
 from vortex.DeferUtil import deferToThreadWrapWithLogger
 from vortex.Payload import Payload
 from vortex.TupleSelector import TupleSelector
@@ -45,7 +45,7 @@ class ClientSearchObjectResultTupleProvider(TuplesProviderABC):
         # GET THE OBJECT IDS FROM KEYWORD
         keysByChunkKey = defaultdict(list)
         for keyword in keywords:
-            keysByChunkKey[makeChunkKeyFromString(keyword)].append(keyword)
+            keysByChunkKey[makeSearchIndexChunkKey(keyword)].append(keyword)
 
         foundObjectIdCounts: Dict[int, int] = defaultdict(lambda: 0)
         for chunkKey, subKeys in keysByChunkKey.items():
@@ -68,7 +68,7 @@ class ClientSearchObjectResultTupleProvider(TuplesProviderABC):
         # GET OBJECTS
         objectIdsByChunkKey = defaultdict(list)
         for objectId in foundObjectIds:
-            objectIdsByChunkKey[makeChunkKeyFromInt(objectId)].append(objectId)
+            objectIdsByChunkKey[makeSearchObjectChunkKey(objectId)].append(objectId)
 
         foundObjects: List[SearchResultObjectTuple] = []
         for chunkKey, subObjectIds in objectIdsByChunkKey.items():

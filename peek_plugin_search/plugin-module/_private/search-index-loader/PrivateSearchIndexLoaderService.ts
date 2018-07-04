@@ -66,7 +66,7 @@ class UpdateDateTupleSelector extends TupleSelector {
 // ----------------------------------------------------------------------------
 /** hash method
  */
-let BUCKET_COUNT = 1024;
+let INDEX_BUCKET_COUNT = 8192;
 
 function keywordChunk(keyword: string): number {
     /** keyword
@@ -91,7 +91,7 @@ function keywordChunk(keyword: string): number {
         bucket |= 0; // Convert to 32bit integer
     }
 
-    bucket = bucket & (BUCKET_COUNT - 1); // 1024 buckets
+    bucket = bucket & (INDEX_BUCKET_COUNT - 1);
 
     return bucket;
 }

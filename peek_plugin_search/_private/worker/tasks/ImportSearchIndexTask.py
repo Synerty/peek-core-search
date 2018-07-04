@@ -12,7 +12,7 @@ from peek_plugin_base.worker import CeleryDbConn
 from peek_plugin_search._private.storage.SearchIndex import SearchIndex
 from peek_plugin_search._private.storage.SearchIndexCompilerQueue import \
     SearchIndexCompilerQueue
-from peek_plugin_search._private.worker.tasks._CalcChunkKey import makeChunkKeyFromString
+from peek_plugin_search._private.worker.tasks._CalcChunkKey import makeSearchIndexChunkKey
 
 logger = logging.getLogger(__name__)
 
@@ -127,7 +127,7 @@ def _indexObject(objectToIndex: ObjectToIndexTuple) -> List[SearchIndex]:
         for token in tokens:
             searchIndexes.append(
                 SearchIndex(
-                    chunkKey=makeChunkKeyFromString(token),
+                    chunkKey=makeSearchIndexChunkKey(token),
                     keyword=token,
                     propertyName=propKey,
                     objectId=objectToIndex.id

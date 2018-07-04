@@ -71,7 +71,7 @@ class UpdateDateTupleSelector extends TupleSelector {
 // ----------------------------------------------------------------------------
 /** hash method
  */
-let BUCKET_COUNT = 1024;
+let OBJECT_BUCKET_COUNT = 8192;
 
 function objectIdChunk(objectId: number): number {
     /** Object ID Chunk
@@ -89,8 +89,7 @@ function objectIdChunk(objectId: number): number {
     if (objectId == null)
         throw new Error("objectId None or zero length");
 
-    // 1024 buckets
-    return objectId & (BUCKET_COUNT - 1);
+    return objectId & (OBJECT_BUCKET_COUNT - 1);
 }
 
 
