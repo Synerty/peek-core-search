@@ -1,36 +1,35 @@
-<StackLayout>
-    <GridLayout columns="1*, 4*" rows="auto">
-        <Label class="h3" col="1" [text]="resultObject.key"></Label>
-        <Label class="h3" col="2" [text]="resultObject.objectType.title"></Label>
+<StackLayout class="peek-tables-section">
+    <GridLayout columns="2*, 3*" rows="auto" class="tr">
+        <Label class="td" col="0" [text]="resultObject.key"></Label>
+        <Label class="td" col="1" [text]="resultObject.objectType.title"></Label>
     </GridLayout>
 
-    <ListView [items]="properties">
-        <ng-template let-item="item" let-i="index" let-odd="odd" let-even="even">
-            <GridLayout [class.odd]="odd" [class.even]="even" columns="*, *" rows="auto">
-                <!-- Title -->
-                <Label class="h3 peek-field-data-text" row="0" col="0"
-                       textWrap="true"
-                       [text]="item.title"></Label>
-                <!-- Valie -->
-                <Label class="h3 peek-field-data-text" row="0" col="1"
-                       textWrap="true"
-                       [text]="item.value"></Label>
+    <StackLayout class="table">
+        <GridLayout *ngFor="let item of properties; odd as odd; even as even"
+                    class="tr" [class.bg-odd]="odd" [class.bg-even]="even"
+                    columns="2*, 3*" rows="auto">
+            <!-- Title -->
+            <Label class="td" row="0" col="0"
+                   textWrap="true"
+                   [text]="item.title"></Label>
+            <!-- Valie -->
+            <Label class="td" row="0" col="1"
+                   textWrap="true"
+                   [text]="item.value"></Label>
 
-            </GridLayout>
-        </ng-template>
-    </ListView>
+        </GridLayout>
 
-    <ListView [items]="resultObject.routes">
-        <ng-template let-item="item" let-i="index" let-odd="odd" let-even="even">
-            <StackLayout [class.odd]="odd" [class.even]="even">
-                <GridLayout columns="*" rows="auto">
-                    <!-- String -->
-                    <Label class="h3 peek-field-data-text" row="0" col="0"
-                           textWrap="true"
-                           [text]="item.title"></Label>
+    </StackLayout>
 
-                </GridLayout>
-            </StackLayout>
-        </ng-template>
-    </ListView>
+    <StackLayout>
+        <GridLayout *ngFor="let item of resultObject.routes; odd as odd; even as even">
+            <Button class="btn"
+                    textWrap="true"
+                    (tap)="navTo(item)"
+                    [text]="item.title">
+
+            </Button>
+        </GridLayout>
+
+    </StackLayout>
 </StackLayout>

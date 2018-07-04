@@ -1,33 +1,34 @@
-<StackLayout class="p-20">
+<StackLayout class="peek-details-section">
 
-    <GridLayout columns="*, auto" rows="auto">
-        <TextField class="input input-border"
+    <GridLayout columns="*, auto" rows="auto" class="peek-details-section">
+        <TextField  class="details-section-value editable"
                    autocorrect="false"
                    hint="search" [(ngModel)]="keywords"
                    returnKeyType="search"
                    returnPress="find()">
         </TextField>
 
-        <Button col="1" text="Find" (tap)="find()"
+        <Button class="btn fa"
+                col="1" text="Find" (tap)="find()"
                 [isEnabled]="!searchInProgress"
                 [class.nav-section-btn-disabled]="searchInProgress"></Button>
     </GridLayout>
 
     <!-- START SEARCH PROPERTY PICKER -->
-    <GridLayout columns="auto, *, auto" rows="auto">
-        <Label col="0" class="h3 p-15 text-left" text="Property:"></Label>
-        <ListPicker col="1"
+    <GridLayout columns="*, auto" rows="auto, auto">
+        <Label col="0" class="details-section-title" text="Property:"></Label>
+        <ListPicker col="0"
                     #propertyPicker class="p-15"
                     *ngIf="searchPropertyNsPicking"
                     [items]="searchPropertyStrings"
                     (selectedIndexChange)="nsSelectProperty(propertyPicker.selectedIndex)">
         </ListPicker>
-        <Label col="1"
-               class="h3 p-15"
+        <Label row="1" col="0"
+               class="details-section-value"
                *ngIf="!searchPropertyNsPicking"
                [text]="searchProperty.title"></Label>
         <!-- The edit / save buttons -->
-        <Button col="2"
+        <Button row="1" col="1"
                 class="btn fa"
                 [text]="nsEditPropertyFonticon() | fonticon"
                 (tap)="searchPropertyNsPicking = !searchPropertyNsPicking">
@@ -36,20 +37,20 @@
     <!-- END SEARCH PROPERTY PICKER -->
 
     <!-- START SEARCH OBJECT TYPE PICKER -->
-    <GridLayout columns="auto, *, auto" rows="auto">
-        <Label col="0" class="h3 p-15 text-left" text="Object Type:"></Label>
-        <ListPicker col="1"
+    <GridLayout columns="*, auto" rows="auto, auto">
+        <Label col="0" class="details-section-title" text="Object Type:"></Label>
+        <ListPicker col="0"
                     #objectTypePicker class="p-15"
                     *ngIf="searchObjectTypesNsPicking"
                     [items]="searchObjectTypeStrings"
                     (selectedIndexChange)="nsSelectObjectType(objectTypePicker.selectedIndex)">
         </ListPicker>
-        <Label col="1"
-               class="h3 p-15"
+        <Label row="1" col="0"
+               class="details-section-value"
                *ngIf="!searchObjectTypesNsPicking"
                [text]="searchObjectType.title"></Label>
         <!-- The edit / save buttons -->
-        <Button col="2"
+        <Button row="1" col="1"
                 class="btn fa"
                 [text]="nsEditObjectTypeFonticon() | fonticon"
                 (tap)="searchObjectTypesNsPicking = !searchObjectTypesNsPicking">
@@ -58,21 +59,17 @@
     <!-- END SEARCH OBJECT TYPE PICKER -->
 
 
-    <GridLayout columns="*" rows="auto">
-        <Label class="h3" col="0" text="Results"></Label>
-    </GridLayout>
 
     <Label *ngIf="noResults()" text="No results."></Label>
 
     <Label *ngIf="searchInProgress" text="Search in progress."></Label>
     <ActivityIndicator *ngIf="searchInProgress" [busy]="1"></ActivityIndicator>
 
-    <ListView [items]="resultObjects">
-        <ng-template let-item="item" let-i="index" let-odd="odd" let-even="even">
-            <GridLayout columns="*" rows="auto" [class.odd]="odd" [class.even]="even">
-                <plugin-search-result
-                        [resultObject]="item"></plugin-search-result>
-            </GridLayout>
-        </ng-template>
-    </ListView>
+    <GridLayout *ngIf="!noResults()">
+        <ListView [items]="resultObjects">
+            <ng-template let-item="item" let-i="index" let-odd="odd" let-even="even">
+                    <plugin-search-result [resultObject]="item"></plugin-search-result>
+            </ng-template>
+        </ListView>
+    </GridLayout>
 </StackLayout>
