@@ -30,9 +30,9 @@ class SearchIndexChunkCompilerQueueController:
     """
 
     FETCH_SIZE = 10
-    PERIOD = 5.000
+    PERIOD = 1.000
 
-    QUEUE_MAX = 10
+    QUEUE_MAX = 20
     QUEUE_MIN = 0
 
     def __init__(self, dbSessionCreator,
