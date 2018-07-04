@@ -163,7 +163,7 @@ export class PrivateSearchObjectLoaderService extends ComponentLifecycleEventEmi
         this._status.cacheForOfflineEnabled = this.offlineConfig.cacheChunksForOffline;
         this._status.initialLoadComplete = this.index.initialLoadComplete;
         this._status.loadProgress = Object.keys(this.index.updateDateByChunkKey).length;
-        this._status.loadTotal = BUCKET_COUNT;
+        this._status.loadTotal = OBJECT_BUCKET_COUNT;
         this._statusSubject.next(this._status);
     }
 

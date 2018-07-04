@@ -167,7 +167,7 @@ export class PrivateSearchIndexLoaderService extends ComponentLifecycleEventEmit
         this._status.cacheForOfflineEnabled = this.offlineConfig.cacheChunksForOffline;
         this._status.initialLoadComplete = this.index.initialLoadComplete;
         this._status.loadProgress = Object.keys(this.index.updateDateByChunkKey).length;
-        this._status.loadTotal = BUCKET_COUNT;
+        this._status.loadTotal = INDEX_BUCKET_COUNT;
         this._statusSubject.next(this._status);
     }
 
@@ -379,7 +379,7 @@ export class PrivateSearchIndexLoaderService extends ComponentLifecycleEventEmit
 
                 // Find object ids where all keywords match
                 for (let objectId of Object.keys(matchesByObjectId)) {
-                    if (matchesByObjectId[objectId] == results.length) {
+                    if (matchesByObjectId[objectId] == keywords.length) {
                         objectIds.push(parseInt(objectId));
                     }
                 }

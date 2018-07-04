@@ -3,7 +3,7 @@ import logging
 import string
 from collections import namedtuple
 from datetime import datetime
-from typing import List
+from typing import List, Set
 
 import pytz
 from sqlalchemy import select
@@ -105,6 +105,17 @@ def reindexSearchObject(objectsToIndex: List[ObjectToIndexTuple]) -> None:
 # lemmatizer = WordNetLemmatizer()
 
 
+def _splitKeywords(keywordStr:str) -> Set[str] :
+    # Lowercase the string
+    keywordStr = keywordStr.lower()
+
+    # Remove punctuation
+    tokens = ''.join([c for c in keywordStr if c not in string.punctuation])
+
+    tokens = set([w.strip() for w in tokens.split(' ') if w.strip()])
+    return tokens
+
+
 def _indexObject(objectToIndex: ObjectToIndexTuple) -> List[SearchIndex]:
     """ Index Object
 
@@ -120,11 +131,7 @@ def _indexObject(objectToIndex: ObjectToIndexTuple) -> List[SearchIndex]:
     searchIndexes = []
 
     for propKey, text in objectToIndex.props.items():
-        text = text.lower()
-        tokens = ''.join([c for c in text if c not in string.punctuation])
-        tokens = set([w.strip() for w in tokens.split(' ') if w.strip()])
-
-        for token in tokens:
+        for token in _splitKeywords(text):
             searchIndexes.append(
                 SearchIndex(
                     chunkKey=makeSearchIndexChunkKey(token),
@@ -147,3 +154,5 @@ def _indexObject(objectToIndex: ObjectToIndexTuple) -> List[SearchIndex]:
 #         }
 #     )
 #     print(_indexObject(objectToIndex))
+
+

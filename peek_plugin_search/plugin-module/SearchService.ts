@@ -23,6 +23,7 @@ import {PrivateSearchObjectLoaderService} from "./_private/search-object-loader"
 import {SearchResultObjectTuple} from "./SearchResultObjectTuple";
 import {SearchObjectTypeTuple} from "./SearchObjectTypeTuple";
 import {OfflineConfigTuple, SearchPropertyTuple, SearchTupleService} from "./_private";
+import {keywordSplitter} from "./_private/KeywordSplitter";
 
 
 export interface SearchPropT {
@@ -45,7 +46,6 @@ export interface SearchPropT {
 @Injectable()
 export class SearchService extends ComponentLifecycleEventEmitter {
     // From python string.punctuation
-    private punctuation = "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~";
 
     private offlineConfig: OfflineConfigTuple = new OfflineConfigTuple();
 
@@ -101,38 +101,14 @@ export class SearchService extends ComponentLifecycleEventEmitter {
             });
     }
 
+
     /** Split Keywords
-     *
-     * This MUST MATCH the code that runs in the worker
-     * peek_plugin_search/_private/worker/tasks/ImportSearchIndexTask.py
      *
      * @param {string} keywordStr: The keywords as one string
      * @returns {string[]} The keywords as an array
      */
     private splitKeywords(keywordStr: string): string[] {
-        // Lowercase the string
-        keywordStr = keywordStr.toLowerCase();
-
-        // Remove punctuation
-        let nonPunct = '';
-        for (let char of keywordStr) {
-            if (this.punctuation.indexOf(char) == -1)
-                nonPunct += char;
-        }
-
-        // Split the stirng into words
-        let words = nonPunct.split(' ');
-
-        // Strip the words
-        words = words.map((w: string) => w.replace(/^\s+|\s+$/g, ''));
-
-        // Filter out the empty words
-        words = words.filter((w: string) => w.length != 0);
-
-        // return - nicely commented
-        return words;
-
-
+        return keywordSplitter(keywordStr);
     }
 
 

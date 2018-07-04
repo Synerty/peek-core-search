@@ -56,7 +56,7 @@ class ClientSearchObjectResultTupleProvider(TuplesProviderABC):
 
         # Return all the object IDs that have the most keyword matches
         foundObjectIds: List[int] = []
-        maxCount = max(foundObjectIdCounts.values()) if foundObjectIdCounts else 0
+        maxCount = len(keywords)
 
         for objectId, maxObjectNum in foundObjectIdCounts.items():
             if maxObjectNum == maxCount:
