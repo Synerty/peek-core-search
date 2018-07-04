@@ -61,18 +61,20 @@ def upgrade():
     session.close()
 
     op.execute(' TRUNCATE TABLE pl_search."EncodedSearchIndexChunk" ')
+    op.execute(' TRUNCATE TABLE pl_search."SearchIndexCompilerQueue" ')
 
     op.execute('''INSERT INTO pl_search."SearchIndexCompilerQueue"
-                            (chunkKey")
-                            SELECT DISTINCT chunkKey"
+                            ("chunkKey")
+                            SELECT DISTINCT "chunkKey"
                             FROM pl_search."SearchIndex"
                          ''')
 
     op.execute(' TRUNCATE TABLE pl_search."EncodedSearchObjectChunk" ')
+    op.execute(' TRUNCATE TABLE pl_search."SearchObjectCompilerQueue" ')
 
     op.execute('''INSERT INTO pl_search."SearchObjectCompilerQueue"
-                            (chunkKey")
-                            SELECT DISTINCT chunkKey"
+                            ("chunkKey")
+                            SELECT DISTINCT "chunkKey"
                             FROM pl_search."SearchObject"
                          ''')
 
