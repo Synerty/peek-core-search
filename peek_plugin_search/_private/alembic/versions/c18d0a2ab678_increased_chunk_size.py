@@ -39,9 +39,8 @@ class __SearchObject(__DeclarativeBase):
     __tablename__ = 'SearchObject'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    modelSetId = Column(Integer)
-    key = Column(String)
-    chunkKey = Column(String)
+    key = Column(String, nullable=False)
+    chunkKey = Column(Integer, nullable=False)
 
 
 def upgrade():
