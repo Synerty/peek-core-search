@@ -43,19 +43,38 @@ class __SearchObject(__DeclarativeBase):
     chunkKey = Column(Integer, nullable=False)
 
 
+def _loadSearchObjects(session, _Declarative):
+    FETCH_SIZE = 5000
+    lastOffset = 0
+    while True:
+        rows = (
+            session.query(_Declarative)
+                .order_by(_Declarative.id)
+                .offset(lastOffset)
+                .limit(FETCH_SIZE)
+                .yield_per(FETCH_SIZE)
+                .all()
+        )
+        if not rows: return
+        yield rows
+        lastOffset += FETCH_SIZE
+
+
 def upgrade():
     bind = op.get_bind()
     session = sessionmaker()(bind=bind)
 
-    for item in session.query(__SearchIndex):
-        item.chunkKey = makeSearchIndexChunkKey(item.keyword)
+    for rows in _loadSearchObjects(session, __SearchIndex):
+        for item in rows:
+            item.chunkKey = makeSearchIndexChunkKey(item.keyword)
+        session.commit()
+        session.expunge_all()
 
-    session.commit()
-
-    for item in session.query(__SearchObject):
-        item.chunkKey = makeSearchObjectChunkKey(item.id)
-
-    session.commit()
+    for rows in _loadSearchObjects(session, __SearchObject):
+        for item in rows:
+            item.chunkKey = makeSearchObjectChunkKey(item.id)
+        session.commit()
+        session.expunge_all()
 
     session.close()
 
