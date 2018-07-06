@@ -9,6 +9,7 @@ Create Date: 2018-07-04 21:56:28.319589
 """
 
 # revision identifiers, used by Alembic.
+
 from sqlalchemy import MetaData, Integer, String, Column
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
@@ -25,6 +26,8 @@ from alembic import op
 
 __DeclarativeBase = declarative_base(metadata=MetaData(schema="pl_search"))
 
+import logging
+logger = logging.getLogger(__name__)
 
 class __SearchIndex(__DeclarativeBase):
     __tablename__ = 'SearchIndex'
@@ -56,6 +59,7 @@ def _loadSearchObjects(session, _Declarative):
                 .all()
         )
         if not rows: return
+        logger.info("Loading %s-%s for %s", lastOffset, lastOffset+FETCH_SIZE, _Declarative)
         yield rows
         lastOffset += FETCH_SIZE
 
