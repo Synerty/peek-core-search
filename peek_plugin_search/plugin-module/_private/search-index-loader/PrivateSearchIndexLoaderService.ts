@@ -109,8 +109,10 @@ function keywordChunk(keyword: string): number {
  */
 @Injectable()
 export class PrivateSearchIndexLoaderService extends ComponentLifecycleEventEmitter {
+    private UPDATE_CHUNK_FETCH_SIZE = 5;
 
     private index = new SearchIndexUpdateDateTuple();
+    private askServerChunks: SearchIndexUpdateDateTuple[] = [];
 
     private _hasLoaded = false;
 
@@ -145,6 +147,8 @@ export class PrivateSearchIndexLoaderService extends ComponentLifecycleEventEmit
             new TupleOfflineStorageNameService(searchIndexCacheStorageName)
         );
 
+        this.setupVortexSubscriptions();
+        this._notifyStatus();
     }
 
     isReady(): boolean {
@@ -166,8 +170,12 @@ export class PrivateSearchIndexLoaderService extends ComponentLifecycleEventEmit
     private _notifyStatus(): void {
         this._status.cacheForOfflineEnabled = this.offlineConfig.cacheChunksForOffline;
         this._status.initialLoadComplete = this.index.initialLoadComplete;
-        this._status.loadProgress = Object.keys(this.index.updateDateByChunkKey).length;
-        this._status.loadTotal = INDEX_BUCKET_COUNT;
+
+        let keys = Object.keys(this.index.updateDateByChunkKey);
+        this._status.loadProgress = keys.filter(
+            (key) => this.index.updateDateByChunkKey[key] != null
+        ).length;
+
         this._statusSubject.next(this._status);
     }
 
@@ -179,7 +187,8 @@ export class PrivateSearchIndexLoaderService extends ComponentLifecycleEventEmit
     private initialLoad(): void {
 
         this.storage.loadTuples(new UpdateDateTupleSelector())
-            .then((tuples: SearchIndexUpdateDateTuple[]) => {
+            .then((tuplesAny: any[]) => {
+                let tuples: SearchIndexUpdateDateTuple[] = tuplesAny;
                 if (tuples.length != 0) {
                     this.index = tuples[0];
 
@@ -190,10 +199,8 @@ export class PrivateSearchIndexLoaderService extends ComponentLifecycleEventEmit
 
                 }
 
-                this._notifyStatus();
-
-                this.setupVortexSubscriptions();
                 this.askServerForUpdates();
+                this._notifyStatus();
             });
 
         this._notifyStatus();
@@ -216,6 +223,12 @@ export class PrivateSearchIndexLoaderService extends ComponentLifecycleEventEmit
 
     }
 
+    private areWeTalkingToTheServer(): boolean {
+        return this.offlineConfig.cacheChunksForOffline
+            && this.vortexStatusService.snapshot.isOnline;
+    }
+
+
     /** Ask Server For Updates
      *
      * Tell the server the state of the chunks in our index and ask if there
@@ -223,15 +236,76 @@ export class PrivateSearchIndexLoaderService extends ComponentLifecycleEventEmit
      *
      */
     private askServerForUpdates() {
-        if (!this.offlineConfig.cacheChunksForOffline)
+        if (!this.areWeTalkingToTheServer()) return;
+
+
+        this.tupleService.observer
+            .pollForTuples(new UpdateDateTupleSelector())
+            .then((tuplesAny: any) => {
+                let serverIndex: SearchIndexUpdateDateTuple = tuplesAny[0];
+                let keys = Object.keys(serverIndex.updateDateByChunkKey);
+                let keysNeedingUpdate:string[] = [];
+
+                this._status.loadTotal = keys.length;
+
+                // Tuples is an array of strings
+                for (let chunkKey of keys) {
+                    if (!this.index.updateDateByChunkKey.hasOwnProperty(chunkKey)) {
+                        this.index.updateDateByChunkKey[chunkKey] = null;
+                        keysNeedingUpdate.push(chunkKey);
+
+                    } else if (this.index.updateDateByChunkKey[chunkKey]
+                        != serverIndex.updateDateByChunkKey[chunkKey]) {
+                        keysNeedingUpdate.push(chunkKey);
+                    }
+                }
+                this.queueChunksToAskServer(keysNeedingUpdate);
+            });
+    }
+
+
+    /** Queue Chunks To Ask Server
+     *
+     */
+    private queueChunksToAskServer(keysNeedingUpdate: string[]) {
+        if (!this.areWeTalkingToTheServer()) return;
+
+        this.askServerChunks = [];
+
+        let count = 0;
+        let indexChunk = new SearchIndexUpdateDateTuple();
+
+        for (let key of keysNeedingUpdate) {
+            indexChunk.updateDateByChunkKey[key] = this.index.updateDateByChunkKey[key];
+            count++;
+
+            if (count == this.UPDATE_CHUNK_FETCH_SIZE) {
+                this.askServerChunks.push(indexChunk);
+                count = 0;
+                indexChunk = new SearchIndexUpdateDateTuple();
+            }
+        }
+
+        if (count)
+            this.askServerChunks.push(indexChunk);
+
+        this.askServerForNextUpdateChunk();
+
+        this._status.lastCheck = new Date();
+        this._notifyStatus();
+    }
+
+    private askServerForNextUpdateChunk() {
+        if (!this.areWeTalkingToTheServer()) return;
+
+        if (this.askServerChunks.length == 0)
             return;
 
-        // There is no point talking to the server if it's offline
-        if (!this.vortexStatusService.snapshot.isOnline)
-            return;
-
-        let pl = new Payload(clientSearchIndexWatchUpdateFromDeviceFilt, [this.index]);
+        let indexChunk: SearchIndexUpdateDateTuple = this.askServerChunks.pop();
+        let pl = new Payload(clientSearchIndexWatchUpdateFromDeviceFilt, [indexChunk]);
         this.vortexService.sendPayload(pl);
+
+        this._status.lastCheck = new Date();
     }
 
 
@@ -241,30 +315,26 @@ export class PrivateSearchIndexLoaderService extends ComponentLifecycleEventEmit
      */
     private processSearchIndexesFromServer(payloadEnvelope: PayloadEnvelope) {
 
-        this._status.lastCheck = new Date();
-
         if (payloadEnvelope.result != null && payloadEnvelope.result != true) {
             console.log(`ERROR: ${payloadEnvelope.result}`);
-            return;
-        }
-
-        if (payloadEnvelope.filt["finished"] == true) {
-            this.index.initialLoadComplete = true;
-
-            this.storage.saveTuples(new UpdateDateTupleSelector(), [this.index])
-                .then(() => {
-                    this._hasLoaded = true;
-                    this._hasLoadedSubject.next();
-                    this._notifyStatus();
-                })
-                .catch(err => console.log(`ERROR : ${err}`));
-
             return;
         }
 
         payloadEnvelope
             .decodePayload()
             .then((payload: Payload) => this.storeSearchIndexPayload(payload))
+            .then(() => {
+                if (this.askServerChunks.length == 0) {
+                    this.index.initialLoadComplete = true;
+                    this._hasLoaded = true;
+                    this._hasLoadedSubject.next();
+
+                } else {
+                    this.askServerForNextUpdateChunk();
+
+                }
+                this._notifyStatus();
+            })
             .catch(e =>
                 `SearchIndexCache.processSearchIndexesFromServer failed: ${e}`
             );
@@ -273,13 +343,9 @@ export class PrivateSearchIndexLoaderService extends ComponentLifecycleEventEmit
 
     private storeSearchIndexPayload(payload: Payload) {
 
-        let encodedSearchIndexChunkTuples: EncodedSearchIndexChunkTuple[] = <EncodedSearchIndexChunkTuple[]>payload.tuples;
-
-        let tuplesToSave: EncodedSearchIndexChunkTuple[] = [];
-
-        for (let item of encodedSearchIndexChunkTuples) {
-            tuplesToSave.push(item);
-        }
+        let tuplesToSave: EncodedSearchIndexChunkTuple[] = <EncodedSearchIndexChunkTuple[]>payload.tuples;
+        if (tuplesToSave.length == 0)
+            return;
 
         // 2) Store the index
         this.storeSearchIndexChunkTuples(tuplesToSave)

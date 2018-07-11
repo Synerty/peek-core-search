@@ -2,8 +2,16 @@ from peek_plugin_search._private.client.controller.SearchIndexCacheController im
     SearchIndexCacheController
 from peek_plugin_search._private.client.controller.SearchObjectCacheController import \
     SearchObjectCacheController
+from peek_plugin_search._private.client.tuple_providers.ClientSearchIndexUpdateDateTupleProvider import \
+    ClientSearchIndexUpdateDateTupleProvider
 from peek_plugin_search._private.client.tuple_providers.ClientSearchObjectResultTupleProvider import \
     ClientSearchObjectResultTupleProvider
+from peek_plugin_search._private.client.tuple_providers.ClientSearchObjectUpdateDateTupleProvider import \
+    ClientSearchObjectUpdateDateTupleProvider
+from peek_plugin_search._private.tuples.search_index.SearchIndexUpdateDateTuple import \
+    SearchIndexUpdateDateTuple
+from peek_plugin_search._private.tuples.search_object.SearchObjectUpdateDateTuple import \
+    SearchObjectUpdateDateTuple
 from peek_plugin_search._private.tuples.search_object.SearchResultObjectTuple import \
     SearchResultObjectTuple
 from vortex.handler.TupleDataObservableProxyHandler import TupleDataObservableProxyHandler
@@ -30,3 +38,11 @@ def makeClientTupleDataObservableHandler(
         ClientSearchObjectResultTupleProvider(searchIndexCacheHandler,
                                               searchObjectCacheHandler)
     )
+
+    tupleObservable.addTupleProvider(
+        SearchIndexUpdateDateTuple.tupleName(),
+        ClientSearchIndexUpdateDateTupleProvider(searchIndexCacheHandler))
+
+    tupleObservable.addTupleProvider(
+        SearchObjectUpdateDateTuple.tupleName(),
+        ClientSearchObjectUpdateDateTupleProvider(searchObjectCacheHandler))

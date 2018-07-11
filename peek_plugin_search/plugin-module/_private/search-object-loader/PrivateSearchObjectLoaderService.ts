@@ -105,8 +105,10 @@ function objectIdChunk(objectId: number): number {
  */
 @Injectable()
 export class PrivateSearchObjectLoaderService extends ComponentLifecycleEventEmitter {
+    private UPDATE_CHUNK_FETCH_SIZE = 5;
 
     private index = new SearchObjectUpdateDateTuple();
+    private askServerChunks: SearchObjectUpdateDateTuple[] = [];
 
     private _hasLoaded = false;
 
@@ -141,6 +143,8 @@ export class PrivateSearchObjectLoaderService extends ComponentLifecycleEventEmi
             new TupleOfflineStorageNameService(searchObjectCacheStorageName)
         );
 
+        this.setupVortexSubscriptions();
+        this._notifyStatus();
     }
 
     isReady(): boolean {
@@ -162,8 +166,12 @@ export class PrivateSearchObjectLoaderService extends ComponentLifecycleEventEmi
     private _notifyStatus(): void {
         this._status.cacheForOfflineEnabled = this.offlineConfig.cacheChunksForOffline;
         this._status.initialLoadComplete = this.index.initialLoadComplete;
-        this._status.loadProgress = Object.keys(this.index.updateDateByChunkKey).length;
-        this._status.loadTotal = OBJECT_BUCKET_COUNT;
+
+        let keys = Object.keys(this.index.updateDateByChunkKey);
+        this._status.loadProgress = keys.filter(
+            (key) => this.index.updateDateByChunkKey[key] != null
+        ).length;
+
         this._statusSubject.next(this._status);
     }
 
@@ -175,7 +183,8 @@ export class PrivateSearchObjectLoaderService extends ComponentLifecycleEventEmi
     private initialLoad(): void {
 
         this.storage.loadTuples(new UpdateDateTupleSelector())
-            .then((tuples: SearchObjectUpdateDateTuple[]) => {
+            .then((tuplesAny: any[]) => {
+                let tuples: SearchObjectUpdateDateTuple[] = tuplesAny;
                 if (tuples.length != 0) {
                     this.index = tuples[0];
 
@@ -186,10 +195,8 @@ export class PrivateSearchObjectLoaderService extends ComponentLifecycleEventEmi
 
                 }
 
-                this._notifyStatus();
-
-                this.setupVortexSubscriptions();
                 this.askServerForUpdates();
+                this._notifyStatus();
             });
 
         this._notifyStatus();
@@ -201,7 +208,7 @@ export class PrivateSearchObjectLoaderService extends ComponentLifecycleEventEmi
         this.vortexService.createEndpointObservable(this, clientSearchObjectWatchUpdateFromDeviceFilt)
             .takeUntil(this.onDestroyEvent)
             .subscribe((payloadEnvelope: PayloadEnvelope) => {
-                this.processSearchObjectesFromServer(payloadEnvelope);
+                this.processSearchObjectsFromServer(payloadEnvelope);
             });
 
         // If the vortex service comes back online, update the watch grids.
@@ -212,6 +219,12 @@ export class PrivateSearchObjectLoaderService extends ComponentLifecycleEventEmi
 
     }
 
+    private areWeTalkingToTheServer(): boolean {
+        return this.offlineConfig.cacheChunksForOffline
+            && this.vortexStatusService.snapshot.isOnline;
+    }
+
+
     /** Ask Server For Updates
      *
      * Tell the server the state of the chunks in our index and ask if there
@@ -219,64 +232,117 @@ export class PrivateSearchObjectLoaderService extends ComponentLifecycleEventEmi
      *
      */
     private askServerForUpdates() {
-        if (!this.offlineConfig.cacheChunksForOffline)
-            return;
+        if (!this.areWeTalkingToTheServer()) return;
 
-        // There is no point talking to the server if it's offline
-        if (!this.vortexStatusService.snapshot.isOnline)
-            return;
 
-        let pl = new Payload(clientSearchObjectWatchUpdateFromDeviceFilt, [this.index]);
-        this.vortexService.sendPayload(pl);
+        this.tupleService.observer
+            .pollForTuples(new UpdateDateTupleSelector())
+            .then((tuplesAny: any) => {
+                let serverIndex: SearchObjectUpdateDateTuple = tuplesAny[0];
+                let keys = Object.keys(serverIndex.updateDateByChunkKey);
+                let keysNeedingUpdate:string[] = [];
+
+                this._status.loadTotal = keys.length;
+
+                // Tuples is an array of strings
+                for (let chunkKey of keys) {
+                    if (!this.index.updateDateByChunkKey.hasOwnProperty(chunkKey)) {
+                        this.index.updateDateByChunkKey[chunkKey] = null;
+                        keysNeedingUpdate.push(chunkKey);
+
+                    } else if (this.index.updateDateByChunkKey[chunkKey]
+                        != serverIndex.updateDateByChunkKey[chunkKey]) {
+                        keysNeedingUpdate.push(chunkKey);
+                    }
+                }
+                this.queueChunksToAskServer(keysNeedingUpdate);
+            });
     }
 
 
-    /** Process SearchObjectes From Server
+    /** Queue Chunks To Ask Server
+     *
+     */
+    private queueChunksToAskServer(keysNeedingUpdate: string[]) {
+        if (!this.areWeTalkingToTheServer()) return;
+
+        this.askServerChunks = [];
+
+        let count = 0;
+        let indexChunk = new SearchObjectUpdateDateTuple();
+
+        for (let key of keysNeedingUpdate) {
+            indexChunk.updateDateByChunkKey[key] = this.index.updateDateByChunkKey[key];
+            count++;
+
+            if (count == this.UPDATE_CHUNK_FETCH_SIZE) {
+                this.askServerChunks.push(indexChunk);
+                count = 0;
+                indexChunk = new SearchObjectUpdateDateTuple();
+            }
+        }
+
+        if (count)
+            this.askServerChunks.push(indexChunk);
+
+        this.askServerForNextUpdateChunk();
+
+        this._status.lastCheck = new Date();
+
+    }
+
+    private askServerForNextUpdateChunk() {
+        if (!this.areWeTalkingToTheServer()) return;
+
+        if (this.askServerChunks.length == 0)
+            return;
+
+        let indexChunk: SearchObjectUpdateDateTuple = this.askServerChunks.pop();
+        let pl = new Payload(clientSearchObjectWatchUpdateFromDeviceFilt, [indexChunk]);
+        this.vortexService.sendPayload(pl);
+
+        this._status.lastCheck = new Date();
+        this._notifyStatus();
+    }
+
+
+    /** Process SearchObjects From Server
      *
      * Process the grids the server has sent us.
      */
-    private processSearchObjectesFromServer(payloadEnvelope: PayloadEnvelope) {
-
-        this._status.lastCheck = new Date();
+    private processSearchObjectsFromServer(payloadEnvelope: PayloadEnvelope) {
 
         if (payloadEnvelope.result != null && payloadEnvelope.result != true) {
             console.log(`ERROR: ${payloadEnvelope.result}`);
             return;
         }
 
-        if (payloadEnvelope.filt["finished"] == true) {
-            this.index.initialLoadComplete = true;
-
-            this.storage.saveTuples(new UpdateDateTupleSelector(), [this.index])
-                .then(() => {
-                    this._hasLoaded = true;
-                    this._hasLoadedSubject.next();
-                    this._notifyStatus();
-                })
-                .catch(err => console.log(`ERROR : ${err}`));
-
-            return;
-        }
-
         payloadEnvelope
             .decodePayload()
             .then((payload: Payload) => this.storeSearchObjectPayload(payload))
+            .then(() => {
+                if (this.askServerChunks.length == 0) {
+                    this.index.initialLoadComplete = true;
+                    this._hasLoaded = true;
+                    this._hasLoadedSubject.next();
+
+                } else {
+                    this.askServerForNextUpdateChunk();
+
+                }
+                this._notifyStatus();
+            })
             .catch(e =>
-                `SearchObjectCache.processSearchObjectesFromServer failed: ${e}`
+                `SearchObjectCache.processSearchObjectsFromServer failed: ${e}`
             );
 
     }
 
     private storeSearchObjectPayload(payload: Payload) {
 
-        let encodedSearchObjectChunkTuples: EncodedSearchObjectChunkTuple[] = <EncodedSearchObjectChunkTuple[]>payload.tuples;
-
-        let tuplesToSave: EncodedSearchObjectChunkTuple[] = [];
-
-        for (let item of encodedSearchObjectChunkTuples) {
-            tuplesToSave.push(item);
-        }
-
+        let tuplesToSave: EncodedSearchObjectChunkTuple[] = <EncodedSearchObjectChunkTuple[]>payload.tuples;
+        if (tuplesToSave.length == 0)
+            return;
 
         // 2) Store the index
         this.storeSearchObjectChunkTuples(tuplesToSave)

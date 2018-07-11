@@ -2,19 +2,19 @@ import logging
 from collections import defaultdict
 from typing import List, Dict
 
+from twisted.internet.defer import DeferredList, inlineCallbacks, Deferred
+
+from peek_plugin_search._private.PluginNames import searchFilt
+from peek_plugin_search._private.client.controller.SearchObjectCacheController import \
+    SearchObjectCacheController
 from peek_plugin_search._private.tuples.search_object.SearchObjectUpdateDateTuple import \
     SearchObjectUpdateDateTuple
-from twisted.internet.defer import DeferredList, inlineCallbacks, Deferred
 from vortex.DeferUtil import vortexLogFailure
 from vortex.Payload import Payload
 from vortex.PayloadEndpoint import PayloadEndpoint
 from vortex.PayloadEnvelope import PayloadEnvelope
 from vortex.VortexABC import SendVortexMsgResponseCallable
 from vortex.VortexFactory import VortexFactory
-
-from peek_plugin_search._private.PluginNames import searchFilt
-from peek_plugin_search._private.client.controller.SearchObjectCacheController import \
-    SearchObjectCacheController
 
 logger = logging.getLogger(__name__)
 
@@ -101,7 +101,8 @@ class SearchObjectCacheHandler(object):
 
         yield self._replyToObserve(payload.filt,
                                    updateDatesTuples.updateDateByChunkKey,
-                                   sendResponse)
+                                   sendResponse,
+                                   vortexUuid)
 
     # ---------------
     # Reply to device observe
@@ -109,7 +110,8 @@ class SearchObjectCacheHandler(object):
     @inlineCallbacks
     def _replyToObserve(self, filt,
                         lastUpdateBySearchObjectKey: Dict[str, str],
-                        sendResponse: SendVortexMsgResponseCallable) -> None:
+                        sendResponse: SendVortexMsgResponseCallable,
+                        vortexUuid: str) -> None:
         """ Reply to Observe
 
         The client has told us that it's observing a new set of searchObjects, and the lastUpdate
@@ -122,23 +124,17 @@ class SearchObjectCacheHandler(object):
         :returns: None
 
         """
+        yield None
 
         searchObjectTuplesToSend = []
-        searchObjectKeys = self._cacheController.searchObjectKeys()
-
-        def sendChunk(searchObjectTuplesToSend):
-            if not searchObjectTuplesToSend:
-                return
-
-            payload = Payload(filt=filt, tuples=searchObjectTuplesToSend)
-            d: Deferred = payload.makePayloadEnvelopeDefer()
-            d.addCallback(lambda payloadEnvelope: payloadEnvelope.toVortexMsgDefer())
-            d.addCallback(sendResponse)
-            d.addErrback(vortexLogFailure, logger, consumeError=True)
 
         # Check and send any updates
-        for searchObjectKey in searchObjectKeys:
-            lastUpdate = lastUpdateBySearchObjectKey.get(searchObjectKey)
+        for searchObjectKey, lastUpdate in lastUpdateBySearchObjectKey.items():
+            if vortexUuid not in VortexFactory.getRemoteVortexUuids():
+                logger.debug("Vortex %s is offline, stopping update")
+                return
+
+            searchObjectKey = int(searchObjectKey)
 
             # NOTE: lastUpdate can be null.
             encodedSearchObjectTuple = self._cacheController.searchObject(searchObjectKey)
@@ -158,15 +154,9 @@ class SearchObjectCacheHandler(object):
             searchObjectTuplesToSend.append(encodedSearchObjectTuple)
             logger.debug("Sending searchObject %s from the cache" % searchObjectKey)
 
-            if len(searchObjectTuplesToSend) == 200:
-                sendChunk(searchObjectTuplesToSend)
-                searchObjectTuplesToSend = []
-
-        if searchObjectTuplesToSend:
-            sendChunk(searchObjectTuplesToSend)
-
-        # Tell the client the initial load is complete.
-        finishedFilt = {'finished': True}
-        finishedFilt.update(filt)
-        vortexMsg = yield PayloadEnvelope(filt=finishedFilt).toVortexMsgDefer()
-        yield sendResponse(vortexMsg)
+        # Send the payload to the frontend
+        payload = Payload(filt=filt, tuples=searchObjectTuplesToSend)
+        d: Deferred = payload.makePayloadEnvelopeDefer()
+        d.addCallback(lambda payloadEnvelope: payloadEnvelope.toVortexMsgDefer())
+        d.addCallback(sendResponse)
+        d.addErrback(vortexLogFailure, logger, consumeError=True)
