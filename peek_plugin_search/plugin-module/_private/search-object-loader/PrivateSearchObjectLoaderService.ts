@@ -106,6 +106,7 @@ function objectIdChunk(objectId: number): number {
 @Injectable()
 export class PrivateSearchObjectLoaderService extends ComponentLifecycleEventEmitter {
     private UPDATE_CHUNK_FETCH_SIZE = 5;
+    private OFFLINE_CHECK_PERIOD_MS = 15 * 60 * 1000; // 15 minutes
 
     private index = new SearchObjectUpdateDateTuple();
     private askServerChunks: SearchObjectUpdateDateTuple[] = [];
@@ -145,6 +146,11 @@ export class PrivateSearchObjectLoaderService extends ComponentLifecycleEventEmi
 
         this.setupVortexSubscriptions();
         this._notifyStatus();
+
+        // Check for updates every so often
+        Observable.interval(this.OFFLINE_CHECK_PERIOD_MS)
+            .takeUntil(this.onDestroyEvent)
+            .subscribe(() => this.askServerForUpdates());
     }
 
     isReady(): boolean {
@@ -167,10 +173,9 @@ export class PrivateSearchObjectLoaderService extends ComponentLifecycleEventEmi
         this._status.cacheForOfflineEnabled = this.offlineConfig.cacheChunksForOffline;
         this._status.initialLoadComplete = this.index.initialLoadComplete;
 
-        let keys = Object.keys(this.index.updateDateByChunkKey);
-        this._status.loadProgress = keys.filter(
-            (key) => this.index.updateDateByChunkKey[key] != null
-        ).length;
+        this._status.loadProgress = Object.keys(this.index.updateDateByChunkKey).length;
+        for (let chunk of this.askServerChunks)
+            this._status.loadProgress -= Object.keys(chunk.updateDateByChunkKey).length;
 
         this._statusSubject.next(this._status);
     }
@@ -234,6 +239,11 @@ export class PrivateSearchObjectLoaderService extends ComponentLifecycleEventEmi
     private askServerForUpdates() {
         if (!this.areWeTalkingToTheServer()) return;
 
+        // If we're still caching, then exit
+        if (this.askServerChunks.length != 0) {
+            this.askServerForNextUpdateChunk();
+            return;
+        }
 
         this.tupleService.observer
             .pollForTuples(new UpdateDateTupleSelector())
