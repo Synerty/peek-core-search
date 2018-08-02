@@ -32,6 +32,8 @@ let clientSearchIndexWatchUpdateFromDeviceFilt = extend(
     searchFilt
 );
 
+const cacheAll = "cacheAll";
+
 // ----------------------------------------------------------------------------
 /** SearchIndexChunkTupleSelector
  *
@@ -254,7 +256,7 @@ export class PrivateSearchIndexLoaderService extends ComponentLifecycleEventEmit
             .then((tuplesAny: any) => {
                 let serverIndex: SearchIndexUpdateDateTuple = tuplesAny[0];
                 let keys = Object.keys(serverIndex.updateDateByChunkKey);
-                let keysNeedingUpdate:string[] = [];
+                let keysNeedingUpdate: string[] = [];
 
                 this._status.loadTotal = keys.length;
 
@@ -312,7 +314,9 @@ export class PrivateSearchIndexLoaderService extends ComponentLifecycleEventEmit
             return;
 
         let indexChunk: SearchIndexUpdateDateTuple = this.askServerChunks.pop();
-        let pl = new Payload(clientSearchIndexWatchUpdateFromDeviceFilt, [indexChunk]);
+        let filt = extend({}, clientSearchIndexWatchUpdateFromDeviceFilt);
+        filt[cacheAll] = true;
+        let pl = new Payload(filt, [indexChunk]);
         this.vortexService.sendPayload(pl);
 
         this._status.lastCheck = new Date();
@@ -339,12 +343,13 @@ export class PrivateSearchIndexLoaderService extends ComponentLifecycleEventEmit
                     this._hasLoaded = true;
                     this._hasLoadedSubject.next();
 
-                } else {
+                } else if (payloadEnvelope.filt[cacheAll] == true) {
                     this.askServerForNextUpdateChunk();
 
                 }
-                this._notifyStatus();
+
             })
+            .then(() => this._notifyStatus())
             .catch(e =>
                 `SearchIndexCache.processSearchIndexesFromServer failed: ${e}`
             );
