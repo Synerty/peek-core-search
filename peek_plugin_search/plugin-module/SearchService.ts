@@ -126,7 +126,7 @@ export class SearchService extends ComponentLifecycleEventEmitter {
 
         // If there is no offline support, or we're online
         if (!this.offlineConfig.cacheChunksForOffline
-            || this.vortexStatusService.isOnline) {
+            || this.vortexStatusService.snapshot.isOnline) {
             let ts = new TupleSelector(SearchResultObjectTuple.tupleName, {
                 "propertyName": propertyName,
                 "objectTypeId": objectTypeId,
