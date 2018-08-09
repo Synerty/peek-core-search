@@ -124,7 +124,9 @@ export class SearchService extends ComponentLifecycleEventEmitter {
         let keywords = this.splitKeywords(keywordsString);
         console.log(keywords);
 
-        if (!this.offlineConfig.cacheChunksForOffline) {
+        // If there is no offline support, or we're online
+        if (!this.offlineConfig.cacheChunksForOffline
+            || this.vortexStatusService.isOnline) {
             let ts = new TupleSelector(SearchResultObjectTuple.tupleName, {
                 "propertyName": propertyName,
                 "objectTypeId": objectTypeId,
@@ -143,6 +145,7 @@ export class SearchService extends ComponentLifecycleEventEmitter {
                 .then(v => this._loadObjectTypes(v));
         }
 
+        // If we do have offline support
         return this.searchIndexLoader.getObjectIds(propertyName, keywords)
             .then((objectIds: number[]) => {
                 if (objectIds.length == 0) {
