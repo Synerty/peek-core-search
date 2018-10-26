@@ -59,7 +59,8 @@ def _loadSearchObjects(session, _Declarative):
                 .all()
         )
         if not rows: return
-        logger.info("Loading %s-%s for %s", lastOffset, lastOffset+FETCH_SIZE, _Declarative)
+        logger.info("Loading %s-%s for %s",
+                    lastOffset, lastOffset+FETCH_SIZE, _Declarative.__name__)
         yield rows
         lastOffset += FETCH_SIZE
 
