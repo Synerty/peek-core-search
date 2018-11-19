@@ -2,7 +2,7 @@
     "plugin": {
         "title": "Search",
         "packageName": "peek_plugin_search",
-    "version":"1.1.6",
+    "version":"1.2.0a3",
         "buildNumber": "#PLUGIN_BUILD#",
         "buildDate": "#BUILD_DATE#",
         "creator": "Synerty Pty Ltd",
