@@ -4,9 +4,11 @@ Administration
 
 Search provides the data crunching required to index strings and provide search results.
 
-The search index is loaded from other plugins, the search plugin then provides users
-with the ability to search and view the data.
+The search index is loaded by other plugins, the search plugin then indexes the search
+terms and results, then provides users with a UI to search and view the data.
 
+APIs are also available in the Peek Desktop and Peek Mobile services to for other plugins
+to use the search.
 
 
 .. toctree::
@@ -14,5 +16,5 @@ with the ability to search and view the data.
     :caption: Contents:
 
     overview
-    admin_tasks
+    admin_tasks/admin_tasks
 
