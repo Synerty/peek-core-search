@@ -16,5 +16,6 @@ to use the search.
     :caption: Contents:
 
     overview
+    status/status
     admin_tasks/admin_tasks
 
