@@ -464,7 +464,7 @@ def _packObjectJson(updatedIds: List[int],
         else:
             dbSession.rollback()
 
-        logger.debug("Packed JSON for %s SearchObjects",
+        logger.debug("Packed JSON for %s SearchObjects in %s",
                      len(updatedIds),
                      (datetime.now(pytz.utc) - startTime))
 
