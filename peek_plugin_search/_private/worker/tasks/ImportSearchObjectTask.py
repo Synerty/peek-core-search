@@ -7,6 +7,7 @@ from typing import List, Dict, Tuple, Set
 import pytz
 from sqlalchemy import select, bindparam, and_
 from txcelery.defer import DeferrableTask
+from vortex.Payload import Payload
 
 from peek_plugin_base.worker import CeleryDbConn
 from peek_plugin_search._private.storage.SearchObject import SearchObject
@@ -19,9 +20,9 @@ from peek_plugin_search._private.storage.SearchPropertyTuple import SearchProper
 from peek_plugin_search._private.worker.CeleryApp import celeryApp
 from peek_plugin_search._private.worker.tasks.ImportSearchIndexTask import \
     ObjectToIndexTuple, reindexSearchObject
-from peek_plugin_search._private.worker.tasks._CalcChunkKey import makeSearchObjectChunkKey
+from peek_plugin_search._private.worker.tasks._CalcChunkKey import \
+    makeSearchObjectChunkKey
 from peek_plugin_search.tuples.ImportSearchObjectTuple import ImportSearchObjectTuple
-from vortex.Payload import Payload
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +43,8 @@ def removeSearchObjectTask(self, importGroupHashes: List[str]) -> None:
 @DeferrableTask
 @celeryApp.task(bind=True)
 def importSearchObjectTask(self, searchObjectsEncodedPayload: bytes) -> None:
+    startTime = datetime.now(pytz.utc)
+
     # Decode arguments
     newSearchObjects: List[ImportSearchObjectTuple] = (
         Payload().fromEncodedPayload(searchObjectsEncodedPayload).tuples
@@ -69,6 +72,10 @@ def importSearchObjectTask(self, searchObjectsEncodedPayload: bytes) -> None:
         _packObjectJson(list(objectIdByKey.values()), chunkKeysForQueue)
 
         reindexSearchObject(objectsToIndex)
+
+        logger.info("Imported %s SearchObjects in %s",
+                    len(newSearchObjects),
+                    datetime.now(pytz.utc) - startTime)
 
     except Exception as e:
         logger.debug("Retrying import search objects, %s", e)
@@ -352,13 +359,13 @@ def _insertObjectRoutes(newSearchObjects: List[ImportSearchObjectTuple],
 
                 if uniqueRouteStr in existingRoutes:
                     logger.debug("A duplicate route exists in another"
-                                   " import group\n%s\n%s",
-                                   existingRoutes[uniqueRouteStr], routeInsert)
+                                 " import group\n%s\n%s",
+                                 existingRoutes[uniqueRouteStr], routeInsert)
 
                 elif uniqueRouteStr in newRoutes:
                     logger.debug("Duplicate route titles defined in this"
-                                   " import group\n%s\n%s",
-                                   newRoutes[uniqueRouteStr], routeInsert)
+                                 " import group\n%s\n%s",
+                                 newRoutes[uniqueRouteStr], routeInsert)
 
                 else:
                     inserts.append(routeInsert)
