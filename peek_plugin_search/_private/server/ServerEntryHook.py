@@ -1,7 +1,6 @@
 import logging
 
 from celery import Celery
-
 from peek_plugin_base.server.PluginServerEntryHookABC import PluginServerEntryHookABC
 from peek_plugin_base.server.PluginServerStorageEntryHookABC import \
     PluginServerStorageEntryHookABC
@@ -9,13 +8,17 @@ from peek_plugin_base.server.PluginServerWorkerEntryHookABC import \
     PluginServerWorkerEntryHookABC
 from peek_plugin_search._private.storage import DeclarativeBase
 from peek_plugin_search._private.storage.DeclarativeBase import loadStorageTuples
+from peek_plugin_search._private.storage.Setting import globalSetting, \
+    KEYWORD_COMPILER_ENABLED, OBJECT_COMPILER_ENABLED, globalProperties
 from peek_plugin_search._private.tuples import loadPrivateTuples
 from peek_plugin_search.tuples import loadPublicTuples
 from peek_plugin_search.tuples.ImportSearchObjectRouteTuple import \
     ImportSearchObjectRouteTuple
 from peek_plugin_search.tuples.ImportSearchObjectTuple import ImportSearchObjectTuple
-from vortex.DeferUtil import vortexLogFailure
+from twisted.internet.defer import inlineCallbacks
+from vortex.DeferUtil import vortexLogFailure, deferToThreadWrapWithLogger
 from vortex.Payload import Payload
+
 from .TupleActionProcessor import makeTupleActionProcessorHandler
 from .TupleDataObservable import makeTupleDataObservableHandler
 from .admin_backend import makeAdminBackendHandlers
@@ -65,6 +68,7 @@ class ServerEntryHook(PluginServerEntryHookABC,
     def dbMetadata(self):
         return DeclarativeBase.metadata
 
+    @inlineCallbacks
     def start(self):
         """ Start
 
@@ -158,8 +162,14 @@ class ServerEntryHook(PluginServerEntryHookABC,
 
         # ----------------
         # Start the compiler controllers
-        searchIndexChunkCompilerQueueController.start()
-        searchObjectChunkCompilerQueueController.start()
+
+        settings = yield self._loadSettings()
+
+        if settings[KEYWORD_COMPILER_ENABLED]:
+            searchIndexChunkCompilerQueueController.start()
+
+        if settings[OBJECT_COMPILER_ENABLED]:
+            searchObjectChunkCompilerQueueController.start()
 
         # self._test()
 
@@ -280,3 +290,13 @@ class ServerEntryHook(PluginServerEntryHookABC,
     def celeryApp(self) -> Celery:
         from peek_plugin_search._private.worker.CeleryApp import celeryApp
         return celeryApp
+
+    @deferToThreadWrapWithLogger(logger)
+    def _loadSettings(self):
+        dbSession = self.dbSessionCreator()
+        try:
+            return {globalProperties[p.key]: p.value
+                    for p in globalSetting(dbSession).propertyObjects}
+
+        finally:
+            dbSession.close()
