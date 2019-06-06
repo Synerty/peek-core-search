@@ -43,9 +43,9 @@
     "client": {
     },
     "mobile": {
+        "showHomeLink": false,
         "cfgDir": "_private/both-cfg",
         "cfgModule": "search-cfg.module#SearchCfgModule",
-        "showHomeLink": true,
         "appDir": "_private/both-app",
         "appModule": "search.module#SearchModule",
         "assetDir": "_private/both-assets",
@@ -75,7 +75,7 @@
     "agent": {
     },
     "desktop": {
-        "showHomeLink": true,
+        "showHomeLink": false,
         "appDir": "_private/both-app",
         "appModule": "search.module#SearchModule",
         "assetDir": "_private/both-assets",
