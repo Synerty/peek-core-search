@@ -23,12 +23,15 @@ export class EditSettingComponent extends ComponentLifecycleEventEmitter {
 
     loader: TupleLoader;
 
+    settingsType: string = "Global";
+
     constructor(private balloonMsg: Ng2BalloonMsgService,
                 vortexService: VortexService) {
         super();
 
         this.loader = vortexService.createTupleLoader(this,
-            () => extend({}, this.filt, searchFilt));
+            () => extend({settingType: this.settingsType},
+                this.filt, searchFilt));
 
         this.loader.observable
             .subscribe((tuples:SettingPropertyTuple[]) => this.items = tuples);
