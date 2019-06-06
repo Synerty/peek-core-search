@@ -5,7 +5,7 @@ set -o errexit
 
 #------------------------------------------------------------------------------
 # Configure package preferences here
-PY_PACKAGE="peek_plugin_search"
+PY_PACKAGE="peek_core_search"
 
 # Leave blank not to publish
 # Or select one of the index servers defined in ~/.pypirc

@@ -9,7 +9,7 @@ from setuptools import find_packages
 #
 author = "Synerty"
 author_email = 'contact@synerty.com'
-py_package_name = "peek_plugin_search"
+py_package_name = "peek_core_search"
 pip_package_name = py_package_name.replace('_', '-')
 package_version = '1.3.0'
 description = 'Peek Plugin Search - My first enhancement.'
