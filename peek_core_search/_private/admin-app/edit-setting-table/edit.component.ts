@@ -6,7 +6,7 @@ import {
     TupleLoader,
     VortexService
 } from "@synerty/vortexjs";
-import {SettingPropertyTuple, searchFilt} from "@peek/peek_core_search/_private";
+import {searchFilt, SettingPropertyTuple} from "@peek/peek_core_search/_private";
 
 
 @Component({
@@ -23,18 +23,16 @@ export class EditSettingComponent extends ComponentLifecycleEventEmitter {
 
     loader: TupleLoader;
 
-    settingsType: string = "Global";
-
     constructor(private balloonMsg: Ng2BalloonMsgService,
                 vortexService: VortexService) {
         super();
 
         this.loader = vortexService.createTupleLoader(this,
-            () => extend({settingType: this.settingsType},
+            () => extend({},
                 this.filt, searchFilt));
 
         this.loader.observable
-            .subscribe((tuples:SettingPropertyTuple[]) => this.items = tuples);
+            .subscribe((tuples: SettingPropertyTuple[]) => this.items = tuples);
     }
 
     saveClicked() {
