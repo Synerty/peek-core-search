@@ -24,7 +24,7 @@ depends_on = None
 
 from alembic import op
 
-__DeclarativeBase = declarative_base(metadata=MetaData(schema="pl_search"))
+__DeclarativeBase = declarative_base(metadata=MetaData(schema="core_search"))
 
 import logging
 logger = logging.getLogger(__name__)
@@ -83,22 +83,22 @@ def upgrade():
 
     session.close()
 
-    op.execute(' TRUNCATE TABLE pl_search."EncodedSearchIndexChunk" ')
-    op.execute(' TRUNCATE TABLE pl_search."SearchIndexCompilerQueue" ')
+    op.execute(' TRUNCATE TABLE core_search."EncodedSearchIndexChunk" ')
+    op.execute(' TRUNCATE TABLE core_search."SearchIndexCompilerQueue" ')
 
-    op.execute('''INSERT INTO pl_search."SearchIndexCompilerQueue"
+    op.execute('''INSERT INTO core_search."SearchIndexCompilerQueue"
                             ("chunkKey")
                             SELECT DISTINCT "chunkKey"
-                            FROM pl_search."SearchIndex"
+                            FROM core_search."SearchIndex"
                          ''')
 
-    op.execute(' TRUNCATE TABLE pl_search."EncodedSearchObjectChunk" ')
-    op.execute(' TRUNCATE TABLE pl_search."SearchObjectCompilerQueue" ')
+    op.execute(' TRUNCATE TABLE core_search."EncodedSearchObjectChunk" ')
+    op.execute(' TRUNCATE TABLE core_search."SearchObjectCompilerQueue" ')
 
-    op.execute('''INSERT INTO pl_search."SearchObjectCompilerQueue"
+    op.execute('''INSERT INTO core_search."SearchObjectCompilerQueue"
                             ("chunkKey")
                             SELECT DISTINCT "chunkKey"
-                            FROM pl_search."SearchObject"
+                            FROM core_search."SearchObject"
                          ''')
 
 

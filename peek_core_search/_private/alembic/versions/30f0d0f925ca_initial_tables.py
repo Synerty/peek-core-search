@@ -28,9 +28,9 @@ def upgrade():
     sa.Column('encodedHash', sa.String(), nullable=False),
     sa.Column('lastUpdate', sa.String(), nullable=False),
     sa.PrimaryKeyConstraint('id', 'chunkKey'),
-    schema='pl_search'
+    schema='core_search'
     )
-    op.create_index('idx_EncodedSearchIndex_chunkKey', 'EncodedSearchIndexChunk', ['chunkKey'], unique=True, schema='pl_search')
+    op.create_index('idx_EncodedSearchIndex_chunkKey', 'EncodedSearchIndexChunk', ['chunkKey'], unique=True, schema='core_search')
     op.create_table('EncodedSearchObjectChunk',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('chunkKey', sa.Integer(), nullable=False),
@@ -38,45 +38,45 @@ def upgrade():
     sa.Column('encodedHash', sa.String(), nullable=False),
     sa.Column('lastUpdate', sa.String(), nullable=False),
     sa.PrimaryKeyConstraint('id', 'chunkKey'),
-    schema='pl_search'
+    schema='core_search'
     )
-    op.create_index('idx_EncodedSearchObject_chunkKey', 'EncodedSearchObjectChunk', ['chunkKey'], unique=True, schema='pl_search')
+    op.create_index('idx_EncodedSearchObject_chunkKey', 'EncodedSearchObjectChunk', ['chunkKey'], unique=True, schema='core_search')
     op.create_table('SearchIndexCompilerQueue',
     sa.Column('id', sa.Integer(), nullable=False, autoincrement=True),
     sa.Column('chunkKey', sa.Integer(), nullable=False),
     sa.PrimaryKeyConstraint('id', 'chunkKey'),
-    schema='pl_search'
+    schema='core_search'
     )
     op.create_table('SearchObjectCompilerQueue',
     sa.Column('id', sa.Integer(), nullable=False, autoincrement=True),
     sa.Column('chunkKey', sa.Integer(), nullable=False),
     sa.PrimaryKeyConstraint('id', 'chunkKey'),
-    schema='pl_search'
+    schema='core_search'
     )
     op.create_table('SearchObjectType',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(), nullable=False),
     sa.Column('title', sa.String(), nullable=False),
     sa.PrimaryKeyConstraint('id'),
-    schema='pl_search'
+    schema='core_search'
     )
-    op.create_index('idx_ObjType_name', 'SearchObjectType', ['name'], unique=True, schema='pl_search')
-    op.create_index('idx_ObjType_title', 'SearchObjectType', ['title'], unique=True, schema='pl_search')
+    op.create_index('idx_ObjType_name', 'SearchObjectType', ['name'], unique=True, schema='core_search')
+    op.create_index('idx_ObjType_title', 'SearchObjectType', ['title'], unique=True, schema='core_search')
     op.create_table('SearchProperty',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(), nullable=False),
     sa.Column('title', sa.String(), nullable=False),
     sa.Column('order', sa.Integer(), server_default='0', nullable=False),
     sa.PrimaryKeyConstraint('id'),
-    schema='pl_search'
+    schema='core_search'
     )
-    op.create_index('idx_SearchProp_name', 'SearchProperty', ['name'], unique=True, schema='pl_search')
-    op.create_index('idx_SearchProp_title', 'SearchProperty', ['title'], unique=True, schema='pl_search')
+    op.create_index('idx_SearchProp_name', 'SearchProperty', ['name'], unique=True, schema='core_search')
+    op.create_index('idx_SearchProp_title', 'SearchProperty', ['title'], unique=True, schema='core_search')
     op.create_table('Setting',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(), nullable=True),
     sa.PrimaryKeyConstraint('id'),
-    schema='pl_search'
+    schema='core_search'
     )
     op.create_table('SearchObject',
     sa.Column('id', sa.Integer(), nullable=False),
@@ -85,13 +85,13 @@ def upgrade():
     sa.Column('chunkKey', sa.Integer(), nullable=False),
     sa.Column('propertiesJson', sa.String(), nullable=True),
     sa.Column('packedJson', sa.String(), nullable=True),
-    sa.ForeignKeyConstraint(['objectTypeId'], ['pl_search.SearchObjectType.id'], ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['objectTypeId'], ['core_search.SearchObjectType.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id'),
-    schema='pl_search'
+    schema='core_search'
     )
-    op.create_index('idx_SearchObject_chunkKey', 'SearchObject', ['chunkKey'], unique=False, schema='pl_search')
-    op.create_index('idx_SearchObject_key', 'SearchObject', ['key'], unique=True, schema='pl_search')
-    op.create_index('idx_SearchObject_objectTypeId', 'SearchObject', ['objectTypeId'], unique=False, schema='pl_search')
+    op.create_index('idx_SearchObject_chunkKey', 'SearchObject', ['chunkKey'], unique=False, schema='core_search')
+    op.create_index('idx_SearchObject_key', 'SearchObject', ['key'], unique=True, schema='core_search')
+    op.create_index('idx_SearchObject_objectTypeId', 'SearchObject', ['objectTypeId'], unique=False, schema='core_search')
     op.create_table('SettingProperty',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('settingId', sa.Integer(), nullable=False),
@@ -100,63 +100,63 @@ def upgrade():
     sa.Column('int_value', sa.Integer(), nullable=True),
     sa.Column('char_value', sa.String(), nullable=True),
     sa.Column('boolean_value', sa.Boolean(), nullable=True),
-    sa.ForeignKeyConstraint(['settingId'], ['pl_search.Setting.id'], ),
+    sa.ForeignKeyConstraint(['settingId'], ['core_search.Setting.id'], ),
     sa.PrimaryKeyConstraint('id'),
-    schema='pl_search'
+    schema='core_search'
     )
-    op.create_index('idx_SettingProperty_settingId', 'SettingProperty', ['settingId'], unique=False, schema='pl_search')
+    op.create_index('idx_SettingProperty_settingId', 'SettingProperty', ['settingId'], unique=False, schema='core_search')
     op.create_table('SearchIndex',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('chunkKey', sa.Integer(), nullable=False),
     sa.Column('keyword', sa.String(), nullable=False),
     sa.Column('propertyName', sa.String(), nullable=False),
     sa.Column('objectId', sa.Integer(), nullable=False),
-    sa.ForeignKeyConstraint(['objectId'], ['pl_search.SearchObject.id'], ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['objectId'], ['core_search.SearchObject.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id'),
-    schema='pl_search'
+    schema='core_search'
     )
-    op.create_index('idx_SearchIndex_quick_query', 'SearchIndex', ['chunkKey', 'keyword', 'propertyName', 'objectId'], unique=True, schema='pl_search')
+    op.create_index('idx_SearchIndex_quick_query', 'SearchIndex', ['chunkKey', 'keyword', 'propertyName', 'objectId'], unique=True, schema='core_search')
     op.create_table('SearchObjectRoute',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('objectId', sa.Integer(), nullable=False),
     sa.Column('importGroupHash', sa.String(), nullable=False),
     sa.Column('routeTitle', sa.String(), nullable=False),
     sa.Column('routePath', sa.String(), nullable=False),
-    sa.ForeignKeyConstraint(['objectId'], ['pl_search.SearchObject.id'], ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['objectId'], ['core_search.SearchObject.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id'),
-    schema='pl_search'
+    schema='core_search'
     )
-    op.create_index('idx_ObjectRoute_objectId', 'SearchObjectRoute', ['objectId'], unique=False, schema='pl_search')
-    op.create_index('idx_ObjectRoute_routeTitle_importGroupHash', 'SearchObjectRoute', ['importGroupHash'], unique=False, schema='pl_search')
-    op.create_index('idx_ObjectRoute_routeTitle_objectId', 'SearchObjectRoute', ['routeTitle', 'objectId'], unique=True, schema='pl_search')
+    op.create_index('idx_ObjectRoute_objectId', 'SearchObjectRoute', ['objectId'], unique=False, schema='core_search')
+    op.create_index('idx_ObjectRoute_routeTitle_importGroupHash', 'SearchObjectRoute', ['importGroupHash'], unique=False, schema='core_search')
+    op.create_index('idx_ObjectRoute_routeTitle_objectId', 'SearchObjectRoute', ['routeTitle', 'objectId'], unique=True, schema='core_search')
     # ### end Alembic commands ###
 
 
 def downgrade():
     # ### commands auto generated by Alembic - please adjust! ###
-    op.drop_index('idx_ObjectRoute_routeTitle_objectId', table_name='SearchObjectRoute', schema='pl_search')
-    op.drop_index('idx_ObjectRoute_routeTitle_importGroupHash', table_name='SearchObjectRoute', schema='pl_search')
-    op.drop_index('idx_ObjectRoute_objectId', table_name='SearchObjectRoute', schema='pl_search')
-    op.drop_table('SearchObjectRoute', schema='pl_search')
-    op.drop_index('idx_SearchIndex_quick_query', table_name='SearchIndex', schema='pl_search')
-    op.drop_table('SearchIndex', schema='pl_search')
-    op.drop_index('idx_SettingProperty_settingId', table_name='SettingProperty', schema='pl_search')
-    op.drop_table('SettingProperty', schema='pl_search')
-    op.drop_index('idx_SearchObject_objectTypeId', table_name='SearchObject', schema='pl_search')
-    op.drop_index('idx_SearchObject_key', table_name='SearchObject', schema='pl_search')
-    op.drop_index('idx_SearchObject_chunkKey', table_name='SearchObject', schema='pl_search')
-    op.drop_table('SearchObject', schema='pl_search')
-    op.drop_table('Setting', schema='pl_search')
-    op.drop_index('idx_SearchProp_title', table_name='SearchProperty', schema='pl_search')
-    op.drop_index('idx_SearchProp_name', table_name='SearchProperty', schema='pl_search')
-    op.drop_table('SearchProperty', schema='pl_search')
-    op.drop_index('idx_SearchProp_title', table_name='SearchObjectType', schema='pl_search')
-    op.drop_index('idx_SearchProp_name', table_name='SearchObjectType', schema='pl_search')
-    op.drop_table('SearchObjectType', schema='pl_search')
-    op.drop_table('SearchObjectCompilerQueue', schema='pl_search')
-    op.drop_table('SearchIndexCompilerQueue', schema='pl_search')
-    op.drop_index('idx_EncodedSearchObject_chunkKey', table_name='EncodedSearchObjectChunk', schema='pl_search')
-    op.drop_table('EncodedSearchObjectChunk', schema='pl_search')
-    op.drop_index('idx_EncodedSearchIndex_chunkKey', table_name='EncodedSearchIndexChunk', schema='pl_search')
-    op.drop_table('EncodedSearchIndexChunk', schema='pl_search')
+    op.drop_index('idx_ObjectRoute_routeTitle_objectId', table_name='SearchObjectRoute', schema='core_search')
+    op.drop_index('idx_ObjectRoute_routeTitle_importGroupHash', table_name='SearchObjectRoute', schema='core_search')
+    op.drop_index('idx_ObjectRoute_objectId', table_name='SearchObjectRoute', schema='core_search')
+    op.drop_table('SearchObjectRoute', schema='core_search')
+    op.drop_index('idx_SearchIndex_quick_query', table_name='SearchIndex', schema='core_search')
+    op.drop_table('SearchIndex', schema='core_search')
+    op.drop_index('idx_SettingProperty_settingId', table_name='SettingProperty', schema='core_search')
+    op.drop_table('SettingProperty', schema='core_search')
+    op.drop_index('idx_SearchObject_objectTypeId', table_name='SearchObject', schema='core_search')
+    op.drop_index('idx_SearchObject_key', table_name='SearchObject', schema='core_search')
+    op.drop_index('idx_SearchObject_chunkKey', table_name='SearchObject', schema='core_search')
+    op.drop_table('SearchObject', schema='core_search')
+    op.drop_table('Setting', schema='core_search')
+    op.drop_index('idx_SearchProp_title', table_name='SearchProperty', schema='core_search')
+    op.drop_index('idx_SearchProp_name', table_name='SearchProperty', schema='core_search')
+    op.drop_table('SearchProperty', schema='core_search')
+    op.drop_index('idx_SearchProp_title', table_name='SearchObjectType', schema='core_search')
+    op.drop_index('idx_SearchProp_name', table_name='SearchObjectType', schema='core_search')
+    op.drop_table('SearchObjectType', schema='core_search')
+    op.drop_table('SearchObjectCompilerQueue', schema='core_search')
+    op.drop_table('SearchIndexCompilerQueue', schema='core_search')
+    op.drop_index('idx_EncodedSearchObject_chunkKey', table_name='EncodedSearchObjectChunk', schema='core_search')
+    op.drop_table('EncodedSearchObjectChunk', schema='core_search')
+    op.drop_index('idx_EncodedSearchIndex_chunkKey', table_name='EncodedSearchIndexChunk', schema='core_search')
+    op.drop_table('EncodedSearchIndexChunk', schema='core_search')
     # ### end Alembic commands ###
