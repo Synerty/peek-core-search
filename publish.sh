@@ -2,80 +2,86 @@
 
 set -o nounset
 set -o errexit
+set -x
 
 #------------------------------------------------------------------------------
-# Configure package preferences here
-PY_PACKAGE="peek_core_search"
-
-# Leave blank not to publish
-# Or select one of the index servers defined in ~/.pypirc
-PYPI_PUBLISH=""
-
-
-#------------------------------------------------------------------------------
-PIP_PACKAGE=${PY_PACKAGE//_/-} # Replace _ with -
-HAS_GIT=`ls -d .git 2> /dev/null`
-
+# Prechecks
 
 if ! [ -f "setup.py" ]; then
-    echo "setver.sh must be run in the directory where setup.py is" >&2
+    echo "publish.sh must be run in the directory where setup.py is" >&2
+    exit 1
+fi
+
+if [ -n "$(git status --porcelain)" ]; then
+    echo "There are uncommitted changes, please make sure all changes are committed" >&2
     exit 1
 fi
 
 VER="${1:?You must pass a version of the format 0.0.0 as the only argument}"
 
-if [ $HAS_GIT ]; then
-    if [ -n "$(git status --porcelain)" ]; then
-        echo "There are uncomitted changes, please make sure all changes are comitted" >&2
-        exit 1
-    fi
-
-    if git tag | grep -q "${VER}"; then
-        echo "Git tag for version ${VER} already exists." >&2
-        exit 1
-    fi
+if git tag | grep -q "${VER}"; then
+    echo "Git tag for version ${VER} already exists." >&2
+    exit 1
 fi
 
 #------------------------------------------------------------------------------
+# Configure package preferences here
+
+source ./publish.settings.sh
+
+PIP_PACKAGE=${PY_PACKAGE//_/-} # Replace _ with -
+
+HAS_GIT=`ls -d .git 2> /dev/null`
+
+#------------------------------------------------------------------------------
+# Set the versions
 echo "Setting version to $VER"
 
-# Update the setup.py
-sed -i "s;^package_version.*=.*;package_version = '${VER}';"  setup.py
+VER_FILES="${VER_FILES} setup.py"
+VER_FILES="${VER_FILES} ${PY_PACKAGE}/__init__.py"
+VER_FILES="${VER_FILES} ${PY_PACKAGE}/plugin_package.json"
 
-# Update the package version
-sed -i "s;.*version.*;__version__ = '${VER}';" ${PY_PACKAGE}/__init__.py
+function updateFileVers {
+    for file in ${VER_FILES}
+    do
+        if [ -f ${file} ]; then
+            sed -i "s/###PEEKVER###/${VER}/g" ${file}
+            sed -i "s/111.111.111/${VER}/g" ${file}
+            sed -i "s/0.0.0/${VER}/g" ${file}
+        fi
+    done
+}
 
-# Update the plugin_package.json
-# "version": "#PLUGIN_VER#",
-sed -i 's;.*"version".*:.*".*;    "version":"'${VER}'",;' ${PY_PACKAGE}/plugin_package.json
+# Apply the version to the other files
+updateFileVers
 
+#------------------------------------------------------------------------------
+# Clear out old files
+
+rm -rf dist *.egg-info
+
+#------------------------------------------------------------------------------
+# Create the package and upload to pypi
+
+if [ ${PYPI_PUBLISH} == "1" ]
+then
+    python setup.py sdist --format=gztar upload
+else
+    python setup.py sdist --format=gztar
+fi
+
+#------------------------------------------------------------------------------
 # Reset the commit, we don't want versions in the commit
-
+# Tag and push this release
 if [ $HAS_GIT ]; then
-    git commit -a -m "Updated to version ${VER}"
-
+    git reset --hard
     git tag ${VER}
     git push
     git push --tags
 fi
 
-#------------------------------------------------------------------------------
-# Upload to test pypi
-PIPY_ALIAS="${2-$PYPI_PUBLISH}"
-
-if [ -n "${PIPY_ALIAS}" ]; then
-    echo "Pushing to pypi index server PIPY_ALIAS"
-    python setup.py sdist upload -r $PYPI_PUBLISH
-else
-    echo "Not publishing to any pypi indexes"
-    python setup.py sdist
-fi
 
 #------------------------------------------------------------------------------
-# Copy to local release dir if it exists
-RELEASE_DIR=${RELEASE_DIR-/media/psf/release}
-if [ -d  $RELEASE_DIR ]; then
-    rm -rf $RELEASE_DIR/${PIP_PACKAGE}*.gz || true
-    cp ./dist/${PIP_PACKAGE}-$VER.tar.gz $RELEASE_DIR
-fi
+# All done
 
+echo "Publish Complete"
