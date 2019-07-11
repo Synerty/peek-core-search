@@ -1,8 +1,11 @@
 import logging
 from collections import defaultdict
-from typing import Dict, List
+from typing import Dict, List, Optional
 
+import ujson
 from twisted.internet.defer import inlineCallbacks
+from vortex.DeferUtil import deferToThreadWrapWithLogger
+from vortex.Payload import Payload
 
 from peek_core_search._private.PluginNames import searchFilt
 from peek_core_search._private.server.client_handlers.ClientChunkLoadRpc import \
@@ -11,6 +14,13 @@ from peek_core_search._private.storage.EncodedSearchObjectChunk import \
     EncodedSearchObjectChunk
 from vortex.PayloadEndpoint import PayloadEndpoint
 from vortex.PayloadEnvelope import PayloadEnvelope
+
+from peek_core_search._private.storage.SearchObjectTypeTuple import SearchObjectTypeTuple
+from peek_core_search._private.tuples.search_object.SearchResultObjectRouteTuple import \
+    SearchResultObjectRouteTuple
+from peek_core_search._private.tuples.search_object.SearchResultObjectTuple import \
+    SearchResultObjectTuple
+from peek_core_search._private.worker.tasks._CalcChunkKey import makeSearchObjectChunkKey
 
 logger = logging.getLogger(__name__)
 
@@ -79,7 +89,7 @@ class SearchObjectCacheController:
         self._loadSearchObjectIntoCache(searchObjectTuples)
 
     def _loadSearchObjectIntoCache(self,
-                                  encodedChunkTuples: List[EncodedSearchObjectChunk]):
+                                   encodedChunkTuples: List[EncodedSearchObjectChunk]):
         chunkKeysUpdated: List[str] = []
 
         for t in encodedChunkTuples:
@@ -98,3 +108,82 @@ class SearchObjectCacheController:
 
     def searchObjectKeys(self) -> List[int]:
         return list(self._cache)
+
+    @deferToThreadWrapWithLogger(logger)
+    def getObjects(self, objectTypeId: Optional[int],
+                   objectIds: List[int]) -> List[SearchResultObjectTuple]:
+        return self.getObjectsBlocking(objectTypeId, objectIds)
+
+    def getObjectsBlocking(self, objectTypeId: Optional[int],
+                           objectIds: List[int]) -> List[SearchResultObjectTuple]:
+
+        objectIdsByChunkKey = defaultdict(list)
+        for objectId in objectIds:
+            objectIdsByChunkKey[makeSearchObjectChunkKey(objectId)].append(objectId)
+
+        foundObjects: List[SearchResultObjectTuple] = []
+        for chunkKey, subObjectIds in objectIdsByChunkKey.items():
+            foundObjects += self._getObjectsForChunkBlocking(
+                chunkKey, objectTypeId, subObjectIds
+            )
+
+        return foundObjects
+
+    def _getObjectsForChunkBlocking(self, chunkKey: str,
+                                    objectTypeId: Optional[int],
+                                    objectIds: List[int]
+                                    ) -> List[SearchResultObjectTuple]:
+
+        chunk = self.searchObject(chunkKey)
+        if not chunk:
+            return []
+
+        objectPropsByIdStr = Payload().fromEncodedPayload(chunk.encodedData).tuples[0]
+        objectPropsById = ujson.loads(objectPropsByIdStr)
+
+        foundObjects: List[SearchResultObjectTuple] = []
+
+        for objectId in objectIds:
+            if str(objectId) not in objectPropsById:
+                logger.warning(
+                    "Search object id %s is missing from index, chunkKey %s",
+                    objectId, chunkKey
+                )
+                continue
+
+            # Reconstruct the data
+            objectProps: {} = ujson.loads(objectPropsById[str(objectId)])
+
+            # Get out the object type
+            thisObjectTypeId = objectProps['_otid_']
+            del objectProps['_otid_']
+
+            # If the property is set, then make sure it matches
+            if objectTypeId is not None and objectTypeId != thisObjectTypeId:
+                continue
+
+            # Get out the routes
+            routes: List[List[str]] = objectProps['_r_']
+            del objectProps['_r_']
+
+            # Get out the key
+            objectKey: str = objectProps['key']
+            del objectProps['key']
+
+            # Create the new object
+            newObject = SearchResultObjectTuple()
+            foundObjects.append(newObject)
+
+            newObject.id = objectId
+            newObject.key = objectKey
+            newObject.objectType = SearchObjectTypeTuple(id=thisObjectTypeId)
+            newObject.properties = objectProps
+
+            for route in routes:
+                newRoute = SearchResultObjectRouteTuple()
+                newObject.routes.append(newRoute)
+
+                newRoute.title = route[0]
+                newRoute.path = route[1]
+
+        return foundObjects

@@ -1,16 +1,15 @@
 import logging
-from collections import defaultdict
 from typing import Dict, List
 
 from twisted.internet.defer import inlineCallbacks
+from vortex.PayloadEndpoint import PayloadEndpoint
+from vortex.PayloadEnvelope import PayloadEnvelope
 
 from peek_core_search._private.PluginNames import searchFilt
 from peek_core_search._private.server.client_handlers.ClientChunkLoadRpc import \
     ClientChunkLoadRpc
 from peek_core_search._private.storage.EncodedSearchIndexChunk import \
     EncodedSearchIndexChunk
-from vortex.PayloadEndpoint import PayloadEndpoint
-from vortex.PayloadEnvelope import PayloadEnvelope
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +30,7 @@ class SearchIndexCacheController:
     def __init__(self, clientId: str):
         self._clientId = clientId
         self._webAppHandler = None
+        self._fastKeywordController = None
 
         #: This stores the cache of searchIndex data for the clients
         self._cache: Dict[int, EncodedSearchIndexChunk] = {}
@@ -41,13 +41,16 @@ class SearchIndexCacheController:
     def setSearchIndexCacheHandler(self, handler):
         self._webAppHandler = handler
 
+    def setFastKeywordController(self, fastKeywordController):
+        self._fastKeywordController = fastKeywordController
+
     @inlineCallbacks
     def start(self):
         yield self.reloadCache()
 
     def shutdown(self):
-        self._tupleObservable = None
-
+        self._webAppHandler = None
+        self._fastKeywordController = None
         self._endpoint.shutdown()
         self._endpoint = None
 
@@ -92,6 +95,7 @@ class SearchIndexCacheController:
         logger.debug("Received searchIndex updates from server, %s", chunkKeysUpdated)
 
         self._webAppHandler.notifyOfSearchIndexUpdate(chunkKeysUpdated)
+        self._fastKeywordController.notifyOfSearchIndexUpdate(chunkKeysUpdated)
 
     def searchIndex(self, chunkKey) -> EncodedSearchIndexChunk:
         return self._cache.get(chunkKey)

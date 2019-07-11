@@ -2,6 +2,10 @@ import logging
 
 from twisted.internet.defer import inlineCallbacks
 
+from peek_core_search._private.client.DeviceTupleProcessorActionProxy import \
+    makeTupleActionProcessorProxy
+from peek_core_search._private.client.controller.FastKeywordController import \
+    FastKeywordController
 from peek_plugin_base.PeekVortexUtil import peekServerName
 from peek_plugin_base.client.PluginClientEntryHookABC import PluginClientEntryHookABC
 from peek_core_search._private.PluginNames import searchActionProcessorName
@@ -59,15 +63,6 @@ class ClientEntryHook(PluginClientEntryHookABC):
         Place any custom initialiastion steps here.
 
         """
-
-        # ----------------
-        # Proxy actions back to the server, we don't process them at all
-        self._loadedObjects.append(
-            TupleActionProcessorProxy(
-                tupleActionProcessorName=searchActionProcessorName,
-                proxyToVortexName=peekServerName,
-                additionalFilt=searchFilt)
-        )
         # ----------------
 
         # Provide the devices access to the servers observable
@@ -90,7 +85,7 @@ class ClientEntryHook(PluginClientEntryHookABC):
         self._loadedObjects.append(serverTupleObserver)
 
         # ----------------
-        # Location Index Cache Controller
+        # Search Index Cache Controller
 
         searchIndexCacheController = SearchIndexCacheController(
             self.platform.serviceId
@@ -104,12 +99,11 @@ class ClientEntryHook(PluginClientEntryHookABC):
         )
         self._loadedObjects.append(searchIndexCacheHandler)
 
-        searchIndexCacheController.setSearchIndexCacheHandler(
-            searchIndexCacheHandler
-        )
+        searchIndexCacheController \
+            .setSearchIndexCacheHandler(searchIndexCacheHandler)
 
         # ----------------
-        # Location Object Cache Controller
+        # Search Object Cache Controller
 
         searchObjectCacheController = SearchObjectCacheController(
             self.platform.serviceId
@@ -126,6 +120,22 @@ class ClientEntryHook(PluginClientEntryHookABC):
         searchObjectCacheController.setSearchObjectCacheHandler(
             searchObjectCacheHandler
         )
+
+        # ----------------
+        # Fast Keyword Controller
+
+        fastKeywordController = FastKeywordController(
+            searchObjectCacheController,
+            searchIndexCacheController
+        )
+        self._loadedObjects.append(fastKeywordController)
+
+        searchIndexCacheController.setFastKeywordController(fastKeywordController)
+
+        # ----------------
+        # Proxy actions back to the server, we don't process them at all
+        tupleActionHandler = makeTupleActionProcessorProxy(fastKeywordController)
+        self._loadedObjects.append(tupleActionHandler)
 
         # ----------------
         # Create the Tuple Observer

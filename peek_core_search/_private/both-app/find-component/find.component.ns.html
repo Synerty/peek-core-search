@@ -1,8 +1,9 @@
 <StackLayout class="peek-details-section">
 
     <GridLayout columns="*, auto" rows="auto" class="peek-details-section">
-        <TextField  class="details-section-value editable"
+        <TextField class="details-section-value editable"
                    autocorrect="false"
+                   (ngModelChange)="searchKeywordOnChange($event)"
                    hint="search" [(ngModel)]="keywords"
                    returnKeyType="search"
                    returnPress="find()">
@@ -59,7 +60,6 @@
     <!-- END SEARCH OBJECT TYPE PICKER -->
 
 
-
     <Label *ngIf="noResults()" text="No results."></Label>
 
     <Label *ngIf="searchInProgress" text="Search in progress."></Label>
@@ -68,7 +68,7 @@
     <GridLayout *ngIf="!noResults()">
         <ListView [items]="resultObjects">
             <ng-template let-item="item" let-i="index" let-odd="odd" let-even="even">
-                    <plugin-search-result [resultObject]="item"></plugin-search-result>
+                <plugin-search-result [resultObject]="item"></plugin-search-result>
             </ng-template>
         </ListView>
     </GridLayout>

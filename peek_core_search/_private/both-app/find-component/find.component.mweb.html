@@ -5,6 +5,7 @@
 
                 <div class="input-group details-section-value">
                     <input type="text" class="form-control editable"
+                           (ngModelChange)="searchKeywordOnChange($event)"
                            placeholder="search" [(ngModel)]="keywords">
                     <span class="input-group-btn">
                     <Button class="btn" (click)="find()"

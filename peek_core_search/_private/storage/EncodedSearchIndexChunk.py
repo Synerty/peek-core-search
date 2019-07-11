@@ -12,6 +12,10 @@ class EncodedSearchIndexChunk(Tuple, DeclarativeBase):
     __tablename__ = 'EncodedSearchIndexChunk'
     __tupleType__ = searchTuplePrefix + 'EncodedSearchIndexChunkTable'
 
+    ENCODED_DATA_KEYWORD_NUM = 0
+    ENCODED_DATA_PROPERTY_MAME_NUM = 1
+    ENCODED_DATA_OBJECT_IDS_JSON_INDEX = 2
+
     id = Column(Integer, primary_key=True, autoincrement=True)
 
     chunkKey = Column(Integer, primary_key=True)

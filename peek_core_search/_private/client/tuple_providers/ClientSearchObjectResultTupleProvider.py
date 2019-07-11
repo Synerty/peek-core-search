@@ -66,17 +66,8 @@ class ClientSearchObjectResultTupleProvider(TuplesProviderABC):
         foundObjectIds = foundObjectIds[:20]
 
         # GET OBJECTS
-        objectIdsByChunkKey = defaultdict(list)
-        for objectId in foundObjectIds:
-            objectIdsByChunkKey[makeSearchObjectChunkKey(objectId)].append(objectId)
-
-        foundObjects: List[SearchResultObjectTuple] = []
-        for chunkKey, subObjectIds in objectIdsByChunkKey.items():
-            encodedChunk = self._searchObjectCacheHandler.searchObject(chunkKey)
-            if encodedChunk:
-                foundObjects += self._getObjects(
-                    encodedChunk, objectTypeId, subObjectIds
-                )
+        foundObjects = self._searchObjectCacheHandler \
+            .getObjectsBlocking(objectTypeId, foundObjectIds)
 
         # Create the vortex message
         return Payload(filt, tuples=foundObjects).makePayloadEnvelope().toVortexMsg()
@@ -109,57 +100,3 @@ class ClientSearchObjectResultTupleProvider(TuplesProviderABC):
             foundObjectIds += json.loads(keywordIndex[2])
 
         return foundObjectIds
-
-    def _getObjects(self, chunk: EncodedSearchObjectChunk,
-                    objectTypeId: Optional[int],
-                    objectIds: List[int]) -> List[SearchResultObjectTuple]:
-
-        objectPropsByIdStr = Payload().fromEncodedPayload(chunk.encodedData).tuples[0]
-        objectPropsById = json.loads(objectPropsByIdStr)
-
-        foundObjects: List[SearchResultObjectTuple] = []
-
-        for objectId in objectIds:
-            if str(objectId) not in objectPropsById:
-                logger.warning(
-                    "Search object id %s is missing from index, chunkKey %s",
-                    objectId, chunk.chunkKey
-                )
-                continue
-
-            # Reconstruct the data
-            objectProps: {} = json.loads(objectPropsById[str(objectId)])
-
-            # Get out the object type
-            thisObjectTypeId = objectProps['_otid_']
-            del objectProps['_otid_']
-
-            # If the property is set, then make sure it matches
-            if objectTypeId is not None and objectTypeId != thisObjectTypeId:
-                continue
-
-            # Get out the routes
-            routes: List[List[str]] = objectProps['_r_']
-            del objectProps['_r_']
-
-            # Get out the key
-            objectKey: str = objectProps['key']
-            del objectProps['key']
-
-            # Create the new object
-            newObject = SearchResultObjectTuple()
-            foundObjects.append(newObject)
-
-            newObject.id = objectId
-            newObject.key = objectKey
-            newObject.objectType = SearchObjectTypeTuple(id=thisObjectTypeId)
-            newObject.properties = objectProps
-
-            for route in routes:
-                newRoute = SearchResultObjectRouteTuple()
-                newObject.routes.append(newRoute)
-
-                newRoute.title = route[0]
-                newRoute.path = route[1]
-
-        return foundObjects
