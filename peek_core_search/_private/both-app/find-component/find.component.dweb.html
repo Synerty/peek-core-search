@@ -1,14 +1,18 @@
 <div class="container">
     <div class="row">
         <div class="col-md-4">
+            <div class="alert alert-warning" *ngIf="offlineSearchEnabled">
+                You are searching offline, you must use full words to search.
+            </div>
 
             <div class="input-group">
                 <input type="text" class="form-control"
-                           (ngModelChange)="searchKeywordOnChange($event)"
-                       placeholder="search" [(ngModel)]="keywords">
+                       (ngModelChange)="searchKeywordOnChange()"
+                       placeholder="search" [(ngModel)]="searchString">
                 <span class="input-group-btn">
                     <Button class="btn" (click)="find()"
-                        [disabled]="searchInProgress">Find</Button>
+                            *ngIf="offlineSearchEnabled"
+                            [disabled]="searchInProgress">Find</Button>
                 </span>
 
             </div>
@@ -21,6 +25,7 @@
                 <select id="searchPropertyId"
                         class="form-control dialog-selector"
                         name="searchPropertyId"
+                       (ngModelChange)="searchKeywordOnChange()"
                         [(ngModel)]="searchProperty">
                     <option [ngValue]="option"
                             *ngFor="let option of searchProperties">
@@ -37,6 +42,7 @@
                 <select id="searchObjectTypesId"
                         class="form-control dialog-selector"
                         name="searchObjectTypesId"
+                       (ngModelChange)="searchKeywordOnChange()"
                         [(ngModel)]="searchObjectType">
                     <option [ngValue]="option"
                             *ngFor="let option of searchObjectTypes">

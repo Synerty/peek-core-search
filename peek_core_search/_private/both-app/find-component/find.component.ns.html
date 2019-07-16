@@ -3,14 +3,15 @@
     <GridLayout columns="*, auto" rows="auto" class="peek-details-section">
         <TextField class="details-section-value editable"
                    autocorrect="false"
-                   (ngModelChange)="searchKeywordOnChange($event)"
-                   hint="search" [(ngModel)]="keywords"
+                   (ngModelChange)="searchKeywordOnChange()"
+                   hint="search" [(ngModel)]="searchString"
                    returnKeyType="search"
                    returnPress="find()">
         </TextField>
 
         <Button class="btn fa"
                 col="1" text="Find" (tap)="find()"
+                *ngIf="offlineSearchEnabled"
                 [isEnabled]="!searchInProgress"
                 [class.nav-section-btn-disabled]="searchInProgress"></Button>
     </GridLayout>

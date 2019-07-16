@@ -26,7 +26,7 @@ export class FindComponent extends ComponentLifecycleEventEmitter {
 
     private readonly ALL = "All";
 
-    keywords: string = '';
+    searchString: string = '';
 
     resultObjects: SearchResultObjectTuple[] = [];
     searchInProgress: boolean = false;
@@ -40,8 +40,6 @@ export class FindComponent extends ComponentLifecycleEventEmitter {
     searchObjectTypeStrings: string[] = [];
     searchObjectType: SearchObjectTypeTuple = new SearchObjectTypeTuple();
     searchObjectTypesNsPicking = false;
-
-    autocomplete: any = null;
 
     private performAutoCompleteSubject: Subject<string> = new Subject<string>();
 
@@ -104,13 +102,20 @@ export class FindComponent extends ComponentLifecycleEventEmitter {
                 debounceTime(500),
                 // only emit if value is different from previous value
                 distinctUntilChanged())
-            .subscribe(partialKw => this.performAutoComplete(partialKw));
+            .takeUntil(this.onDestroyEvent)
+            .subscribe(() => this.performAutoComplete());
+
+        this.vortexStatusService
+            .isOnline
+            .takeUntil(this.onDestroyEvent)
+            .subscribe(() => this.performAutoComplete());
 
 
     }
 
     nsSelectProperty(index: number): void {
         this.searchProperty = this.searchProperties[index];
+        this.searchKeywordOnChange();
     }
 
     nsEditPropertyFonticon(): string {
@@ -119,22 +124,30 @@ export class FindComponent extends ComponentLifecycleEventEmitter {
 
     nsSelectObjectType(index: number): void {
         this.searchObjectType = this.searchObjectTypes[index];
+        this.searchKeywordOnChange();
     }
 
     nsEditObjectTypeFonticon(): string {
-        return this.searchPropertyNsPicking ? 'fa-check' : 'fa-pencil';
+        return this.searchObjectTypesNsPicking ? 'fa-check' : 'fa-pencil';
     }
 
-    searchKeywordOnChange(input: string): void {
+    searchKeywordOnChange(): void {
+        if (!this.vortexStatusService.snapshot.isOnline)
+            return;
+
+        this.performAutoCompleteSubject.next();
+    }
+
+    private performAutoComplete(): void {
         if (!this.vortexStatusService.snapshot.isOnline)
             return;
 
         const check = () => {
 
-            if (input == null || input.length == 0)
+            if (this.searchString == null || this.searchString.length == 0)
                 return false;
 
-            if (input.length < 3)
+            if (this.searchString.length < 3)
                 return false;
 
             return true;
@@ -145,13 +158,8 @@ export class FindComponent extends ComponentLifecycleEventEmitter {
             return;
         }
 
-        this.performAutoCompleteSubject.next(input);
-    }
-
-    private performAutoComplete(searchString: string): void {
-
         const autoCompleteAction = new KeywordAutoCompleteTupleAction();
-        autoCompleteAction.searchString = searchString;
+        autoCompleteAction.searchString = this.searchString;
 
         const prop = this.searchProperty;
         if (prop.title != this.ALL && prop.name != null && prop.name.length)
@@ -163,7 +171,7 @@ export class FindComponent extends ComponentLifecycleEventEmitter {
 
         this.tupleService.action.pushAction(autoCompleteAction)
             .then((results: SearchResultObjectTuple[]) => this.resultObjects = results)
-            .catch(e => this.balloonMsg.showError("Failed to autocomplete"));
+            .catch(e => this.balloonMsg.showError("Failed to live search"));
     }
 
 
@@ -173,18 +181,22 @@ export class FindComponent extends ComponentLifecycleEventEmitter {
     }
 
     find() {
-        if (this.keywords == null || this.keywords.length == 0) {
-            this.balloonMsg.showWarning("Please enter some search keywords");
+        if (this.searchString == null || this.searchString.length == 0) {
+            this.balloonMsg.showWarning("Please enter something to search for");
             return;
         }
 
         this.searchInProgress = true;
 
         this.searchService
-            .getObjects(this.searchProperty.name, this.searchObjectType.id, this.keywords)
+            .getObjects(this.searchProperty.name, this.searchObjectType.id, this.searchString)
             .then((results: SearchResultObjectTuple[]) => this.resultObjects = results)
             .catch((e: string) => this.balloonMsg.showError(`Find Failed:${e}`))
             .then(() => this.searchInProgress = false);
+    }
+
+    offlineSearchEnabled():boolean {
+        return !this.vortexStatusService.snapshot.isOnline;
     }
 
 
