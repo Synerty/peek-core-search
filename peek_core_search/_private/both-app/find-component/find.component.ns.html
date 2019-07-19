@@ -11,7 +11,7 @@
 
         <Button class="btn fa"
                 col="1" text="Find" (tap)="find()"
-                *ngIf="offlineSearchEnabled"
+                *ngIf="offlineSearchEnabled()"
                 [isEnabled]="!searchInProgress"
                 [class.nav-section-btn-disabled]="searchInProgress"></Button>
     </GridLayout>

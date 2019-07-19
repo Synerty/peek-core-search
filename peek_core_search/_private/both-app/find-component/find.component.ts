@@ -178,8 +178,12 @@ export class FindComponent extends ComponentLifecycleEventEmitter implements OnI
         if (objProp.title != this.ALL && objProp.name != null && objProp.name.length)
             autoCompleteAction.objectTypeId = objProp.id;
 
+        this.searchInProgress = true;
         this.tupleService.action.pushAction(autoCompleteAction)
-            .then((results: SearchResultObjectTuple[]) => this.resultObjects = results)
+            .then((results: SearchResultObjectTuple[]) => {
+                this.resultObjects = results;
+                this.searchInProgress = false;
+            })
             .catch(e => this.balloonMsg.showError("Failed to live search"));
     }
 
@@ -205,7 +209,7 @@ export class FindComponent extends ComponentLifecycleEventEmitter implements OnI
     }
 
     offlineSearchEnabled():boolean {
-        return !this.vortexStatusService.snapshot.isOnline;
+        return this.vortexStatusService.snapshot.isOnline === false;
     }
 
 

@@ -2,18 +2,18 @@
     <div class="container">
         <div class="row">
             <div class="col-md-12">
-                <div class="alert alert-warning" *ngIf="offlineSearchEnabled">
+                <div class="alert alert-warning" *ngIf="offlineSearchEnabled()">
                     You are searching offline, you must use full words to search.
                 </div>
-                <div class="input-group details-section-value">
+                <div [class.input-group]="offlineSearchEnabled()"
+                     class="details-section-value">
                     <input type="text" class="form-control editable"
                            (ngModelChange)="searchKeywordOnChange()"
                            placeholder="search" [(ngModel)]="searchString">
-                    <span class="input-group-btn">
-                    <Button class="btn" (click)="find()"
-                            *ngIf="offlineSearchEnabled"
-                            [disabled]="searchInProgress">Find</Button>
-                </span>
+                    <span class="input-group-btn" *ngIf="offlineSearchEnabled()">
+                        <Button class="btn" (click)="find()"
+                                [disabled]="searchInProgress">Find</Button>
+                    </span>
                 </div>
             </div>
         </div>
@@ -27,7 +27,7 @@
                     <select id="searchPropertyId"
                             class="form-control dialog-selector"
                             name="searchPropertyId"
-                       (ngModelChange)="searchKeywordOnChange()"
+                            (ngModelChange)="searchKeywordOnChange()"
                             [(ngModel)]="searchProperty">
                         <option [ngValue]="option"
                                 *ngFor="let option of searchProperties">
@@ -49,7 +49,7 @@
                     <select id="searchObjectTypesId"
                             class="form-control dialog-selector"
                             name="searchObjectTypesId"
-                       (ngModelChange)="searchKeywordOnChange()"
+                            (ngModelChange)="searchKeywordOnChange()"
                             [(ngModel)]="searchObjectType">
                         <option [ngValue]="option"
                                 *ngFor="let option of searchObjectTypes">
