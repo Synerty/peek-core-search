@@ -124,7 +124,7 @@ export class FindComponent extends ComponentLifecycleEventEmitter implements OnI
 
     nsSelectProperty(index: number): void {
         this.searchProperty = this.searchProperties[index];
-        this.searchKeywordOnChange();
+        this.performAutoComplete();
     }
 
     nsEditPropertyFonticon(): string {
@@ -133,18 +133,19 @@ export class FindComponent extends ComponentLifecycleEventEmitter implements OnI
 
     nsSelectObjectType(index: number): void {
         this.searchObjectType = this.searchObjectTypes[index];
-        this.searchKeywordOnChange();
+        this.performAutoComplete();
     }
 
     nsEditObjectTypeFonticon(): string {
         return this.searchObjectTypesNsPicking ? 'fa-check' : 'fa-pencil';
     }
 
-    searchKeywordOnChange(): void {
+    searchKeywordOnChange($event): void {
         if (!this.vortexStatusService.snapshot.isOnline)
             return;
 
-        this.performAutoCompleteSubject.next();
+        this.searchString = $event;
+        this.performAutoCompleteSubject.next($event);
     }
 
     private performAutoComplete(): void {

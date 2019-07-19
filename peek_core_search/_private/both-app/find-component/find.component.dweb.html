@@ -8,7 +8,7 @@
             <div class="form-group">
                 <div [class.input-group]="offlineSearchEnabled()">
                     <input type="text" class="form-control"
-                           (ngModelChange)="searchKeywordOnChange()"
+                           (ngModelChange)="searchKeywordOnChange($event)"
                            placeholder="search" [(ngModel)]="searchString">
                     <span class="input-group-btn" *ngIf="offlineSearchEnabled()">
                     <Button class="btn" (click)="find()"
@@ -25,7 +25,7 @@
                 <select id="searchPropertyId"
                         class="form-control dialog-selector"
                         name="searchPropertyId"
-                        (ngModelChange)="searchKeywordOnChange()"
+                        (change)="performAutoComplete()"
                         [(ngModel)]="searchProperty">
                     <option [ngValue]="option"
                             *ngFor="let option of searchProperties">
@@ -42,7 +42,7 @@
                 <select id="searchObjectTypesId"
                         class="form-control dialog-selector"
                         name="searchObjectTypesId"
-                        (ngModelChange)="searchKeywordOnChange()"
+                        (change)="performAutoComplete()"
                         [(ngModel)]="searchObjectType">
                     <option [ngValue]="option"
                             *ngFor="let option of searchObjectTypes">

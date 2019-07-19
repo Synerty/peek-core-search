@@ -3,7 +3,7 @@
     <GridLayout columns="*, auto" rows="auto" class="peek-details-section">
         <TextField class="details-section-value editable"
                    autocorrect="false"
-                   (ngModelChange)="searchKeywordOnChange()"
+                   (ngModelChange)="searchKeywordOnChange($event)"
                    hint="search" [(ngModel)]="searchString"
                    returnKeyType="search"
                    returnPress="find()">
