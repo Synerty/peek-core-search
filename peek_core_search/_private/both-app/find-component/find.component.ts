@@ -1,4 +1,4 @@
-import {Component} from "@angular/core";
+import {Component, OnInit} from "@angular/core";
 import {
     SearchObjectTypeTuple,
     SearchResultObjectTuple,
@@ -22,7 +22,7 @@ import {debounceTime, distinctUntilChanged} from "rxjs/operators";
     templateUrl: 'find.component.mweb.html',
     moduleId: module.id
 })
-export class FindComponent extends ComponentLifecycleEventEmitter {
+export class FindComponent extends ComponentLifecycleEventEmitter implements OnInit {
 
     private readonly ALL = "All";
 
@@ -50,6 +50,9 @@ export class FindComponent extends ComponentLifecycleEventEmitter {
         super();
         this.searchProperty.title = this.ALL;
         this.searchObjectType.title = this.ALL;
+    }
+
+    ngOnInit() {
 
         let propTs = new TupleSelector(SearchPropertyTuple.tupleName, {});
         this.tupleService.offlineObserver
@@ -59,6 +62,9 @@ export class FindComponent extends ComponentLifecycleEventEmitter {
                 // Create the empty item
                 let all = new SearchPropertyTuple();
                 all.title = "All";
+
+                if (this.searchProperty.title == all.title)
+                    this.searchProperty = all;
 
                 // Update the search objects
                 this.searchProperties = [];
@@ -82,6 +88,9 @@ export class FindComponent extends ComponentLifecycleEventEmitter {
                 // Create the empty item
                 let all = new SearchObjectTypeTuple();
                 all.title = "All";
+
+                if (this.searchObjectType.title == all.title)
+                    this.searchObjectType = all;
 
                 // Update the search objects
                 this.searchObjectTypes = [];
