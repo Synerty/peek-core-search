@@ -12,14 +12,14 @@ import {
     VortexStatusService
 } from "@synerty/vortexjs";
 import {Ng2BalloonMsgService} from "@synerty/ng2-balloon-msg";
-import {KeywordAutoCompleteTupleAction} from "../tuples/KeywordAutoCompleteTupleAction";
 import {Subject} from "rxjs";
 import {debounceTime, distinctUntilChanged} from "rxjs/operators";
 
 
 @Component({
     selector: 'plugin-search-find',
-    templateUrl: 'find.component.mweb.html',
+    templateUrl: 'find.component.web.html',
+    styleUrls: ["find.component.web.scss"],
     moduleId: module.id
 })
 export class FindComponent extends ComponentLifecycleEventEmitter implements OnInit {
@@ -42,6 +42,10 @@ export class FindComponent extends ComponentLifecycleEventEmitter implements OnI
     searchObjectTypesNsPicking = false;
 
     private performAutoCompleteSubject: Subject<string> = new Subject<string>();
+
+    private firstSearchHasRun: boolean = false;
+
+    optionsShown = false;
 
     constructor(private vortexStatusService: VortexStatusService,
                 private searchService: SearchService,
@@ -148,6 +152,16 @@ export class FindComponent extends ComponentLifecycleEventEmitter implements OnI
         this.performAutoCompleteSubject.next($event);
     }
 
+    searchPropertyOnChange($event): void {
+        this.searchProperty = $event;
+        this.performAutoComplete();
+    }
+
+    searchObjectTypesOnChange($event): void {
+        this.searchObjectType = $event;
+        this.performAutoComplete();
+    }
+
     private performAutoComplete(): void {
         if (!this.vortexStatusService.snapshot.isOnline)
             return;
@@ -168,33 +182,36 @@ export class FindComponent extends ComponentLifecycleEventEmitter implements OnI
             return;
         }
 
-        const autoCompleteAction = new KeywordAutoCompleteTupleAction();
-        autoCompleteAction.searchString = this.searchString;
-
-        const prop = this.searchProperty;
-        if (prop.title != this.ALL && prop.name != null && prop.name.length)
-            autoCompleteAction.propertyKey = prop.name;
-
-        const objProp = this.searchObjectType;
-        if (objProp.title != this.ALL && objProp.name != null && objProp.name.length)
-            autoCompleteAction.objectTypeId = objProp.id;
-
         this.searchInProgress = true;
-        this.tupleService.action.pushAction(autoCompleteAction)
-            .then((results: SearchResultObjectTuple[]) => {
-                this.resultObjects = results;
+
+        this.searchService
+            .getObjectsOnlinePartial(this.getSearchPropertyName,
+                this.getSearchObjectTypeId,
+                this.searchString)
+            .then((results: SearchResultObjectTuple[]) => this.resultObjects = results)
+            .catch((e: string) => this.balloonMsg.showError(`Find Failed:${e}`))
+            .then(() => {
                 this.searchInProgress = false;
-            })
-            .catch(e => this.balloonMsg.showError("Failed to live search"));
+                this.firstSearchHasRun = true;
+            });
     }
 
+    get getSearchPropertyName(): string | null {
+        const prop = this.searchProperty;
+        if (prop.title != this.ALL && prop.name != null && prop.name.length)
+            return prop.name;
+        return null;
+    }
 
-    noResults(): boolean {
-        return this.resultObjects.length == 0 && !this.searchInProgress;
-
+    get getSearchObjectTypeId(): number | null {
+        const objProp = this.searchObjectType;
+        if (objProp.title != this.ALL && objProp.name != null && objProp.name.length)
+            return objProp.id;
+        return null;
     }
 
     find() {
+
         if (this.searchString == null || this.searchString.length == 0) {
             this.balloonMsg.showWarning("Please enter something to search for");
             return;
@@ -203,13 +220,26 @@ export class FindComponent extends ComponentLifecycleEventEmitter implements OnI
         this.searchInProgress = true;
 
         this.searchService
-            .getObjects(this.searchProperty.name, this.searchObjectType.id, this.searchString)
+            .getObjects(this.getSearchPropertyName,
+                this.getSearchObjectTypeId,
+                this.searchString)
             .then((results: SearchResultObjectTuple[]) => this.resultObjects = results)
             .catch((e: string) => this.balloonMsg.showError(`Find Failed:${e}`))
-            .then(() => this.searchInProgress = false);
+            .then(() => {
+                this.searchInProgress = false;
+                this.firstSearchHasRun = true;
+            });
     }
 
-    offlineSearchEnabled():boolean {
+
+    noResults(): boolean {
+        return this.resultObjects.length == 0 && !this.searchInProgress
+            && this.firstSearchHasRun;
+
+    }
+
+
+    offlineSearchEnabled(): boolean {
         return this.vortexStatusService.snapshot.isOnline === false;
     }
 

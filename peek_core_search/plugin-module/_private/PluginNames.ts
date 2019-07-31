@@ -10,3 +10,5 @@ export let searchBaseUrl = "peek_core_search";
 export let searchIndexCacheStorageName = 'peek_core_search.SearchIndex';
 
 export let searchObjectCacheStorageName = 'peek_core_search.SearchObject';
+
+export let searchPluginName = "peek_core_search";

@@ -1,0 +1,18 @@
+.scroll-flex-stretch {
+  display: flex;
+  flex-direction: column;
+  max-height: 70vh;
+
+}
+
+.scroll-container {
+  flex-grow: 1;
+  overflow-y: scroll;
+}
+
+.scroll-box {
+  height: 100%;
+  width:100%;
+}
+
+

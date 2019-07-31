@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Index
+from sqlalchemy import Column, Index, Boolean
 from sqlalchemy import Integer, String
 
 from peek_core_search._private.PluginNames import searchTuplePrefix
@@ -15,6 +15,9 @@ class SearchPropertyTuple(Tuple, DeclarativeBase):
     name = Column(String, nullable=False)
     title = Column(String, nullable=False)
     order = Column(Integer, nullable=False, server_default='0')
+
+    showOnResult = Column(Boolean, nullable=False, server_default='1')
+    showInHeader = Column(Boolean, nullable=False, server_default='0')
 
     __table_args__ = (
         Index("idx_SearchProp_name", name, unique=True),

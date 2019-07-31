@@ -8,11 +8,11 @@ from typing import List, Set
 import pytz
 from sqlalchemy import select
 
-from peek_plugin_base.worker import CeleryDbConn
 from peek_core_search._private.storage.SearchIndex import SearchIndex
 from peek_core_search._private.storage.SearchIndexCompilerQueue import \
     SearchIndexCompilerQueue
 from peek_core_search._private.worker.tasks._CalcChunkKey import makeSearchIndexChunkKey
+from peek_plugin_base.worker import CeleryDbConn
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +29,8 @@ def reindexSearchObject(objectsToIndex: List[ObjectToIndexTuple]) -> None:
     :param objectsToIndex: Object To Index
     :returns:
     """
+
+    logger.debug("Starting to index %s SearchIndex", len(objectsToIndex))
 
     searchIndexTable = SearchIndex.__table__
     queueTable = SearchIndexCompilerQueue.__table__
@@ -82,7 +84,7 @@ def reindexSearchObject(objectsToIndex: List[ObjectToIndexTuple]) -> None:
             transaction.rollback()
 
         logger.debug("Inserted %s SearchIndex keywords in %s",
-                     newSearchIndexes, (datetime.now(pytz.utc) - startTime))
+                     len(newSearchIndexes), (datetime.now(pytz.utc) - startTime))
 
     except:
         transaction.rollback()
@@ -105,7 +107,7 @@ def reindexSearchObject(objectsToIndex: List[ObjectToIndexTuple]) -> None:
 # lemmatizer = WordNetLemmatizer()
 
 
-def _splitKeywords(keywordStr:str) -> Set[str] :
+def _splitKeywords(keywordStr: str) -> Set[str]:
     # Lowercase the string
     keywordStr = keywordStr.lower()
 
@@ -143,16 +145,14 @@ def _indexObject(objectToIndex: ObjectToIndexTuple) -> List[SearchIndex]:
 
     return searchIndexes
 
-#
+
 # if __name__ == '__main__':
 #     objectToIndex = ObjectToIndexTuple(
 #         id=1,
-#         key='COMP3453453J',
 #         props={
+#             'key': 'COMP3453453J',
 #             'alias': 'AB1345XXX',
 #             'name': 'Hello, this is tokenising, strings string, child children'
 #         }
 #     )
 #     print(_indexObject(objectToIndex))
-
-

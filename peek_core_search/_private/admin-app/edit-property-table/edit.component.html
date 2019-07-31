@@ -17,6 +17,8 @@
                 <th>Name</th>
                 <th>Order</th>
                 <th>Description</th>
+                <th>Header(?)</th>
+                <th>Result(?)</th>
             </tr>
             <tr *ngFor="let item of items">
                 <td>
@@ -31,6 +33,12 @@
                     <input [(ngModel)]="item.title"
                            class="form-control input-sm"
                            type="text"/>
+                </td>
+                <td>
+                    <nz-switch [(ngModel)]="item.showInHeader"></nz-switch>
+                </td>
+                <td>
+                    <nz-switch [(ngModel)]="item.showOnResult"></nz-switch>
                 </td>
             </tr>
         </table>

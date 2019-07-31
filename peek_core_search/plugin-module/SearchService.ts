@@ -3,20 +3,9 @@ import {Injectable} from "@angular/core";
 
 import {
     ComponentLifecycleEventEmitter,
-    extend,
-    Payload,
-    PayloadEnvelope,
-    TupleOfflineStorageNameService,
-    TupleOfflineStorageService,
     TupleSelector,
-    TupleStorageFactoryService,
-    VortexService,
     VortexStatusService
 } from "@synerty/vortexjs";
-
-
-import {Subject} from "rxjs/Subject";
-import {Observable} from "rxjs/Observable";
 import {PrivateSearchIndexLoaderService} from "./_private/search-index-loader";
 import {PrivateSearchObjectLoaderService} from "./_private/search-object-loader";
 
@@ -24,12 +13,19 @@ import {SearchResultObjectTuple} from "./SearchResultObjectTuple";
 import {SearchObjectTypeTuple} from "./SearchObjectTypeTuple";
 import {OfflineConfigTuple, SearchPropertyTuple, SearchTupleService} from "./_private";
 import {keywordSplitter} from "./_private/KeywordSplitter";
+import {KeywordAutoCompleteTupleAction} from "./_private/tuples/KeywordAutoCompleteTupleAction";
 
 
 export interface SearchPropT {
     title: string;
     value: string;
     order: number;
+
+    // Should this property be shown as the name in the search result
+    showInHeader: boolean;
+
+    // Should this property be shown on the search result at all.
+    showOnResult: boolean;
 }
 
 
@@ -162,6 +158,20 @@ export class SearchService extends ComponentLifecycleEventEmitter {
 
     }
 
+    async getObjectsOnlinePartial(propertyName: string | null,
+                                  objectTypeId: number | null,
+                                  keywordsString: string): Promise<SearchResultObjectTuple[]> {
+
+        const autoCompleteAction = new KeywordAutoCompleteTupleAction();
+        autoCompleteAction.searchString = keywordsString;
+        autoCompleteAction.propertyKey = propertyName;
+        autoCompleteAction.objectTypeId = objectTypeId;
+
+        let results = await <any>this.tupleService.action.pushAction(autoCompleteAction);
+        return this._loadObjectTypes(results);
+    }
+
+
     /** Get Nice Ordered Properties
      *
      * @param {SearchResultObjectTuple} obj
@@ -175,7 +185,9 @@ export class SearchService extends ComponentLifecycleEventEmitter {
             props.push({
                 title: prop.title,
                 order: prop.order,
-                value: obj.properties[name]
+                value: obj.properties[name],
+                showInHeader: prop.showInHeader,
+                showOnResult: prop.showOnResult,
             });
         }
         props.sort((a, b) => a.order - b.order);
@@ -198,3 +210,4 @@ export class SearchService extends ComponentLifecycleEventEmitter {
     }
 
 }
+

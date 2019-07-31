@@ -1,47 +1,125 @@
-import {Component, Input, OnInit} from "@angular/core";
+import {ChangeDetectorRef, Component, Input, OnInit, ViewChild} from "@angular/core";
 import {Router} from "@angular/router";
-import {searchBaseUrl, SearchPropertyTuple} from "@peek/peek_core_search/_private";
 
-import {
-    ComponentLifecycleEventEmitter,
-    TupleActionPushService,
-    TupleDataObserverService,
-    TupleSelector
-} from "@synerty/vortexjs";
+import {ComponentLifecycleEventEmitter} from "@synerty/vortexjs";
+import * as $ from "jquery";
 
 import {
     SearchObjectTypeTuple,
+    SearchPropT,
     SearchResultObjectRouteTuple,
     SearchResultObjectTuple,
     SearchService
 } from "@peek/peek_core_search";
+import {searchPluginName} from "@peek/peek_core_search/_private";
 
-interface PropT {
-    title: string;
-    value: string;
-    order: number;
+import {DocDbPopupService, DocDbPopupTypeE} from "@peek/peek_plugin_docdb";
+
+interface ItemResultI {
+    key: string;
+    modelSetKey: string;
+    header: string,
+    bodyProps: SearchPropT[]
+}
+
+interface ObjectTypeResultsI {
+    type: SearchObjectTypeTuple,
+    results: ItemResultI[]
 }
 
 @Component({
     selector: 'plugin-search-result',
-    templateUrl: 'result.component.mweb.html',
-    moduleId: module.id
+    templateUrl: 'result.component.web.html',
+    styleUrls: ["result.component.web.scss"],
+    moduleId: module.id,
 })
 export class ResultComponent extends ComponentLifecycleEventEmitter implements OnInit {
 
-    @Input("resultObject")
-    resultObject: SearchResultObjectTuple = new SearchResultObjectTuple();
+    resultObjectTypes: ObjectTypeResultsI[] = [];
 
-    properties: PropT[] = [];
 
-    constructor(private router: Router,
+    constructor(private objectPopupService: DocDbPopupService,
+                private cdr: ChangeDetectorRef,
+                private router: Router,
                 private searchService: SearchService) {
         super();
 
     }
 
     ngOnInit() {
-        this.properties = this.searchService.getNiceOrderedProperties(this.resultObject);
+    }
+
+
+    @Input("resultObjects")
+    set resultObjects(resultObjects: SearchResultObjectTuple[]) {
+        const resultsGroupByType: { [id: number]: ObjectTypeResultsI } = {};
+        this.resultObjectTypes = [];
+        for (const object of resultObjects) {
+            let typeResult = resultsGroupByType[object.objectType.id];
+
+            if (typeResult == null) {
+                typeResult = resultsGroupByType[object.objectType.id] = {
+                    type: object.objectType,
+                    results: []
+                };
+                this.resultObjectTypes.push(typeResult);
+            }
+
+            const props = this.searchService
+                .getNiceOrderedProperties(object)
+                .filter(p => p.showOnResult);
+
+            typeResult.results.push({
+                key: object.key,
+                modelSetKey: 'pofDiagram',
+                header: this.headerProps(props),
+                bodyProps: this.bodyProps(props)
+            });
+        }
+
+    }
+
+
+    headerProps(props: SearchPropT[]): string {
+        return props.filter(p => p.showInHeader)
+            .map(p => p.value)
+            .join();
+    }
+
+    bodyProps(props: SearchPropT[]): SearchPropT[] {
+        return props.filter(p => !p.showInHeader);
+    }
+
+    tooltipEnter($event: MouseEvent, result: ItemResultI) {
+        const offset = $(".scroll-container").offset();
+        this.objectPopupService
+            .showPopup(
+                DocDbPopupTypeE.tooltipPopup,
+                searchPluginName,
+                {
+                    x: $event.x + 50,
+                    y: $event.y
+                },
+                'pofDiagram',
+                result.key);
+
+    }
+
+    tooltipExit($event: MouseEvent, result: ItemResultI) {
+        this.objectPopupService.hidePopup(DocDbPopupTypeE.tooltipPopup);
+
+    }
+
+    showSummaryPopup($event: MouseEvent, result: ItemResultI) {
+        this.objectPopupService.hidePopup(DocDbPopupTypeE.tooltipPopup);
+        this.objectPopupService
+            .showPopup(
+                DocDbPopupTypeE.summaryPopup,
+                searchPluginName,
+                $event,
+                result.modelSetKey,
+                result.key);
+
     }
 
 

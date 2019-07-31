@@ -23,6 +23,7 @@ import {
     searchObservableName,
     searchTupleOfflineServiceName
 } from "@peek/peek_core_search/_private";
+import { NzSwitchModule } from 'ng-zorro-antd/switch';
 
 
 export function tupleActionPushNameServiceFactory() {
@@ -53,7 +54,8 @@ export const pluginRoutes: Routes = [
     imports: [
         CommonModule,
         RouterModule.forChild(pluginRoutes),
-        FormsModule
+        FormsModule,
+        NzSwitchModule
     ],
     exports: [],
     providers: [

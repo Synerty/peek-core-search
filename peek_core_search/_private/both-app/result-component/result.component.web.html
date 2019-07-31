@@ -1,0 +1,29 @@
+<div>
+    <nz-tabset>
+        <nz-tab *ngFor="let typeResult of resultObjectTypes"
+                class="scroll-parent"
+                [nzTitle]="typeResult.type.title">
+
+            <div class="scroll-flex-stretch">
+                <div class="scroll-container">
+                    <nz-table class="scroll-box" nzTemplateMode
+                              ngSize="small">
+                        <tbody>
+                        <tr *ngFor="let result of typeResult.results"
+                            (mouseenter)="tooltipEnter($event, result) "
+                            (mouseleave)="tooltipExit($event, result)"
+                            (click)="showSummaryPopup($event, result) ">
+                            <td>
+                                <span nz-text><strong>{{result.header}}</strong></span>
+                                <span *ngFor="let prop of result.bodyProps"
+                                      nz-text nzDisabled>, {{prop.value}}<br></span>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </nz-table>
+                </div>
+            </div>
+
+        </nz-tab>
+    </nz-tabset>
+</div>

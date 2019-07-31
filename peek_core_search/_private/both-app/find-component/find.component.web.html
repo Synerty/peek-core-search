@@ -1,0 +1,112 @@
+<div>
+
+    <nz-alert *ngIf="offlineSearchEnabled()"
+              nzType="warning"
+              [nzMessage]="offlineAlertContent">
+        <ng-template #offlineAlertContent>
+            You are searching offline, you must use full words to search.
+        </ng-template>
+
+    </nz-alert>
+    <div nz-row class="search-row">
+        <div nz-col nzSpan="22">
+
+
+            <!-- Search text field  -->
+            <nz-form-item>
+                <nz-form-control>
+                    <!-- Online search box -->
+                    <nz-input-group *ngIf="!offlineSearchEnabled()">
+                        <input type="text" nz-input
+                               (ngModelChange)="searchKeywordOnChange($event)"
+                               placeholder="search" [(ngModel)]="searchString"/>
+                    </nz-input-group>
+                    <!-- Offline search box -->
+                    <nz-input-group *ngIf="offlineSearchEnabled()"
+                                    nzSearch
+                                    [nzAddOnAfter]="searchButtonSuffix">
+                        <input type="text" nz-input
+                               (ngModelChange)="searchKeywordOnChange($event)"
+                               placeholder="search" [(ngModel)]="searchString"/>
+                    </nz-input-group>
+                    <ng-template #searchButtonSuffix>
+                        <button nz-button nzSearch nzType="primary">
+                            <fa name="search"></fa>
+                        </button>
+                    </ng-template>
+                </nz-form-control>
+            </nz-form-item>
+
+        </div>
+
+        <div nz-col nzSpan="1">
+            <button nz-button (click)="optionsShown = !optionsShown">
+                <fa name="filter"></fa>
+            </button>
+        </div>
+    </div>
+
+    <div *ngIf="optionsShown" nz-form nzLayout="vertical">
+
+        <div nz-row>
+            <div nz-col nzSpan="12">
+                <!-- Search property -->
+                <nz-form-item>
+                    <nz-form-label nzFor="searchPropertyId">Property</nz-form-label>
+                    <nz-form-control>
+
+                        <nz-select id="searchPropertyId"
+                                   name="searchPropertyId"
+                                   (ngModelChange)="searchPropertyOnChange($event)"
+                                   [(ngModel)]="searchProperty">
+                            <nz-option *ngFor="let option of searchProperties"
+                                       [nzLabel]="option.title"
+                                       [nzValue]="option"></nz-option>
+
+                        </nz-select>
+                    </nz-form-control>
+                </nz-form-item>
+            </div>
+
+
+            <div nz-col nzSpan="12">
+                <!-- Search Object Type -->
+                <nz-form-item>
+                    <nz-form-label nzFor="searchObjectTypesId">Object Type
+                    </nz-form-label>
+                    <nz-form-control>
+
+                        <nz-select id="searchObjectTypesId"
+                                   name="searchObjectTypesId"
+                                   (ngModelChange)="searchObjectTypesOnChange($event)"
+                                   [(ngModel)]="searchObjectType">
+                            <nz-option *ngFor="let option of searchObjectTypes"
+                                       [nzLabel]="option.title"
+                                       [nzValue]="option"></nz-option>
+
+                        </nz-select>
+                    </nz-form-control>
+                </nz-form-item>
+            </div>
+        </div>
+    </div>
+
+    <div>
+        <div>
+            <nz-alert *ngIf="noResults()"
+                      nzType="info"
+                      nzMessage="No Results"
+                      nzDescription="Peek could not find any results, please refine your search">
+            </nz-alert>
+
+            <nz-spin *ngIf="searchInProgress" nzTip="Searching...">
+
+            </nz-spin>
+
+            <plugin-search-result *ngIf="resultObjects.length != 0"
+                                  [resultObjects]="resultObjects">
+
+            </plugin-search-result>
+        </div>
+    </div>
+</div>

@@ -177,6 +177,10 @@ def _buildIndex(conn, chunkKeys) -> Dict[str, bytes]:
         compileSearchIndexChunks = []
 
         for keyword, objIdsByProp in objIdsByPropByKw.items():
+            if len(objIdsByProp) > 1000:
+                logger.error("Too many items in bucket for keyword %s",
+                             keyword, len(objIdsByProp))
+
             for propertyName, objectIds in objIdsByProp.items():
                 compileSearchIndexChunks.append(
                     [keyword, propertyName, json.dumps(list(sorted(objectIds)))]

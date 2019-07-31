@@ -288,6 +288,8 @@ def _insertOrUpdateObjects(newSearchObjects: List[ImportSearchObjectTuple],
                      len(inserts), len(propUpdates),
                      (datetime.now(pytz.utc) - startTime))
 
+        logger.debug("Passing to index %s SearchIndex", len(objectsToIndex))
+
         return list(objectsToIndex.values()), objectIdByKey, chunkKeysForQueue
 
     except Exception as e:
