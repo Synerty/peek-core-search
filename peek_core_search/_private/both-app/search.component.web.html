@@ -1,15 +1,11 @@
 <nz-modal
         [(nzVisible)]="showSearch"
-        [nzTitle]="modalTitle"
+        [nzTitle]="null"
         [nzFooter]="null"
         (nzOnCancel)="showSearch=false"
-        [nzContent]="modalBody"
         nzWidth="600px"
         [nzStyle]="{'top':'0px'}">
 
+    <plugin-search-find></plugin-search-find>
 
 </nz-modal>
-
-<ng-template #modalBody>
-    <plugin-search-find></plugin-search-find>
-</ng-template>
