@@ -3,16 +3,15 @@ from datetime import datetime
 from typing import List
 
 import pytz
-from sqlalchemy import asc
-from twisted.internet import task
-from twisted.internet.defer import inlineCallbacks
-
 from peek_core_search._private.server.client_handlers.ClientSearchIndexChunkUpdateHandler import \
     ClientSearchIndexChunkUpdateHandler
 from peek_core_search._private.server.controller.StatusController import \
     StatusController
 from peek_core_search._private.storage.SearchIndexCompilerQueue import \
     SearchIndexCompilerQueue
+from sqlalchemy import asc
+from twisted.internet import task
+from twisted.internet.defer import inlineCallbacks
 from vortex.DeferUtil import deferToThreadWrapWithLogger, vortexLogFailure
 
 logger = logging.getLogger(__name__)
@@ -29,7 +28,6 @@ class SearchIndexChunkCompilerQueueController:
 
     """
 
-    DE_DUPE_FETCH_SIZE = 2000
     ITEMS_PER_TASK = 10
     PERIOD = 1.000
 
@@ -81,24 +79,6 @@ class SearchIndexChunkCompilerQueueController:
         if not queueItems:
             return
 
-        # De duplicated queued grid keys
-        # This is the reason why we don't just queue all the celery tasks in one go.
-        # If we keep them in the DB queue, we can remove the duplicates
-        # and there are lots of them
-        queueIdsToDelete = []
-
-        searchIndexChunkKeys = set()
-        for i in queueItems:
-            if i.chunkKey in searchIndexChunkKeys:
-                queueIdsToDelete.append(i.id)
-            else:
-                searchIndexChunkKeys.add(i.chunkKey)
-
-        if queueIdsToDelete:
-            # Delete the duplicates and requery for our new list
-            yield self._deleteDuplicateQueueItems(queueIdsToDelete)
-            queueItems = yield self._grabQueueChunk()
-
         # Send the tasks to the peek worker
         for start in range(0, len(queueItems), self.ITEMS_PER_TASK):
 
@@ -115,6 +95,8 @@ class SearchIndexChunkCompilerQueueController:
             if self._queueCount >= self.QUEUE_MAX:
                 break
 
+        yield self._dedupeQueue()
+
     @deferToThreadWrapWithLogger(logger)
     def _grabQueueChunk(self):
         session = self._dbSessionCreator()
@@ -122,29 +104,34 @@ class SearchIndexChunkCompilerQueueController:
             qry = (session.query(SearchIndexCompilerQueue)
                    .order_by(asc(SearchIndexCompilerQueue.id))
                    .filter(SearchIndexCompilerQueue.id > self._lastQueueId)
-                   .yield_per(self.DE_DUPE_FETCH_SIZE)
-                   .limit(self.DE_DUPE_FETCH_SIZE)
+                   .yield_per(self.QUEUE_MAX)
+                   .limit(self.QUEUE_MAX)
                    )
 
             queueItems = qry.all()
             session.expunge_all()
 
-            return queueItems
+            # Deduplicate the values and return the ones with the lowest ID
+            return list({o.chunkKey: o for o in reversed(queueItems)}.values())
 
         finally:
             session.close()
 
     @deferToThreadWrapWithLogger(logger)
-    def _deleteDuplicateQueueItems(self, itemIds):
+    def _dedupeQueue(self):
         session = self._dbSessionCreator()
-        table = SearchIndexCompilerQueue.__table__
         try:
-            SIZE = 1000
-            for start in range(0, len(itemIds), SIZE):
-                chunkIds = itemIds[start: start + SIZE]
-
-                session.execute(table.delete(table.c.id.in_(chunkIds)))
-
+            session.execute("""
+                with sq as (
+                    SELECT min(id) as "minId"
+                    FROM core_search."SearchIndexCompilerQueue"
+                    WHERE id > %s
+                    GROUP BY  "chunkKey"
+                )
+                DELETE
+                FROM core_search."SearchIndexCompilerQueue"
+                WHERE "id" not in (SELECT "minId" FROM sq)
+            """ % self._lastQueueId)
             session.commit()
         finally:
             session.close()

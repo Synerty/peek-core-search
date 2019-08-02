@@ -73,7 +73,7 @@ def importSearchObjectTask(self, searchObjectsEncodedPayload: bytes) -> None:
 
         reindexSearchObject(objectsToIndex)
 
-        logger.info("Imported %s SearchObjects in %s",
+        logger.debug("Imported %s SearchObjects in %s",
                     len(newSearchObjects),
                     datetime.now(pytz.utc) - startTime)
 

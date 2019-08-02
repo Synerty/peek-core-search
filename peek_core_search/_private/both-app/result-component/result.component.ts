@@ -100,7 +100,7 @@ export class ResultComponent extends ComponentLifecycleEventEmitter implements O
                     x: $event.x + 50,
                     y: $event.y
                 },
-                'pofDiagram',
+                result.modelSetKey,
                 result.key);
 
     }

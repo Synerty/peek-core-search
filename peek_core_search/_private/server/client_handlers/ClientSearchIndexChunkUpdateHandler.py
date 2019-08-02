@@ -88,7 +88,7 @@ class ClientSearchIndexChunkUpdateHandler:
 
             return (
                 Payload(filt=clientSearchIndexUpdateFromServerFilt, tuples=results)
-                    .makePayloadEnvelope().toVortexMsg()
+                    .makePayloadEnvelope(compressionLevel=3).toVortexMsg()
             )
 
         finally:
