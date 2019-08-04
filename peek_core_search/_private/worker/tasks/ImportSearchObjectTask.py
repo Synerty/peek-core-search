@@ -9,7 +9,6 @@ from sqlalchemy import select, bindparam, and_
 from txcelery.defer import DeferrableTask
 from vortex.Payload import Payload
 
-from peek_plugin_base.worker import CeleryDbConn
 from peek_core_search._private.storage.SearchObject import SearchObject
 from peek_core_search._private.storage.SearchObjectCompilerQueue import \
     SearchObjectCompilerQueue
@@ -23,6 +22,7 @@ from peek_core_search._private.worker.tasks.ImportSearchIndexTask import \
 from peek_core_search._private.worker.tasks._CalcChunkKey import \
     makeSearchObjectChunkKey
 from peek_core_search.tuples.ImportSearchObjectTuple import ImportSearchObjectTuple
+from peek_plugin_base.worker import CeleryDbConn
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +63,7 @@ def importSearchObjectTask(self, searchObjectsEncodedPayload: bytes) -> None:
     try:
         objectTypeIdsByName = _prepareLookups(newSearchObjects)
 
-        objectsToIndex, objectIdByKey, chunkKeysForQueue = _insertOrUpdateObjects(
+        objectIdByKey, chunkKeysForQueue = _insertOrUpdateObjects(
             newSearchObjects, objectTypeIdsByName
         )
 
@@ -71,11 +71,9 @@ def importSearchObjectTask(self, searchObjectsEncodedPayload: bytes) -> None:
 
         _packObjectJson(list(objectIdByKey.values()), chunkKeysForQueue)
 
-        reindexSearchObject(objectsToIndex)
-
         logger.debug("Imported %s SearchObjects in %s",
-                    len(newSearchObjects),
-                    datetime.now(pytz.utc) - startTime)
+                     len(newSearchObjects),
+                     datetime.now(pytz.utc) - startTime)
 
     except Exception as e:
         logger.debug("Retrying import search objects, %s", e)
@@ -147,7 +145,7 @@ def _prepareLookups(newSearchObjects: List[ImportSearchObjectTuple]) -> Dict[str
 
 def _insertOrUpdateObjects(newSearchObjects: List[ImportSearchObjectTuple],
                            objectTypeIdsByName: Dict[str, int]) -> Tuple[
-    List[ObjectToIndexTuple], Dict[str, int], Set[int]]:
+    Dict[str, int], Set[int]]:
     """ Insert or Update Objects
 
     1) Find objects and update them
@@ -159,35 +157,8 @@ def _insertOrUpdateObjects(newSearchObjects: List[ImportSearchObjectTuple],
 
     startTime = datetime.now(pytz.utc)
 
-    engine = CeleryDbConn.getDbEngine()
-    conn = engine.connect()
-
-    try:
-        objectKeys = set(
-            [o.key for o in newSearchObjects]
-            + [o.key.lower() for o in newSearchObjects]
-        )
-
-        # Query existing objects
-        results = list(conn.execute(select(
-            columns=[searchObjectTable.c.id, searchObjectTable.c.key,
-                     searchObjectTable.c.chunkKey, searchObjectTable.c.propertiesJson],
-            whereclause=searchObjectTable.c.key.in_(objectKeys)
-        )))
-
-        createdObjectByKey = {o.key.lower(): o for o in results}
-        del results
-        del objectKeys
-
-    finally:
-        conn.close()
-
-    # Get the IDs that we need
-    newSearchObjectUniqueCount = len(set([o.key.lower() for o in newSearchObjects]))
-    newIdGen = CeleryDbConn.prefetchDeclarativeIds(
-        SearchObject, newSearchObjectUniqueCount - len(createdObjectByKey)
-    )
-    del newSearchObjectUniqueCount
+    createdObjectByKey, engine, newIdGen = _loadExistingObjects(newSearchObjects,
+                                                                searchObjectTable)
 
     conn = engine.connect()
     transaction = conn.begin()
@@ -279,7 +250,10 @@ def _insertOrUpdateObjects(newSearchObjects: List[ImportSearchObjectTuple],
             )
             conn.execute(stmt, objectTypeUpdates)
 
-        if inserts or propUpdates or objectTypeUpdates:
+        # Reindex the keywords
+        reindexSearchObject(conn, list(objectsToIndex.values()))
+
+        if objectsToIndex or inserts or propUpdates or objectTypeUpdates:
             transaction.commit()
         else:
             transaction.rollback()
@@ -290,7 +264,7 @@ def _insertOrUpdateObjects(newSearchObjects: List[ImportSearchObjectTuple],
 
         logger.debug("Passing to index %s SearchIndex", len(objectsToIndex))
 
-        return list(objectsToIndex.values()), objectIdByKey, chunkKeysForQueue
+        return objectIdByKey, chunkKeysForQueue
 
     except Exception as e:
         transaction.rollback()
@@ -299,6 +273,37 @@ def _insertOrUpdateObjects(newSearchObjects: List[ImportSearchObjectTuple],
 
     finally:
         conn.close()
+
+
+def _loadExistingObjects(newSearchObjects, searchObjectTable):
+    engine = CeleryDbConn.getDbEngine()
+    conn = engine.connect()
+    try:
+        objectKeys = set(
+            [o.key for o in newSearchObjects]
+            + [o.key.lower() for o in newSearchObjects]
+        )
+
+        # Query existing objects
+        results = list(conn.execute(select(
+            columns=[searchObjectTable.c.id, searchObjectTable.c.key,
+                     searchObjectTable.c.chunkKey, searchObjectTable.c.propertiesJson],
+            whereclause=searchObjectTable.c.key.in_(objectKeys)
+        )))
+
+        createdObjectByKey = {o.key.lower(): o for o in results}
+        del results
+        del objectKeys
+
+    finally:
+        conn.close()
+    # Get the IDs that we need
+    newSearchObjectUniqueCount = len(set([o.key.lower() for o in newSearchObjects]))
+    newIdGen = CeleryDbConn.prefetchDeclarativeIds(
+        SearchObject, newSearchObjectUniqueCount - len(createdObjectByKey)
+    )
+    del newSearchObjectUniqueCount
+    return createdObjectByKey, engine, newIdGen
 
 
 def _insertObjectRoutes(newSearchObjects: List[ImportSearchObjectTuple],

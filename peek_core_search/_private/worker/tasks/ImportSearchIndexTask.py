@@ -23,9 +23,10 @@ def removeObjectIdsFromSearchIndex(deletedObjectIds: List[int]) -> None:
     pass
 
 
-def reindexSearchObject(objectsToIndex: List[ObjectToIndexTuple]) -> None:
+def reindexSearchObject(conn, objectsToIndex: List[ObjectToIndexTuple]) -> None:
     """ Reindex Search Object
 
+    :param conn:
     :param objectsToIndex: Object To Index
     :returns:
     """
@@ -50,48 +51,31 @@ def reindexSearchObject(objectsToIndex: List[ObjectToIndexTuple]) -> None:
         newSearchIndex.id = next(newIdGen)
         searchIndexChunksToQueue.add(newSearchIndex.chunkKey)
 
-    engine = CeleryDbConn.getDbEngine()
-    conn = engine.connect()
-    transaction = conn.begin()
-    try:
+    results = conn.execute(select(
+        columns=[searchIndexTable.c.chunkKey],
+        whereclause=searchIndexTable.c.objectId.in_(objectIds)
+    ))
 
-        results = conn.execute(select(
-            columns=[searchIndexTable.c.chunkKey],
-            whereclause=searchIndexTable.c.objectId.in_(objectIds)
-        ))
+    for result in results:
+        searchIndexChunksToQueue.add(result.chunkKey)
 
-        for result in results:
-            searchIndexChunksToQueue.add(result.chunkKey)
+    if objectIds:
+        conn.execute(searchIndexTable
+                     .delete(searchIndexTable.c.objectId.in_(objectIds)))
 
-        if objectIds:
-            conn.execute(searchIndexTable
-                         .delete(searchIndexTable.c.objectId.in_(objectIds)))
+    if newSearchIndexes:
+        logger.debug("Inserting %s SearchIndex", len(newSearchIndexes))
+        inserts = [o.tupleToSqlaBulkInsertDict() for o in newSearchIndexes]
+        conn.execute(searchIndexTable.insert(), inserts)
 
-        if newSearchIndexes:
-            logger.debug("Inserting %s SearchIndex", len(newSearchIndexes))
-            inserts = [o.tupleToSqlaBulkInsertDict() for o in newSearchIndexes]
-            conn.execute(searchIndexTable.insert(), inserts)
+    if searchIndexChunksToQueue:
+        conn.execute(
+            queueTable.insert(),
+            [dict(chunkKey=k) for k in searchIndexChunksToQueue]
+        )
 
-        if searchIndexChunksToQueue:
-            conn.execute(
-                queueTable.insert(),
-                [dict(chunkKey=k) for k in searchIndexChunksToQueue]
-            )
-
-        if newSearchIndexes or searchIndexChunksToQueue or objectIds:
-            transaction.commit()
-        else:
-            transaction.rollback()
-
-        logger.debug("Inserted %s SearchIndex keywords in %s",
-                     len(newSearchIndexes), (datetime.now(pytz.utc) - startTime))
-
-    except:
-        transaction.rollback()
-        raise
-
-    finally:
-        conn.close()
+    logger.debug("Inserted %s SearchIndex keywords in %s",
+                 len(newSearchIndexes), (datetime.now(pytz.utc) - startTime))
 
 
 # stopwords = set()  # nltk.corpus.stopwords.words('english'))
@@ -108,6 +92,9 @@ def reindexSearchObject(objectsToIndex: List[ObjectToIndexTuple]) -> None:
 
 
 def _splitKeywords(keywordStr: str) -> Set[str]:
+    if not keywordStr:
+        return set()
+
     # Lowercase the string
     keywordStr = keywordStr.lower()
 
@@ -144,7 +131,6 @@ def _indexObject(objectToIndex: ObjectToIndexTuple) -> List[SearchIndex]:
             )
 
     return searchIndexes
-
 
 # if __name__ == '__main__':
 #     objectToIndex = ObjectToIndexTuple(
