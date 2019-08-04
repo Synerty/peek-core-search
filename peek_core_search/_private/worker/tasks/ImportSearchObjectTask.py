@@ -189,7 +189,9 @@ def _insertOrUpdateObjects(newSearchObjects: List[ImportSearchObjectTuple],
                     propsWithKey.update(json.loads(existingObject.propertiesJson))
 
                 # Add the data we're importing second
-                propsWithKey.update(importObject.properties)
+                # Remove null values
+                propsWithKey \
+                    .update({k: v for k, v in importObject.properties.items() if v})
 
             propsStr = json.dumps(propsWithKey, sort_keys=True)
 
