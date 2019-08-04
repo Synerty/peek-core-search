@@ -515,9 +515,8 @@ export class PrivateSearchObjectLoaderService extends ComponentLifecycleEventEmi
                             let routes: string[][] = objectProps['_r_'];
                             delete objectProps['_r_'];
 
-                            // Get out the key
+                            // Get the key
                             let objectKey: string = objectProps['key'];
-                            delete objectProps['key'];
 
                             // Create the new object
                             let newObject = new SearchResultObjectTuple();

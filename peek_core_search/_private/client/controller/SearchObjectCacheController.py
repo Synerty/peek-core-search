@@ -166,9 +166,8 @@ class SearchObjectCacheController:
             routes: List[List[str]] = objectProps['_r_']
             del objectProps['_r_']
 
-            # Get out the key
+            # Get the key
             objectKey: str = objectProps['key']
-            del objectProps['key']
 
             # Create the new object
             newObject = SearchResultObjectTuple()
