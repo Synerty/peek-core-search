@@ -433,10 +433,9 @@ def _packObjectJson(updatedIds: List[int],
             dbSession.query(SearchObject.id, SearchObject.propertiesJson,
                             SearchObject.objectTypeId,
                             SearchObjectRoute.routeTitle, SearchObjectRoute.routePath)
-                .join(SearchObjectRoute, SearchObject.id == SearchObjectRoute.objectId)
+                .outerjoin(SearchObjectRoute, SearchObject.id == SearchObjectRoute.objectId)
                 .filter(SearchObject.id.in_(updatedIds))
                 .filter(SearchObject.propertiesJson != None)
-                .filter(SearchObjectRoute.routePath != None)
                 .order_by(SearchObject.id, SearchObjectRoute.routeTitle)
                 .yield_per(1000)
                 .all()

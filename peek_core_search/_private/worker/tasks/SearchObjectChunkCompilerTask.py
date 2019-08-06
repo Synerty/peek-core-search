@@ -146,6 +146,7 @@ def _buildIndex(chunkKeys) -> Dict[str, bytes]:
         indexQry = (
             session.query(SearchObject.chunkKey, SearchObject.id, SearchObject.packedJson)
                 .filter(SearchObject.chunkKey.in_(chunkKeys))
+                .filter(SearchObject.packedJson != None)
                 .order_by(SearchObject.id)
                 .yield_per(1000)
                 .all()
