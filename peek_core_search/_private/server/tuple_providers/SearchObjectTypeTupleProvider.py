@@ -26,7 +26,7 @@ class SearchObjectTypeTupleProvider(TuplesProviderABC):
             tuples = (
                 session
                     .query(SearchObjectTypeTuple)
-                    .order_by(SearchObjectTypeTuple.title)
+                    .order_by(SearchObjectTypeTuple.order, SearchObjectTypeTuple.title)
                     .all()
             )
 

@@ -9,11 +9,14 @@ export class SearchObjectTypeTuple extends Tuple {
     //  The id
     id: number;
 
-    //  The name of the search property
+    //  The name of the search object
     name: string;
 
-    //  The title of the search property
+    //  The title of the search object
     title: string;
+
+    //  The order of the search object
+    order: number;
 
     constructor() {
         super(SearchObjectTypeTuple.tupleName)

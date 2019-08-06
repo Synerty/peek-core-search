@@ -1,4 +1,4 @@
-import {ChangeDetectorRef, Component, Input, OnInit, ViewChild} from "@angular/core";
+import {ChangeDetectorRef, Component, Input, OnInit} from "@angular/core";
 import {Router} from "@angular/router";
 
 import {ComponentLifecycleEventEmitter} from "@synerty/vortexjs";
@@ -76,6 +76,14 @@ export class ResultComponent extends ComponentLifecycleEventEmitter implements O
                 bodyProps: this.bodyProps(props)
             });
         }
+
+        this.resultObjectTypes.sort((a, b) => {
+            if (a.type.order < b.type.order) return -1;
+            if (a.type.order > b.type.order) return 1;
+            if (a.type.title < b.type.title) return -1;
+            if (a.type.title > b.type.title) return 1;
+            return 0;
+        });
 
     }
 
