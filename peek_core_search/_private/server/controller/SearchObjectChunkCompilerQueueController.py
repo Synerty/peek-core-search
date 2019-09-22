@@ -4,7 +4,7 @@ from typing import List
 
 import pytz
 from sqlalchemy import asc
-from twisted.internet import task
+from twisted.internet import task, reactor
 from twisted.internet.defer import inlineCallbacks
 from vortex.DeferUtil import deferToThreadWrapWithLogger, vortexLogFailure
 
@@ -68,9 +68,6 @@ class SearchObjectChunkCompilerQueueController:
 
     @inlineCallbacks
     def _poll(self):
-        from peek_core_search._private.worker.tasks.SearchObjectChunkCompilerTask import \
-            compileSearchObjectChunk
-
         # We queue the grids in bursts, reducing the work we have to do.
         if self._queueCount > self.QUEUE_MIN:
             return
@@ -82,21 +79,41 @@ class SearchObjectChunkCompilerQueueController:
 
         # Send the tasks to the peek worker
         for start in range(0, len(queueItems), self.ITEMS_PER_TASK):
-
             items = queueItems[start: start + self.ITEMS_PER_TASK]
 
             # Set the watermark
             self._lastQueueId = items[-1].id
 
-            d = compileSearchObjectChunk.delay(items)
-            d.addCallback(self._pollCallback, datetime.now(pytz.utc), len(items))
-            d.addErrback(self._pollErrback, datetime.now(pytz.utc))
+            # This should never fail
+            d = self._sendToWorker(items)
+            d.addErrback(vortexLogFailure, logger)
 
             self._queueCount += 1
             if self._queueCount >= self.QUEUE_MAX:
                 break
 
         yield self._dedupeQueue()
+
+    @inlineCallbacks
+    def _sendToWorker(self, items: List[SearchObjectCompilerQueue]):
+        from peek_core_search._private.worker.tasks.SearchObjectChunkCompilerTask import \
+            compileSearchObjectChunk
+
+        startTime = datetime.now(pytz.utc)
+
+        try:
+            chunkKeys = yield compileSearchObjectChunk.delay(items)
+            logger.debug("Time Taken = %s" % (datetime.now(pytz.utc) - startTime))
+            self._queueCount -= 1
+            self._clientSearchObjectUpdateHandler.sendChunks(chunkKeys)
+            self._statusController.addToSearchObjectCompilerTotal(len(items))
+            self._statusController.setSearchObjectCompilerStatus(True, self._queueCount)
+
+        except Exception as e:
+            self._statusController.setSearchObjectCompilerError(str(e))
+            logger.warning("Retrying compile : %s", str(e))
+            reactor.callLater(2.0, self._sendToWorker, items)
+            return
 
     @deferToThreadWrapWithLogger(logger)
     def _grabQueueChunk(self):
@@ -136,17 +153,3 @@ class SearchObjectChunkCompilerQueueController:
             session.commit()
         finally:
             session.close()
-
-    def _pollCallback(self, chunkKeys: List[str], startTime, processedCount):
-        self._queueCount -= 1
-        logger.debug("Time Taken = %s" % (datetime.now(pytz.utc) - startTime))
-        self._clientSearchObjectUpdateHandler.sendChunks(chunkKeys)
-        self._statusController.addToSearchObjectCompilerTotal(processedCount)
-        self._statusController.setSearchObjectCompilerStatus(True, self._queueCount)
-
-    def _pollErrback(self, failure, startTime):
-        self._queueCount -= 1
-        self._statusController.setSearchObjectCompilerError(str(failure.value))
-        self._statusController.setSearchObjectCompilerStatus(True, self._queueCount)
-        logger.debug("Time Taken = %s" % (datetime.now(pytz.utc) - startTime))
-        vortexLogFailure(failure, logger)
