@@ -74,7 +74,7 @@ def reindexSearchObject(conn, objectsToIndex: List[ObjectToIndexTuple]) -> None:
             [dict(chunkKey=k) for k in searchIndexChunksToQueue]
         )
 
-    logger.debug("Inserted %s SearchIndex keywords in %s",
+    logger.info("Inserted %s SearchIndex keywords in %s",
                  len(newSearchIndexes), (datetime.now(pytz.utc) - startTime))
 
 

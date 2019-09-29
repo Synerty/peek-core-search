@@ -114,7 +114,7 @@ def compileSearchIndexChunk(self, queueItems) -> List[str]:
         conn.execute(queueTable.delete(queueTable.c.id.in_(queueItemIds)))
 
         transaction.commit()
-        logger.debug("Compiled and Committed %s EncodedSearchIndexChunks in %s",
+        logger.info("Compiled and Committed %s EncodedSearchIndexChunks in %s",
                      total, (datetime.now(pytz.utc) - startTime))
 
         return chunkKeys

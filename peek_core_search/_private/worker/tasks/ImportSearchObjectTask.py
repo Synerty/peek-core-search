@@ -71,7 +71,7 @@ def importSearchObjectTask(self, searchObjectsEncodedPayload: bytes) -> None:
 
         _packObjectJson(list(objectIdByKey.values()), chunkKeysForQueue)
 
-        logger.debug("Imported %s SearchObjects in %s",
+        logger.info("Imported %s SearchObjects in %s",
                      len(newSearchObjects),
                      datetime.now(pytz.utc) - startTime)
 
