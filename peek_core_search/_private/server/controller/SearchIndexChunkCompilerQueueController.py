@@ -45,6 +45,8 @@ class SearchIndexChunkCompilerQueueController:
         self._lastQueueId = -1
         self._queueCount = 0
 
+        self._chunksInProgress = set()
+
     def start(self):
         self._statusController.setSearchIndexCompilerStatus(True, self._queueCount)
         d = self._pollLoopingCall.start(self.PERIOD, now=False)
@@ -84,6 +86,10 @@ class SearchIndexChunkCompilerQueueController:
 
             items = queueItems[start: start + self.ITEMS_PER_TASK]
 
+            # If we're already processing these chunks, then return and try later
+            if self._chunksInProgress & set([o.chunkKey for o in items]):
+                return
+
             # Set the watermark
             self._lastQueueId = items[-1].id
 
@@ -104,6 +110,9 @@ class SearchIndexChunkCompilerQueueController:
 
         startTime = datetime.now(pytz.utc)
 
+        # Add the chunks we're processing to the set
+        self._chunksInProgress |= set([o.chunkKey for o in items])
+
         try:
             chunkKeys = yield compileSearchIndexChunk.delay(items)
             logger.debug("Time Taken = %s" % (datetime.now(pytz.utc) - startTime))
@@ -112,9 +121,12 @@ class SearchIndexChunkCompilerQueueController:
             self._statusController.addToSearchIndexCompilerTotal(len(items))
             self._statusController.setSearchIndexCompilerStatus(True, self._queueCount)
 
+            # Success, Remove the chunks from the in-progress queue
+            self._chunksInProgress -= set([o.chunkKey for o in items])
+
         except Exception as e:
-            self._statusController.setSearchIndexCompilerError(str(e))
-            logger.warning("Retrying compile : %s", str(e))
+            # self._statusController.setSearchIndexCompilerError(str(e))
+            logger.debug("Retrying compile : %s", str(e))
             reactor.callLater(2.0, self._sendToWorker, items)
             return
 
