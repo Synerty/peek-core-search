@@ -4,7 +4,7 @@ from typing import List
 
 import pytz
 from sqlalchemy import asc
-from twisted.internet import task, reactor
+from twisted.internet import task, reactor, defer
 from twisted.internet.defer import inlineCallbacks
 from vortex.DeferUtil import deferToThreadWrapWithLogger, vortexLogFailure
 
@@ -34,6 +34,8 @@ class SearchObjectChunkCompilerQueueController:
 
     QUEUE_MAX = 20
     QUEUE_MIN = 0
+
+    TASK_TIMEOUT = 60.0
 
     def __init__(self, dbSessionCreator,
                  statusController: StatusController,
@@ -111,7 +113,10 @@ class SearchObjectChunkCompilerQueueController:
         self._chunksInProgress |= set([o.chunkKey for o in items])
 
         try:
-            chunkKeys = yield compileSearchObjectChunk.delay(items)
+            d = compileSearchObjectChunk.delay(items)
+            d.addTimeout(self.TASK_TIMEOUT, reactor)
+
+            chunkKeys = yield d
             logger.debug("Time Taken = %s" % (datetime.now(pytz.utc) - startTime))
             self._queueCount -= 1
             self._clientSearchObjectUpdateHandler.sendChunks(chunkKeys)
@@ -122,8 +127,10 @@ class SearchObjectChunkCompilerQueueController:
             self._chunksInProgress -= set([o.chunkKey for o in items])
 
         except Exception as e:
-            # self._statusController.setSearchObjectCompilerError(str(e))
-            logger.debug("Retrying compile : %s", str(e))
+            if isinstance(e, defer.TimeoutError):
+                logger.info("Retrying compile, Task has timed out.")
+            else:
+                logger.debug("Retrying compile : %s", str(e))
             reactor.callLater(2.0, self._sendToWorker, items)
             return
 

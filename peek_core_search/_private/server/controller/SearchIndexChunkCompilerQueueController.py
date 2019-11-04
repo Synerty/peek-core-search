@@ -3,16 +3,17 @@ from datetime import datetime
 from typing import List
 
 import pytz
+from sqlalchemy import asc
+from twisted.internet import task, reactor, defer
+from twisted.internet.defer import inlineCallbacks
+from vortex.DeferUtil import deferToThreadWrapWithLogger, vortexLogFailure
+
 from peek_core_search._private.server.client_handlers.ClientSearchIndexChunkUpdateHandler import \
     ClientSearchIndexChunkUpdateHandler
 from peek_core_search._private.server.controller.StatusController import \
     StatusController
 from peek_core_search._private.storage.SearchIndexCompilerQueue import \
     SearchIndexCompilerQueue
-from sqlalchemy import asc
-from twisted.internet import task, reactor
-from twisted.internet.defer import inlineCallbacks
-from vortex.DeferUtil import deferToThreadWrapWithLogger, vortexLogFailure
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +34,8 @@ class SearchIndexChunkCompilerQueueController:
 
     QUEUE_MAX = 20
     QUEUE_MIN = 0
+
+    TASK_TIMEOUT = 60.0
 
     def __init__(self, dbSessionCreator,
                  statusController: StatusController,
@@ -69,8 +72,6 @@ class SearchIndexChunkCompilerQueueController:
 
     @inlineCallbacks
     def _poll(self):
-        from peek_core_search._private.worker.tasks.SearchIndexChunkCompilerTask import \
-            compileSearchIndexChunk
 
         # We queue the grids in bursts, reducing the work we have to do.
         if self._queueCount > self.QUEUE_MIN:
@@ -114,7 +115,10 @@ class SearchIndexChunkCompilerQueueController:
         self._chunksInProgress |= set([o.chunkKey for o in items])
 
         try:
-            chunkKeys = yield compileSearchIndexChunk.delay(items)
+            d = compileSearchIndexChunk.delay(items)
+            d.addTimeout(self.TASK_TIMEOUT, reactor)
+
+            chunkKeys = yield d
             logger.debug("Time Taken = %s" % (datetime.now(pytz.utc) - startTime))
             self._queueCount -= 1
             self._clientSearchIndexUpdateHandler.sendChunks(chunkKeys)
@@ -125,8 +129,10 @@ class SearchIndexChunkCompilerQueueController:
             self._chunksInProgress -= set([o.chunkKey for o in items])
 
         except Exception as e:
-            # self._statusController.setSearchIndexCompilerError(str(e))
-            logger.debug("Retrying compile : %s", str(e))
+            if isinstance(e, defer.TimeoutError):
+                logger.info("Retrying compile, Task has timed out.")
+            else:
+                logger.debug("Retrying compile : %s", str(e))
             reactor.callLater(2.0, self._sendToWorker, items)
             return
 
