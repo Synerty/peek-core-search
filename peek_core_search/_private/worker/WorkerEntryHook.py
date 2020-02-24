@@ -31,8 +31,3 @@ class WorkerEntryHook(PluginWorkerEntryHookABC):
         return [SearchIndexChunkCompilerTask.__name__,
                 SearchObjectChunkCompilerTask.__name__,
                 ImportSearchObjectTask.__name__]
-
-    @property
-    def celeryApp(self):
-        from .CeleryApp import celeryApp
-        return celeryApp

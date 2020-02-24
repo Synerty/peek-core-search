@@ -16,7 +16,7 @@ from peek_core_search._private.storage.SearchObjectRoute import SearchObjectRout
 from peek_core_search._private.storage.SearchObjectTypeTuple import \
     SearchObjectTypeTuple
 from peek_core_search._private.storage.SearchPropertyTuple import SearchPropertyTuple
-from peek_core_search._private.worker.CeleryApp import celeryApp
+from peek_plugin_base.worker.CeleryApp import celeryApp
 from peek_core_search._private.worker.tasks.ImportSearchIndexTask import \
     ObjectToIndexTuple, reindexSearchObject
 from peek_core_search._private.worker.tasks._CalcChunkKey import \

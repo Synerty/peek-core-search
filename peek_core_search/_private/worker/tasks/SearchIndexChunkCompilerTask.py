@@ -17,7 +17,7 @@ from peek_core_search._private.storage.EncodedSearchIndexChunk import \
 from peek_core_search._private.storage.SearchIndex import SearchIndex
 from peek_core_search._private.storage.SearchIndexCompilerQueue import \
     SearchIndexCompilerQueue
-from peek_core_search._private.worker.CeleryApp import celeryApp
+from peek_plugin_base.worker.CeleryApp import celeryApp
 from vortex.Payload import Payload
 
 logger = logging.getLogger(__name__)
