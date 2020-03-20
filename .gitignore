@@ -20,3 +20,6 @@ dist
 
 # docs
 docs/api_autodoc
+
+# Ignore sonarscanner
+.scannerwork/
