@@ -1,8 +1,8 @@
 import logging
 from typing import List
 
-from peek_abstract_chunked_index.private.server.client_handlers.ChunkedIndexChunkLoadRpcABC import \
-    ChunkedIndexChunkLoadRpcABC
+from peek_abstract_chunked_index.private.server.client_handlers.ACIChunkLoadRpcABC import \
+    ACIChunkLoadRpcABC
 from peek_plugin_base.PeekVortexUtil import peekServerName, peekClientName
 from peek_plugin_base.storage.DbConnection import DbSessionCreator
 from peek_core_search._private.PluginNames import searchFilt
@@ -15,7 +15,7 @@ from vortex.rpc.RPC import vortexRPC
 logger = logging.getLogger(__name__)
 
 
-class ClientChunkLoadRpc(ChunkedIndexChunkLoadRpcABC):
+class ClientChunkLoadRpc(ACIChunkLoadRpcABC):
 
     def makeHandlers(self):
         """ Make Handlers

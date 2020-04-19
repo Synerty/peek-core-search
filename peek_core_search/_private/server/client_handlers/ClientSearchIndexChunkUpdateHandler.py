@@ -1,10 +1,10 @@
 import logging
 from typing import Dict
 
-from peek_abstract_chunked_index.private.server.client_handlers.ChunkedIndexChunkUpdateHandlerABC import \
-    ChunkedIndexChunkUpdateHandlerABC
-from peek_abstract_chunked_index.private.tuples.ChunkedIndexEncodedChunkTupleABC import \
-    ChunkedIndexEncodedChunkTupleABC
+from peek_abstract_chunked_index.private.server.client_handlers.ACIChunkUpdateHandlerABC import \
+    ACIChunkUpdateHandlerABC
+from peek_abstract_chunked_index.private.tuples.ACIEncodedChunkTupleABC import \
+    ACIEncodedChunkTupleABC
 from peek_core_search._private.client.controller.SearchIndexCacheController import \
     clientSearchIndexUpdateFromServerFilt
 from peek_core_search._private.storage.EncodedSearchIndexChunk import \
@@ -13,7 +13,7 @@ from peek_core_search._private.storage.EncodedSearchIndexChunk import \
 logger = logging.getLogger(__name__)
 
 
-class ClientSearchIndexChunkUpdateHandler(ChunkedIndexChunkUpdateHandlerABC):
-    _ChunkedTuple: ChunkedIndexEncodedChunkTupleABC = EncodedSearchIndexChunk
+class ClientSearchIndexChunkUpdateHandler(ACIChunkUpdateHandlerABC):
+    _ChunkedTuple: ACIEncodedChunkTupleABC = EncodedSearchIndexChunk
     _updateFromServerFilt: Dict = clientSearchIndexUpdateFromServerFilt
     _logger: logging.Logger = logger

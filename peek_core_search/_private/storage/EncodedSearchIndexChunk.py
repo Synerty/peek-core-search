@@ -3,15 +3,15 @@ from sqlalchemy import Integer, String
 from sqlalchemy.sql.schema import Index
 from vortex.Tuple import Tuple, addTupleType
 
-from peek_abstract_chunked_index.private.tuples.ChunkedIndexEncodedChunkTupleABC import \
-    ChunkedIndexEncodedChunkTupleABC
+from peek_abstract_chunked_index.private.tuples.ACIEncodedChunkTupleABC import \
+    ACIEncodedChunkTupleABC
 from peek_core_search._private.PluginNames import searchTuplePrefix
 from peek_core_search._private.storage.DeclarativeBase import DeclarativeBase
 
 
 @addTupleType
 class EncodedSearchIndexChunk(Tuple, DeclarativeBase,
-                              ChunkedIndexEncodedChunkTupleABC):
+                              ACIEncodedChunkTupleABC):
     __tablename__ = 'EncodedSearchIndexChunk'
     __tupleType__ = searchTuplePrefix + 'EncodedSearchIndexChunkTable'
 
