@@ -1,6 +1,7 @@
 import logging
 from typing import List, Optional
 
+from sqlalchemy import select
 from twisted.internet.defer import Deferred
 
 from peek_plugin_base.PeekVortexUtil import peekClientName
@@ -75,13 +76,22 @@ class ClientSearchIndexChunkUpdateHandler:
 
     @deferToThreadWrapWithLogger(logger)
     def _loadChunks(self, chunkKeys: List[str]) -> Optional[bytes]:
+        table = EncodedSearchIndexChunk.__table__
 
         session = self._dbSessionCreator()
         try:
-            results = list(
-                session.query(EncodedSearchIndexChunk)
-                    .filter(EncodedSearchIndexChunk.chunkKey.in_(chunkKeys))
-            )
+            sql = select([table]).where(table.c.chunkKey.in_(chunkKeys))
+            sqlData = session.execute(sql).fetchall()
+
+            results: List[EncodedSearchIndexChunk] = []
+            for item in sqlData:
+                results.append(
+                    EncodedSearchIndexChunk(id=item.id,
+                                            chunkKey=item.chunkKey,
+                                            encodedData=item.encodedData,
+                                            encodedHash=item.encodedHash,
+                                            lastUpdate=item.lastUpdate)
+                )
 
             if not results:
                 return None
