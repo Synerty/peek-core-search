@@ -1,6 +1,8 @@
 import logging
 from typing import List
 
+from peek_abstract_chunked_index.private.server.client_handlers.ChunkedIndexChunkLoadRpcABC import \
+    ChunkedIndexChunkLoadRpcABC
 from peek_plugin_base.PeekVortexUtil import peekServerName, peekClientName
 from peek_plugin_base.storage.DbConnection import DbSessionCreator
 from peek_core_search._private.PluginNames import searchFilt
@@ -13,9 +15,7 @@ from vortex.rpc.RPC import vortexRPC
 logger = logging.getLogger(__name__)
 
 
-class ClientChunkLoadRpc:
-    def __init__(self, dbSessionCreator: DbSessionCreator):
-        self._dbSessionCreator = dbSessionCreator
+class ClientChunkLoadRpc(ChunkedIndexChunkLoadRpcABC):
 
     def makeHandlers(self):
         """ Make Handlers
@@ -40,19 +40,7 @@ class ClientChunkLoadRpc:
         Tell the server of the latest status of the loader
 
         """
-        session = self._dbSessionCreator()
-        try:
-            chunks = (session
-                      .query(EncodedSearchIndexChunk)
-                      .order_by(EncodedSearchIndexChunk.id)
-                      .offset(offset)
-                      .limit(count)
-                      .yield_per(count))
-
-            return list(chunks)
-
-        finally:
-            session.close()
+        return self.ckiInitialLoadChunksBlocking(offset, count, EncodedSearchIndexChunk)
 
     # -------------
     @vortexRPC(peekServerName, acceptOnlyFromVortex=peekClientName, timeoutSeconds=60,
@@ -64,16 +52,5 @@ class ClientChunkLoadRpc:
         Tell the server of the latest status of the loader
 
         """
-        session = self._dbSessionCreator()
-        try:
-            chunks = (session
-                      .query(EncodedSearchObjectChunk)
-                      .order_by(EncodedSearchObjectChunk.id)
-                      .offset(offset)
-                      .limit(count)
-                      .yield_per(count))
+        return self.ckiInitialLoadChunksBlocking(offset, count, EncodedSearchObjectChunk)
 
-            return list(chunks)
-
-        finally:
-            session.close()
