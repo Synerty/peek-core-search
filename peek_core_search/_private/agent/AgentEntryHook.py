@@ -1,7 +1,7 @@
 import logging
 
-from peek_plugin_base.agent.PluginAgentEntryHookABC import PluginAgentEntryHookABC
 from peek_core_search.tuples import loadPublicTuples
+from peek_plugin_base.agent.PluginAgentEntryHookABC import PluginAgentEntryHookABC
 
 logger = logging.getLogger(__name__)
 
@@ -15,10 +15,10 @@ class AgentEntryHook(PluginAgentEntryHookABC):
         logger.debug("Loaded")
 
     def start(self):
-        pass
+        logger.debug("Started")
 
     def stop(self):
-        pass
+        logger.debug("Stopped")
 
     def unload(self):
         logger.debug("Unloaded")
