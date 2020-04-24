@@ -1,16 +1,16 @@
 import logging
-from typing import List
+from typing import Optional
+
+from vortex.rpc.RPC import vortexRPC
 
 from peek_abstract_chunked_index.private.server.client_handlers.ACIChunkLoadRpcABC import \
     ACIChunkLoadRpcABC
-from peek_plugin_base.PeekVortexUtil import peekServerName, peekClientName
-from peek_plugin_base.storage.DbConnection import DbSessionCreator
 from peek_core_search._private.PluginNames import searchFilt
 from peek_core_search._private.storage.EncodedSearchIndexChunk import \
     EncodedSearchIndexChunk
 from peek_core_search._private.storage.EncodedSearchObjectChunk import \
     EncodedSearchObjectChunk
-from vortex.rpc.RPC import vortexRPC
+from peek_plugin_base.PeekVortexUtil import peekServerName, peekClientName
 
 logger = logging.getLogger(__name__)
 
@@ -33,24 +33,23 @@ class ClientChunkLoadRpc(ACIChunkLoadRpcABC):
     # -------------
     @vortexRPC(peekServerName, acceptOnlyFromVortex=peekClientName, timeoutSeconds=60,
                additionalFilt=searchFilt, deferToThread=True)
-    def loadSearchIndexChunks(self, offset: int, count: int
-                              ) -> List[EncodedSearchIndexChunk]:
+    def loadSearchIndexChunks(self, offset: int, count: int) -> Optional[bytes]:
         """ Update Page Loader Status
 
         Tell the server of the latest status of the loader
 
         """
-        return self.ckiInitialLoadChunksBlocking(offset, count, EncodedSearchIndexChunk)
+        return self.ckiInitialLoadChunksPayloadBlocking(offset, count,
+                                                        EncodedSearchIndexChunk)
 
     # -------------
     @vortexRPC(peekServerName, acceptOnlyFromVortex=peekClientName, timeoutSeconds=60,
                additionalFilt=searchFilt, deferToThread=True)
-    def loadSearchObjectChunks(self, offset: int, count: int
-                               ) -> List[EncodedSearchObjectChunk]:
+    def loadSearchObjectChunks(self, offset: int, count: int) -> Optional[bytes]:
         """ Update Page Loader Status
 
         Tell the server of the latest status of the loader
 
         """
-        return self.ckiInitialLoadChunksBlocking(offset, count, EncodedSearchObjectChunk)
-
+        return self.ckiInitialLoadChunksPayloadBlocking(offset, count,
+                                                        EncodedSearchObjectChunk)

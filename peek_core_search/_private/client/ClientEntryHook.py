@@ -100,7 +100,7 @@ class ClientEntryHook(PluginClientEntryHookABC):
         self._loadedObjects.append(searchIndexCacheHandler)
 
         searchIndexCacheController \
-            .setSearchIndexCacheHandler(searchIndexCacheHandler)
+            .setCacheHandler(searchIndexCacheHandler)
 
         # ----------------
         # Search Object Cache Controller
@@ -117,7 +117,7 @@ class ClientEntryHook(PluginClientEntryHookABC):
         )
         self._loadedObjects.append(searchObjectCacheHandler)
 
-        searchObjectCacheController.setSearchObjectCacheHandler(
+        searchObjectCacheController.setCacheHandler(
             searchObjectCacheHandler
         )
 

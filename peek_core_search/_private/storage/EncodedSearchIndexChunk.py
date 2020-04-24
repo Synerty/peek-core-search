@@ -1,3 +1,5 @@
+from typing import Any
+
 from sqlalchemy import Column, LargeBinary
 from sqlalchemy import Integer, String
 from sqlalchemy.sql.schema import Index
@@ -34,8 +36,12 @@ class EncodedSearchIndexChunk(Tuple, DeclarativeBase,
     def ckiChunkKey(self):
         return self.chunkKey
 
+    @property
+    def ckiLastUpdate(self):
+        return self.lastUpdate
+
     @classmethod
-    def ckiCreateDeleteEncodedChunk(cls, chunkKey: str):
+    def ckiCreateDeleteEncodedChunk(cls, chunkKey: Any):
         return EncodedSearchIndexChunk(chunkKey=chunkKey)
 
     @classmethod

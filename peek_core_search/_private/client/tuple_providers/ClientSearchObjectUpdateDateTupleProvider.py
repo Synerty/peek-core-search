@@ -23,8 +23,8 @@ class ClientSearchObjectUpdateDateTupleProvider(TuplesProviderABC):
                       tupleSelector: TupleSelector) -> Union[Deferred, bytes]:
         tuple_ = SearchObjectUpdateDateTuple()
         tuple_.updateDateByChunkKey = {
-            key:self._cacheHandler.searchObject(key).lastUpdate
-            for key in self._cacheHandler.searchObjectKeys()
+            key:self._cacheHandler.encodedChunk(key).lastUpdate
+            for key in self._cacheHandler.encodedChunkKeys()
         }
         payload = Payload(filt, tuples=[tuple_])
         payloadEnvelope = yield payload.makePayloadEnvelopeDefer()

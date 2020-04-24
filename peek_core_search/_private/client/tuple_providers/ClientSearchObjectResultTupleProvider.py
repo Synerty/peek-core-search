@@ -49,7 +49,7 @@ class ClientSearchObjectResultTupleProvider(TuplesProviderABC):
 
         foundObjectIdCounts: Dict[int, int] = defaultdict(lambda: 0)
         for chunkKey, subKeys in keysByChunkKey.items():
-            encodedChunk = self._searchIndexCacheHandler.searchIndex(chunkKey)
+            encodedChunk = self._searchIndexCacheHandler.encodedChunk(chunkKey)
             if encodedChunk:
                 for objId in self._getObjectIds(encodedChunk, propertyName, subKeys):
                     foundObjectIdCounts[objId] += 1

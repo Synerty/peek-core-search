@@ -93,7 +93,7 @@ class FastKeywordController(TupleActionProcessorDelegateABC):
         return list(objectIdsUnion)[:50]
 
     @inlineCallbacks
-    def notifyOfSearchIndexUpdate(self, chunkKeys: List[str]):
+    def notifyOfUpdate(self, chunkKeys: List[str]):
         """ Notify of Segment Updates
 
         This method is called by the client.SearchIndexCacheController when it receives
@@ -101,7 +101,7 @@ class FastKeywordController(TupleActionProcessorDelegateABC):
 
         """
         for chunkKey in chunkKeys:
-            encodedChunkTuple = self._indexCacheController.searchIndex(chunkKey)
+            encodedChunkTuple = self._indexCacheController.encodedChunk(chunkKey)
             yield self._unpackKeywordsFromChunk(encodedChunkTuple)
 
     @deferToThreadWrapWithLogger(logger)
