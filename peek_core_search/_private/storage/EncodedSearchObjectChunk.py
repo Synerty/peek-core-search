@@ -31,6 +31,10 @@ class EncodedSearchObjectChunk(Tuple, DeclarativeBase,
         return self.chunkKey
 
     @property
+    def ckiHasEncodedData(self) -> bool:
+        return bool(self.encodedData)
+
+    @property
     def ckiLastUpdate(self):
         return self.lastUpdate
 
