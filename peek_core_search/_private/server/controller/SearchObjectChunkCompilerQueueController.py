@@ -58,7 +58,7 @@ class SearchObjectChunkCompilerQueueController(ACIProcessorQueueControllerABC):
         from peek_core_search._private.worker.tasks.SearchObjectChunkCompilerTask import \
             compileSearchObjectChunk
 
-        return compileSearchObjectChunk.delay(block.items)
+        return compileSearchObjectChunk.delay(block.itemsEncodedPayload)
 
     def _processWorkerResults(self, results):
         self._clientSearchObjectUpdateHandler.sendChunks(results)

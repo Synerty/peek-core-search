@@ -25,5 +25,6 @@ class SearchIndexCompilerQueue(Tuple, DeclarativeBase,
     def sqlCoreLoad(cls, row):
         return SearchIndexCompilerQueue(id=row.id, chunkKey=row.chunkKey)
 
+    @property
     def ckiUniqueKey(self):
         return self.chunkKey

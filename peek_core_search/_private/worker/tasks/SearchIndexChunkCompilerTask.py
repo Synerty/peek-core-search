@@ -10,15 +10,15 @@ from typing import List, Dict
 import pytz
 from sqlalchemy import select
 from txcelery.defer import DeferrableTask
+from vortex.Payload import Payload
 
-from peek_plugin_base.worker import CeleryDbConn
 from peek_core_search._private.storage.EncodedSearchIndexChunk import \
     EncodedSearchIndexChunk
 from peek_core_search._private.storage.SearchIndex import SearchIndex
 from peek_core_search._private.storage.SearchIndexCompilerQueue import \
     SearchIndexCompilerQueue
+from peek_plugin_base.worker import CeleryDbConn
 from peek_plugin_base.worker.CeleryApp import celeryApp
-from vortex.Payload import Payload
 
 logger = logging.getLogger(__name__)
 
@@ -34,13 +34,17 @@ Compile the search indexes
 
 @DeferrableTask
 @celeryApp.task(bind=True)
-def compileSearchIndexChunk(self, queueItems) -> List[str]:
+def compileSearchIndexChunk(self, payloadEncodedArgs: bytes) -> List[str]:
     """ Compile Search Index Task
 
     :param self: A celery reference to this task
-    :param queueItems: An encoded payload containing the queue tuples.
+    :param payloadEncodedArgs: An encoded payload containing the queue tuples.
     :returns: A list of grid keys that have been updated.
     """
+    argData = Payload().fromEncodedPayload(payloadEncodedArgs).tuples
+    queueItems = argData[0]
+    queueItemIds: List[int] = argData[1]
+
     chunkKeys = list(set([i.chunkKey for i in queueItems]))
 
     queueTable = SearchIndexCompilerQueue.__table__
@@ -110,12 +114,11 @@ def compileSearchIndexChunk(self, queueItems) -> List[str]:
 
         total += len(inserts)
 
-        queueItemIds = [o.id for o in queueItems]
         conn.execute(queueTable.delete(queueTable.c.id.in_(queueItemIds)))
 
         transaction.commit()
         logger.info("Compiled and Committed %s EncodedSearchIndexChunks in %s",
-                     total, (datetime.now(pytz.utc) - startTime))
+                    total, (datetime.now(pytz.utc) - startTime))
 
         return chunkKeys
 
