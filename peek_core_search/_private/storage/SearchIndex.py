@@ -24,7 +24,7 @@ class SearchIndex(Tuple, DeclarativeBase):
     propertyName = Column(String, nullable=False)
 
     #:  The object that this routs is for
-    objectId = Column(Integer,
+    objectId = Column(BigInteger,
                       ForeignKey('SearchObject.id', ondelete='CASCADE'),
                       nullable=False)
 

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, LargeBinary
+from sqlalchemy import Column, LargeBinary, BigInteger
 from sqlalchemy import Integer, String
 from sqlalchemy.sql.schema import Index
 from vortex.Tuple import Tuple, addTupleType
@@ -15,7 +15,7 @@ class EncodedSearchObjectChunk(Tuple, DeclarativeBase,
     __tablename__ = 'EncodedSearchObjectChunk'
     __tupleType__ = searchTuplePrefix + 'EncodedSearchObjectChunkTable'
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
 
     chunkKey = Column(Integer, primary_key=True)
     encodedData = Column(LargeBinary, nullable=False)

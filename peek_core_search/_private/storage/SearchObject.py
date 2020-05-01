@@ -1,6 +1,6 @@
 import logging
 
-from sqlalchemy import Column
+from sqlalchemy import Column, BigInteger
 from sqlalchemy import Integer, String
 from sqlalchemy.sql.schema import Index, ForeignKey
 
@@ -16,7 +16,7 @@ class SearchObject(Tuple, DeclarativeBase):
     __tablename__ = 'SearchObject'
     __tupleType__ = searchTuplePrefix + 'SearchObjectTable'
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
 
     #:  The object that this routs is for
     objectTypeId = Column(Integer,

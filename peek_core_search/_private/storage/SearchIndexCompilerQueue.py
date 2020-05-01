@@ -1,6 +1,6 @@
 import logging
 
-from sqlalchemy import Column
+from sqlalchemy import Column, BigInteger
 from sqlalchemy import Integer
 from vortex.Tuple import Tuple, addTupleType
 
@@ -18,7 +18,7 @@ class SearchIndexCompilerQueue(Tuple, DeclarativeBase,
     __tablename__ = 'SearchIndexCompilerQueue'
     __tupleType__ = searchTuplePrefix + 'SearchIndexCompilerQueueTable'
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
     chunkKey = Column(Integer, primary_key=True)
 
     @classmethod

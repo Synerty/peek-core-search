@@ -1,6 +1,6 @@
 from typing import Any
 
-from sqlalchemy import Column, LargeBinary
+from sqlalchemy import Column, LargeBinary, BigInteger
 from sqlalchemy import Integer, String
 from sqlalchemy.sql.schema import Index
 from vortex.Tuple import Tuple, addTupleType
@@ -21,7 +21,7 @@ class EncodedSearchIndexChunk(Tuple, DeclarativeBase,
     ENCODED_DATA_PROPERTY_MAME_NUM = 1
     ENCODED_DATA_OBJECT_IDS_JSON_INDEX = 2
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
 
     chunkKey = Column(Integer, primary_key=True)
     encodedData = Column(LargeBinary, nullable=False)
