@@ -22,4 +22,4 @@ dist
 docs/api_autodoc
 
 # Ignore sonarscanner
-.scannerwork/
+.scannerwork/.scannerwork/
