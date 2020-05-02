@@ -10,6 +10,9 @@ from peek_core_search._private.server.client_handlers.ClientSearchObjectChunkUpd
     ClientSearchObjectChunkUpdateHandler
 from peek_core_search._private.server.controller.StatusController import \
     StatusController
+from peek_core_search._private.storage.EncodedSearchObjectChunk import \
+    EncodedSearchObjectChunk
+from peek_core_search._private.storage.SearchObject import SearchObject
 from peek_core_search._private.storage.SearchObjectCompilerQueue import \
     SearchObjectCompilerQueue
 
@@ -45,6 +48,8 @@ class SearchObjectChunkCompilerQueueController(ACIProcessorQueueControllerABC):
 
     _logger = logger
     _QueueDeclarative: ACIProcessorQueueTupleABC = SearchObjectCompilerQueue
+    _VacuumDeclaratives = (SearchObjectCompilerQueue,
+                           SearchObject, EncodedSearchObjectChunk)
 
     def __init__(self, dbSessionCreator,
                  statusController: StatusController,
