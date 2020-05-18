@@ -101,8 +101,17 @@ def _splitKeywords(keywordStr: str) -> Set[str]:
     # Remove punctuation
     tokens = ''.join([c for c in keywordStr if c not in string.punctuation])
 
-    tokens = set([w.strip() for w in tokens.split(' ') if w.strip()])
-    return tokens
+    # Strip and Split words, filter out words less than three letters
+    tokens = [w.strip() for w in tokens.split(' ') if 2 < len(w.strip())]
+
+    # Split the words up into tokens, this creates partial keyword search support
+    tokenSet = set()
+    for token in tokens:
+        for index in range(len(token) - 2):
+            tokenSet.add(token[index:index+3])
+            pass
+
+    return tokenSet
 
 
 def _indexObject(objectToIndex: ObjectToIndexTuple) -> List[SearchIndex]:

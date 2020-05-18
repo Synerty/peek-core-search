@@ -1,4 +1,4 @@
-let punctuation = "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~";
+const punctuation = "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~";
 
 
 /** Split Keywords
@@ -21,19 +21,23 @@ export function keywordSplitter(keywordStr) {
     }
 
     // Split the string into words
-    let words = nonPunct.split(' ');
+    let tokens = nonPunct.split(' ');
 
     // Strip the words
-    words = words.map(function (w) {
-        return w.replace(/^\s+|\s+$/g, '');
-    });
+    tokens = tokens.map((w) => w.replace(/^\s+|\s+$/g, ''));
 
-    // Filter out the empty words
-    words = words.filter(function (w) {
-        return w.length != 0;
-    });
+    // Filter out the empty words and words less than three letters
+    tokens = tokens.filter((w) =>  2 < w.length);
 
-    // return - nicely commented
-    return words;
+    // Split the words up into tokens, this creates partial keyword search support
+    const tokenSet = {};
+    for (let word of tokens) {
+        for (let i = 0; i < word.length - 2; ++i) {
+            tokenSet[word.substr(i, 3)] = 0;
+        }
+    }
+
+    // return the tokens
+    return Object.keys(tokenSet);
 
 }

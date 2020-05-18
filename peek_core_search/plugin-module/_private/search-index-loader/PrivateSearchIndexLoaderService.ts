@@ -23,6 +23,7 @@ import {SearchIndexUpdateDateTuple} from "./SearchIndexUpdateDateTuple";
 import {OfflineConfigTuple} from "../tuples/OfflineConfigTuple";
 import {SearchTupleService} from "../SearchTupleService";
 import {PrivateSearchIndexLoaderStatusTuple} from "./PrivateSearchIndexLoaderStatusTuple";
+import {keywordSplitter} from "../KeywordSplitter";
 
 
 // ----------------------------------------------------------------------------
@@ -412,7 +413,11 @@ export class PrivateSearchIndexLoaderService extends ComponentLifecycleEventEmit
      * Get the objects with matching keywords from the index..
      *
      */
-    getObjectIds(propertyName: string | null, keywords: string[]): Promise<number[]> {
+    getObjectIds(propertyName: string | null, keywordsString: string): Promise<number[]> {
+
+        const keywords = keywordSplitter(keywordsString)
+        console.log(keywords);
+
         if (keywords == null || keywords.length == 0) {
             throw new Error("We've been passed a null/empty keywords");
         }
@@ -432,40 +437,55 @@ export class PrivateSearchIndexLoaderService extends ComponentLifecycleEventEmit
      * Get the objects with matching keywords from the index..
      *
      */
-    private getObjectIdsWhenReady(propertyName: string | null, keywords: string[]): Promise<number[]> {
-        let promises = [];
-        for (let keyword of keywords) {
-            promises.push(this.getObjectIdsForKeyword(propertyName, keyword));
+    private getObjectIdsWhenReady(propertyName: string | null, tokens: string[]): Promise<number[]> {
+        const tokensByChunkKey: { [chunkKey: number]: string[] } = {};
+        // Group the keys for
+        for (let token of tokens) {
+            if (tokensByChunkKey[keywordChunk(token)] == null)
+                tokensByChunkKey[keywordChunk(token)] = [];
+            tokensByChunkKey[keywordChunk(token)].push(token);
+        }
+
+        const promises = [];
+        for (let chunkKey of Object.keys(tokensByChunkKey)) {
+            const tokensInChunk = tokensByChunkKey[chunkKey];
+            const chunkKeyInt = parseInt(chunkKey.toString());
+            promises.push(
+                this.getObjectIdsForKeyword(propertyName, chunkKeyInt, tokensInChunk)
+            );
         }
 
         return Promise.all(promises)
-            .then((results: number[][]) => {
+            .then((promiseResults: number[][][]) => {
 
-                // Create a list of objectIds
-                let objectIds: number[] = [];
-                for (let result of results) {
-                    objectIds.add(result);
-                }
-
-                // Create RANK dict
-                let matchesByObjectId = {};
-                for (let objectId of objectIds) {
-                    if (matchesByObjectId[objectId] == null)
-                        matchesByObjectId[objectId] = 1;
-                    else
-                        matchesByObjectId[objectId] = matchesByObjectId[objectId] + 1;
-                }
-
-                objectIds = [];
-
-                // Find object ids where all keywords match
-                for (let objectId of Object.keys(matchesByObjectId)) {
-                    if (matchesByObjectId[objectId] == keywords.length) {
-                        objectIds.push(parseInt(objectId));
+                    // Flatten the results into a list of ids.
+                    let objectIds: number[] = [];
+                    for (let eachTokenInChunk of promiseResults) {
+                        for (let result of eachTokenInChunk) {
+                            objectIds.add(result);
+                        }
                     }
+
+                    // Create RANK dict
+                    let matchesByObjectId = {};
+                    for (let objectId of objectIds) {
+                        if (matchesByObjectId[objectId] == null)
+                            matchesByObjectId[objectId] = 1;
+                        else
+                            matchesByObjectId[objectId] = matchesByObjectId[objectId] + 1;
+                    }
+
+                    objectIds = [];
+
+                    // Find object ids where all keywords match
+                    for (let objectId of Object.keys(matchesByObjectId)) {
+                        if (matchesByObjectId[objectId] == tokens.length) {
+                            objectIds.push(parseInt(objectId));
+                        }
+                    }
+                    return objectIds;
                 }
-                return objectIds;
-            });
+            );
     }
 
 
@@ -474,53 +494,53 @@ export class PrivateSearchIndexLoaderService extends ComponentLifecycleEventEmit
      * Get the objects with matching keywords from the index..
      *
      */
-    private getObjectIdsForKeyword(propertyName: string | null, keyword: string): Promise<number[]> {
-        if (keyword == null || keyword.length == 0) {
+    private async getObjectIdsForKeyword(propertyName: string | null,
+                                         chunkKey: number,
+                                         tokens: string[]): Promise<number[][]> {
+        if (tokens == null || tokens.length == 0) {
             throw new Error("We've been passed a null/empty keyword");
         }
 
-        let chunkKey: number = keywordChunk(keyword);
-
         if (!this.index.updateDateByChunkKey.hasOwnProperty(chunkKey)) {
-            console.log(`keyword: ${keyword} doesn't appear in the index`);
+            console.log(`keyword: ${tokens} doesn't appear in the index`);
             return Promise.resolve([]);
         }
 
-        let retPromise: any;
-        retPromise = this.storage.loadTuplesEncoded(new SearchIndexChunkTupleSelector(chunkKey))
-            .then((vortexMsg: string) => {
-                if (vortexMsg == null) {
-                    return [];
+        const objectIdsList: number[][] = [];
+
+        const vortexMsg = await this.storage
+            .loadTuplesEncoded(new SearchIndexChunkTupleSelector(chunkKey));
+
+        if (vortexMsg == null)
+            return [];
+
+        const payload = await Payload.fromEncodedPayload(vortexMsg);
+        const chunkData = payload.tuples;
+
+        for (let token of tokens) {
+            const objectIds = [];
+            objectIdsList.push(objectIds);
+
+            // TODO Binary Search, the data IS sorted
+            for (let keywordIndex of chunkData) {
+                // Find the keyword, we're just iterating
+                if (keywordIndex[0] != token)
+                    continue;
+
+                // If the property is set, then make sure it matches
+                if (propertyName != null && keywordIndex[1] != propertyName)
+                    continue;
+
+                // This is stored as a string, so we don't have to construct
+                // so much data when deserialising the chunk
+                let thisObjectIds = JSON.parse(keywordIndex[2]);
+                for (let thisObjectId of thisObjectIds) {
+                    objectIds.push(thisObjectId);
                 }
+            }
+        }
 
-                return Payload.fromEncodedPayload(vortexMsg)
-                    .then((payload: Payload) => payload.tuples)
-                    .then((chunkData: string[][]) => {
-                        let objectIds = [];
-
-                        // TODO Binary Search, the data IS sorted
-                        for (let keywordIndex of chunkData) {
-                            // Find the keyword, we're just iterating
-                            if (keywordIndex[0] != keyword)
-                                continue;
-
-                            // If the property is set, then make sure it matches
-                            if (propertyName != null && keywordIndex[1] != propertyName)
-                                continue;
-
-                            // This is stored as a string, so we don't have to construct
-                            // so much data when deserialising the chunk
-                            let thisObjectIds = JSON.parse(keywordIndex[2]);
-                            for (let thisObjectId of thisObjectIds) {
-                                objectIds.push(thisObjectId);
-                            }
-                        }
-
-                        return objectIds;
-
-                    });
-            });
-        return retPromise;
+        return objectIdsList;
 
     }
 
