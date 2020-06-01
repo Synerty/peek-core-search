@@ -23,7 +23,7 @@ import {SearchIndexUpdateDateTuple} from "./SearchIndexUpdateDateTuple";
 import {OfflineConfigTuple} from "../tuples/OfflineConfigTuple";
 import {SearchTupleService} from "../SearchTupleService";
 import {PrivateSearchIndexLoaderStatusTuple} from "./PrivateSearchIndexLoaderStatusTuple";
-import {keywordSplitter} from "../KeywordSplitter";
+import {splitFullKeywords, splitPartialKeywords} from "../KeywordSplitter";
 
 
 // ----------------------------------------------------------------------------
@@ -413,22 +413,15 @@ export class PrivateSearchIndexLoaderService extends ComponentLifecycleEventEmit
      * Get the objects with matching keywords from the index..
      *
      */
-    getObjectIds(propertyName: string | null, keywordsString: string): Promise<number[]> {
-
-        const keywords = keywordSplitter(keywordsString)
-        console.log(keywords);
-
-        if (keywords == null || keywords.length == 0) {
-            throw new Error("We've been passed a null/empty keywords");
-        }
+    getObjectIds(propertyName: string | null, searchString: string): Promise<number[]> {
 
         if (this.isReady())
-            return this.getObjectIdsWhenReady(propertyName, keywords);
+            return this.getObjectIdsForSearchString(searchString, propertyName);
 
         return this.isReadyObservable()
             .first()
             .toPromise()
-            .then(() => this.getObjectIdsWhenReady(propertyName, keywords));
+            .then(() => this.getObjectIdsForSearchString(searchString, propertyName));
     }
 
 
@@ -436,9 +429,68 @@ export class PrivateSearchIndexLoaderService extends ComponentLifecycleEventEmit
      *
      * Get the objects with matching keywords from the index..
      *
+     * This should match FastKeywordController.py
      */
-    private getObjectIdsWhenReady(propertyName: string | null, tokens: string[]): Promise<number[]> {
+    private async getObjectIdsForSearchString(searchString: string,
+                                              propertyName: string | null): Promise<number[]> {
+
+        // Split the keywords into full keywords
+        const fullKwTokens = splitFullKeywords(searchString)
+
+        // If there are no tokens then return nothing
+        if (fullKwTokens == null || fullKwTokens.length == 0) {
+            return [];
+        }
+
+        // First find all the results from the full kw tokens
+        const resultsByFullKw: { [token: string]: number[] } = await this
+            .loadObjectIdsFromIndex(fullKwTokens, propertyName);
+
+        // Filter out the no matches
+        for (let token of Object.keys(resultsByFullKw)) {
+            if (resultsByFullKw[token] == null)
+                delete resultsByFullKw[token];
+        }
+
+        // Get the remaining tokens to try the partial keyword search in
+        const remainingSearchString = fullKwTokens
+            .filter(kw => resultsByFullKw[kw] == null)
+            .join(' ');
+
+        // Now lookup any remaining keywords, if any
+        const partialKwTokens = splitPartialKeywords(remainingSearchString);
+        const resultsByPartialKw: { [token: string]: number[] } = await this
+            .loadObjectIdsFromIndex(partialKwTokens, propertyName);
+
+        // Merge the results
+        const results = {};
+        Object.assign(results, resultsByFullKw);
+        Object.assign(results, resultsByPartialKw);
+
+        // If there are no results, then return
+        if (Object.keys(results).length !== 0)
+            return []
+
+        // Now, return the ObjectIDs that exist in all keyword lookups
+        const keys = Object.keys(results);
+
+        let objectIdsUnion: any = new Set<number>(results[keys.pop()]);
+        for (let key of keys) {
+            const thisSet = new Set<number>(results[key]);
+            objectIdsUnion = new Set<number>([...objectIdsUnion]
+                .filter(x => thisSet.has(x)));
+        }
+
+        // Limit to 50 and return
+        return [...objectIdsUnion].slice(0, 50);
+    }
+
+
+    private async loadObjectIdsFromIndex(tokens: string[],
+                                         propertyName: string | null): Promise<{ [token: string]: number[] }> {
+
         const tokensByChunkKey: { [chunkKey: number]: string[] } = {};
+
         // Group the keys for
         for (let token of tokens) {
             if (tokensByChunkKey[keywordChunk(token)] == null)
@@ -455,37 +507,15 @@ export class PrivateSearchIndexLoaderService extends ComponentLifecycleEventEmit
             );
         }
 
-        return Promise.all(promises)
-            .then((promiseResults: number[][][]) => {
 
-                    // Flatten the results into a list of ids.
-                    let objectIds: number[] = [];
-                    for (let eachTokenInChunk of promiseResults) {
-                        for (let result of eachTokenInChunk) {
-                            objectIds.add(result);
-                        }
-                    }
+        const allResults = await Promise.all(promises);
+        const mergedResults: { [token: string]: number[] } = {};
+        for (let results of allResults) {
+            Object.assign(mergedResults, results);
+        }
 
-                    // Create RANK dict
-                    let matchesByObjectId = {};
-                    for (let objectId of objectIds) {
-                        if (matchesByObjectId[objectId] == null)
-                            matchesByObjectId[objectId] = 1;
-                        else
-                            matchesByObjectId[objectId] = matchesByObjectId[objectId] + 1;
-                    }
+        return mergedResults;
 
-                    objectIds = [];
-
-                    // Find object ids where all keywords match
-                    for (let objectId of Object.keys(matchesByObjectId)) {
-                        if (matchesByObjectId[objectId] == tokens.length) {
-                            objectIds.push(parseInt(objectId));
-                        }
-                    }
-                    return objectIds;
-                }
-            );
     }
 
 
@@ -496,30 +526,30 @@ export class PrivateSearchIndexLoaderService extends ComponentLifecycleEventEmit
      */
     private async getObjectIdsForKeyword(propertyName: string | null,
                                          chunkKey: number,
-                                         tokens: string[]): Promise<number[][]> {
+                                         tokens: string[]): Promise<{ [token: string]: number[] }> {
         if (tokens == null || tokens.length == 0) {
             throw new Error("We've been passed a null/empty keyword");
         }
 
         if (!this.index.updateDateByChunkKey.hasOwnProperty(chunkKey)) {
             console.log(`keyword: ${tokens} doesn't appear in the index`);
-            return Promise.resolve([]);
+            return {};
         }
 
-        const objectIdsList: number[][] = [];
+        const objectIdsByToken: { [token: string]: number[] } = {};
 
         const vortexMsg = await this.storage
             .loadTuplesEncoded(new SearchIndexChunkTupleSelector(chunkKey));
 
         if (vortexMsg == null)
-            return [];
+            return {};
 
         const payload = await Payload.fromEncodedPayload(vortexMsg);
         const chunkData = payload.tuples;
 
         for (let token of tokens) {
             const objectIds = [];
-            objectIdsList.push(objectIds);
+            objectIdsByToken[token] = objectIds;
 
             // TODO Binary Search, the data IS sorted
             for (let keywordIndex of chunkData) {
@@ -540,7 +570,7 @@ export class PrivateSearchIndexLoaderService extends ComponentLifecycleEventEmit
             }
         }
 
-        return objectIdsList;
+        return objectIdsByToken;
 
     }
 

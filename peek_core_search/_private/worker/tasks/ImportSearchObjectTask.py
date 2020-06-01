@@ -5,10 +5,6 @@ from datetime import datetime
 from typing import List, Dict, Tuple, Set
 
 import pytz
-from sqlalchemy import select, bindparam, and_
-from txcelery.defer import DeferrableTask
-from vortex.Payload import Payload
-
 from peek_core_search._private.storage.SearchObject import SearchObject
 from peek_core_search._private.storage.SearchObjectCompilerQueue import \
     SearchObjectCompilerQueue
@@ -16,13 +12,16 @@ from peek_core_search._private.storage.SearchObjectRoute import SearchObjectRout
 from peek_core_search._private.storage.SearchObjectTypeTuple import \
     SearchObjectTypeTuple
 from peek_core_search._private.storage.SearchPropertyTuple import SearchPropertyTuple
-from peek_plugin_base.worker.CeleryApp import celeryApp
 from peek_core_search._private.worker.tasks.ImportSearchIndexTask import \
     ObjectToIndexTuple, reindexSearchObject
 from peek_core_search._private.worker.tasks._CalcChunkKey import \
     makeSearchObjectChunkKey
 from peek_core_search.tuples.ImportSearchObjectTuple import ImportSearchObjectTuple
 from peek_plugin_base.worker import CeleryDbConn
+from peek_plugin_base.worker.CeleryApp import celeryApp
+from sqlalchemy import select, bindparam, and_, or_
+from txcelery.defer import DeferrableTask
+from vortex.Payload import Payload
 
 logger = logging.getLogger(__name__)
 
@@ -57,8 +56,11 @@ def importSearchObjectTask(self, searchObjectsEncodedPayload: bytes) -> None:
 
         o.objectType = o.objectType.lower()
 
-        if o.properties:
-            o.properties = {k.lower(): v for k, v in o.properties.items()}
+        if o.fullKeywords:
+            o.fullKeywords = {k.lower(): v for k, v in o.fullKeywords.items()}
+
+        if o.partialKeywords:
+            o.partialKeywords = {k.lower(): v for k, v in o.partialKeywords.items()}
 
     try:
         objectTypeIdsByName = _prepareLookups(newSearchObjects)
@@ -72,8 +74,8 @@ def importSearchObjectTask(self, searchObjectsEncodedPayload: bytes) -> None:
         _packObjectJson(list(objectIdByKey.values()), chunkKeysForQueue)
 
         logger.info("Imported %s SearchObjects in %s",
-                     len(newSearchObjects),
-                     datetime.now(pytz.utc) - startTime)
+                    len(newSearchObjects),
+                    datetime.now(pytz.utc) - startTime)
 
     except Exception as e:
         logger.debug("Retrying import search objects, %s", e)
@@ -99,8 +101,11 @@ def _prepareLookups(newSearchObjects: List[ImportSearchObjectTuple]) -> Dict[str
         for o in newSearchObjects:
             objectTypeNames.add(o.objectType)
 
-            if o.properties:
-                propertyNames.update(o.properties)
+            if o.fullKeywords:
+                propertyNames.update(o.fullKeywords)
+
+            if o.partialKeywords:
+                propertyNames.update(o.partialKeywords)
 
         # Prepare Properties
         dbProps = dbSession.query(SearchPropertyTuple).all()
@@ -182,18 +187,31 @@ def _insertOrUpdateObjects(newSearchObjects: List[ImportSearchObjectTuple],
             existingObject = createdObjectByKey.get(loweredObjectKey)
             importObjectTypeId = objectTypeIdsByName[importObject.objectType]
 
-            propsWithKey = dict(key=originalImportObjectKey)
+            fullKwPropsWithKey = dict(key=originalImportObjectKey)
+            partialKwProps = {}
 
-            if importObject.properties:
-                if existingObject and existingObject.propertiesJson:
-                    propsWithKey.update(json.loads(existingObject.propertiesJson))
+            if importObject.fullKeywords:
+                if existingObject and existingObject.fullKwPropertiesJson:
+                    fullKwPropsWithKey \
+                        .update(json.loads(existingObject.fullKwPropertiesJson))
 
                 # Add the data we're importing second
                 # Remove null values
-                propsWithKey \
-                    .update({k: v for k, v in importObject.properties.items() if v})
+                fullKwPropsWithKey \
+                    .update({k: v for k, v in importObject.fullKeywords.items() if v})
 
-            propsStr = json.dumps(propsWithKey, sort_keys=True)
+            if importObject.partialKeywords:
+                if existingObject and existingObject.partialKwPropertiesJson:
+                    partialKwProps \
+                        .update(json.loads(existingObject.partialKwPropertiesJson))
+
+                # Add the data we're importing second
+                # Remove null values
+                partialKwProps \
+                    .update({k: v for k, v in importObject.partialKeywords.items() if v})
+
+            fullKwPropsStr = json.dumps(fullKwPropsWithKey, sort_keys=True)
+            partialKwPropsStr = json.dumps(partialKwProps, sort_keys=True)
 
             # Work out if we need to update the object type
             if importObject.objectType != 'None' and existingObject:
@@ -203,9 +221,17 @@ def _insertOrUpdateObjects(newSearchObjects: List[ImportSearchObjectTuple],
 
             # Work out if we need to update the existing object or create one
             if existingObject:
-                searchIndexUpdateNeeded = propsStr and existingObject.propertiesJson != propsStr
+                searchIndexUpdateNeeded = \
+                    fullKwPropsStr and existingObject.fullKwPropertiesJson != fullKwPropsStr
+
+                searchIndexUpdateNeeded = \
+                    searchIndexUpdateNeeded or \
+                    partialKwPropsStr and existingObject.partialKwPropertiesJson != partialKwPropsStr
+
                 if searchIndexUpdateNeeded:
-                    propUpdates.append(dict(b_id=existingObject.id, b_propsStr=propsStr))
+                    propUpdates.append(dict(b_id=existingObject.id,
+                                            b_fullPropsKwStr=fullKwPropsStr,
+                                            b_partialKwPropsStr=partialKwPropsStr))
 
             else:
                 searchIndexUpdateNeeded = True
@@ -214,7 +240,8 @@ def _insertOrUpdateObjects(newSearchObjects: List[ImportSearchObjectTuple],
                     id=id_,
                     key=originalImportObjectKey,
                     objectTypeId=importObjectTypeId,
-                    propertiesJson=propsStr,
+                    fullKwPropertiesJson=fullKwPropsStr,
+                    partialKwPropertiesJson=partialKwPropsStr,
                     chunkKey=makeSearchObjectChunkKey(id_)
                 )
                 inserts.append(existingObject.tupleToSqlaBulkInsertDict())
@@ -226,7 +253,8 @@ def _insertOrUpdateObjects(newSearchObjects: List[ImportSearchObjectTuple],
             if searchIndexUpdateNeeded:
                 objectsToIndex[existingObject.id] = ObjectToIndexTuple(
                     id=existingObject.id,
-                    props=propsWithKey
+                    fullKwProps=fullKwPropsWithKey,
+                    partialKwProps=partialKwProps
                 )
 
             objectIdByKey[loweredObjectKey] = existingObject.id
@@ -240,7 +268,8 @@ def _insertOrUpdateObjects(newSearchObjects: List[ImportSearchObjectTuple],
             stmt = (
                 searchObjectTable.update()
                     .where(searchObjectTable.c.id == bindparam('b_id'))
-                    .values(propertiesJson=bindparam('b_propsStr'))
+                    .values(fullKwPropertiesJson=bindparam('b_fullPropsKwStr'),
+                            partialKwPropertiesJson=bindparam('b_partialKwPropsStr'))
             )
             conn.execute(stmt, propUpdates)
 
@@ -289,7 +318,9 @@ def _loadExistingObjects(newSearchObjects, searchObjectTable):
         # Query existing objects
         results = list(conn.execute(select(
             columns=[searchObjectTable.c.id, searchObjectTable.c.key,
-                     searchObjectTable.c.chunkKey, searchObjectTable.c.propertiesJson],
+                     searchObjectTable.c.chunkKey,
+                     searchObjectTable.c.fullKwPropertiesJson,
+                     searchObjectTable.c.partialKwPropertiesJson],
             whereclause=searchObjectTable.c.key.in_(objectKeys)
         )))
 
@@ -430,12 +461,16 @@ def _packObjectJson(updatedIds: List[int],
     try:
 
         indexQry = (
-            dbSession.query(SearchObject.id, SearchObject.propertiesJson,
+            dbSession.query(SearchObject.id,
+                            SearchObject.fullKwPropertiesJson,
+                            SearchObject.partialKwPropertiesJson,
                             SearchObject.objectTypeId,
                             SearchObjectRoute.routeTitle, SearchObjectRoute.routePath)
-                .outerjoin(SearchObjectRoute, SearchObject.id == SearchObjectRoute.objectId)
+                .outerjoin(SearchObjectRoute,
+                           SearchObject.id == SearchObjectRoute.objectId)
                 .filter(SearchObject.id.in_(updatedIds))
-                .filter(SearchObject.propertiesJson != None)
+                .filter(or_(SearchObject.fullKwPropertiesJson != None,
+                            SearchObject.partialKwPropertiesJson != None))
                 .order_by(SearchObject.id, SearchObjectRoute.routeTitle)
                 .yield_per(1000)
                 .all()
@@ -446,15 +481,18 @@ def _packObjectJson(updatedIds: List[int],
 
         for item in indexQry:
             (
-                qryDict[(item.id, item.propertiesJson, item.objectTypeId)]
+                qryDict[(item.id,
+                         item.fullKwPropertiesJson, item.partialKwPropertiesJson,
+                         item.objectTypeId)]
                     .append([item.routeTitle, item.routePath])
             )
 
         packedJsonUpdates = []
 
         # Sort each bucket by the key
-        for (id_, propertiesJson, objectTypeId), routes in qryDict.items():
-            props = json.loads(propertiesJson)
+        for (id_, fullKwPropJson, partialKwPropJson, objectTypeId), routes in qryDict.items():
+            props = json.loads(fullKwPropJson)
+            props.update(json.loads(partialKwPropJson))
             props['_r_'] = routes
             props['_otid_'] = objectTypeId
             packedJson = json.dumps(props, sort_keys=True)

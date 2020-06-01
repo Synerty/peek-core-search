@@ -16,15 +16,21 @@ class ImportSearchObjectTuple(Tuple):
     __tupleType__ = searchTuplePrefix + 'ImportSearchObjectTuple'
 
     #:  The unique key for this object
+    # This key will be indexed as a full keyword, do not include the key in the keywords
     key: str = TupleField()
 
     #:  The type of this object
     objectType: str = TupleField()
 
-    #:  The details to index.
-    # Do not include "key", it will be indexed anyway.
+    #:  Full Keywords
+    # The keywords to index that allows the user to search by partial keywords
     # The key of the property will match of create a new "SearchProperty"
-    properties: Dict[str, str] = TupleField({})
+    fullKeywords: Dict[str, str] = TupleField({})
+
+    #:  Partial Keywords
+    # The keywords to index that allows the user to search by partial keywords
+    # The key of the property will match of create a new "SearchProperty"
+    partialKeywords: Dict[str, str] = TupleField({})
 
     #:  The color
     routes: List[ImportSearchObjectRouteTuple] = TupleField([])

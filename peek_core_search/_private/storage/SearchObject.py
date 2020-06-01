@@ -27,7 +27,9 @@ class SearchObject(Tuple, DeclarativeBase):
 
     chunkKey = Column(Integer, nullable=False)
 
-    propertiesJson = Column(String, nullable=True)
+    fullKwPropertiesJson = Column(String, nullable=True)
+
+    partialKwPropertiesJson = Column(String, nullable=True)
 
     packedJson = Column(String, nullable=True)
 

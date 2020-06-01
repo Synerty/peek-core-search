@@ -233,7 +233,8 @@ class ServerEntryHook(PluginServerEntryHookABC,
         searchObjects = []
         so1 = ImportSearchObjectTuple(
             key="so1key",
-            properties={
+            fullKeywords={},
+            partialKeywords={
                 "name": "134 Ocean Parade, Circuit breaker 1",
                 "alias": "SO1ALIAS"
             }
@@ -254,7 +255,8 @@ class ServerEntryHook(PluginServerEntryHookABC,
         searchObjects.append(so1)
         so2 = ImportSearchObjectTuple(
             key="so2key",
-            properties={
+            fullKeywords={},
+            partialKeywords={
                 "name": "69 Sheep Farmers Rd Sub TX breaker",
                 "alias": "SO2ALIAS"
             }
@@ -280,13 +282,16 @@ class ServerEntryHook(PluginServerEntryHookABC,
 
         searchObjects = []
         # Try an update of the object, it should add to the props
-        so1v2 = ImportSearchObjectTuple(key="so1key", properties={"additional": "ADMS"})
+        so1v2 = ImportSearchObjectTuple(key="so1key",
+                                        fullKeywords={},
+                                        partialKeywords={"additional": "ADMS"})
         searchObjects.append(so1v2)
 
         # This should do nothing
         so2v2 = ImportSearchObjectTuple(
             key="so2key",
-            properties=None,
+            fullKeywords=None,
+            partialKeywords=None,
             objectType='Equipment'
         )
         searchObjects.append(so2v2)
@@ -295,7 +300,8 @@ class ServerEntryHook(PluginServerEntryHookABC,
         # This should do nothing
         so3v2 = ImportSearchObjectTuple(
             key="so3key",
-            properties=None,
+            fullKeywords=None,
+            partialKeywords=None,
             objectType='Job'
         )
         searchObjects.append(so3v2)
@@ -330,7 +336,7 @@ class ServerEntryHook(PluginServerEntryHookABC,
     @property
     def publishedServerApi(self) -> object:
         """ Published Server API
-    
+
         :return  class that implements the API that can be used by other Plugins on this
         platform service.
         """

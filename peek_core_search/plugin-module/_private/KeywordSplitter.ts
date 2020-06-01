@@ -1,7 +1,7 @@
 const punctuation = "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~";
 
 
-/** Split Keywords
+/** Full Split Keywords
  *
  * This MUST MATCH the code that runs in the worker
  * peek_core_search/_private/worker/tasks/ImportSearchIndexTask.py
@@ -9,7 +9,7 @@ const punctuation = "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~";
  * @param {string} keywordStr: The keywords as one string
  * @returns {string[]} The keywords as an array
  */
-export function keywordSplitter(keywordStr) {
+export function splitFullKeywords(keywordStr): string[] {
     // Lowercase the string
     keywordStr = keywordStr.toLowerCase();
 
@@ -27,7 +27,31 @@ export function keywordSplitter(keywordStr) {
     tokens = tokens.map((w) => w.replace(/^\s+|\s+$/g, ''));
 
     // Filter out the empty words and words less than three letters
-    tokens = tokens.filter((w) =>  2 < w.length);
+    const uniqueWords = {};
+    return tokens.filter((w) => {
+        if (2 < w.length)
+            return false;
+
+        if (uniqueWords[w] === true)
+            return false;
+
+        uniqueWords[w] = true;
+        return true;
+    });
+
+}
+
+/** Partial Split Keywords
+ *
+ * This MUST MATCH the code that runs in the worker
+ * peek_core_search/_private/worker/tasks/ImportSearchIndexTask.py
+ *
+ * @param {string} keywordStr: The keywords as one string
+ * @returns {string[]} The keywords as an array
+ */
+export function splitPartialKeywords(keywordStr): string[] {
+    // Filter out the empty words and words less than three letters
+    const tokens = splitFullKeywords(keywordStr);
 
     // Split the words up into tokens, this creates partial keyword search support
     const tokenSet = {};

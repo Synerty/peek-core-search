@@ -12,7 +12,6 @@ import {PrivateSearchObjectLoaderService} from "./_private/search-object-loader"
 import {SearchResultObjectTuple} from "./SearchResultObjectTuple";
 import {SearchObjectTypeTuple} from "./SearchObjectTypeTuple";
 import {OfflineConfigTuple, SearchPropertyTuple, SearchTupleService} from "./_private";
-import {keywordSplitter} from "./_private/KeywordSplitter";
 import {KeywordAutoCompleteTupleAction} from "./_private/tuples/KeywordAutoCompleteTupleAction";
 
 
