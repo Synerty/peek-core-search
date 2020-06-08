@@ -135,9 +135,6 @@ export class SearchService extends ComponentLifecycleEventEmitter {
                     return [];
                 }
 
-                // Limit to 20 results
-                objectIds = objectIds.slice(0, 20);
-
                 return this.searchObjectLoader.getObjects(objectTypeId, objectIds)
                     .then(v => this._loadObjectTypes(v));
             })

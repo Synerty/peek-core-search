@@ -1,4 +1,5 @@
 import logging
+from typing import Callable
 
 from peek_abstract_chunked_index.private.server.controller.ACIProcessorQueueControllerABC import \
     ACIProcessorQueueControllerABC, ACIProcessorQueueBlockItem
@@ -41,8 +42,10 @@ class SearchIndexChunkCompilerQueueController(ACIProcessorQueueControllerABC):
     QUEUE_ITEMS_PER_TASK = 10
     POLL_PERIOD_SECONDS = 1.000
 
-    QUEUE_BLOCKS_MAX = 10
-    QUEUE_BLOCKS_MIN = 0
+    # We can run this with a large queue because this compiler only runs when the
+    # object compiler queue is empty
+    QUEUE_BLOCKS_MAX = 40
+    QUEUE_BLOCKS_MIN = 4
 
     WORKER_TASK_TIMEOUT = 60.0
 
@@ -53,9 +56,12 @@ class SearchIndexChunkCompilerQueueController(ACIProcessorQueueControllerABC):
 
     def __init__(self, dbSessionCreator,
                  statusController: StatusController,
-                 clientSearchIndexUpdateHandler: ClientSearchIndexChunkUpdateHandler):
-        ACIProcessorQueueControllerABC.__init__(self, dbSessionCreator,
-                                                _Notifier(statusController))
+                 clientSearchIndexUpdateHandler: ClientSearchIndexChunkUpdateHandler,
+                 isProcessorEnabledCallable: Callable):
+        ACIProcessorQueueControllerABC \
+            .__init__(self, dbSessionCreator,
+                      _Notifier(statusController),
+                      isProcessorEnabledCallable)
 
         self._clientSearchIndexUpdateHandler: ClientSearchIndexChunkUpdateHandler \
             = clientSearchIndexUpdateHandler

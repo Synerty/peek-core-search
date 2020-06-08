@@ -180,22 +180,23 @@ class ServerEntryHook(PluginServerEntryHookABC,
         self._loadedObjects.append(mainController)
 
         # ----------------
-        # Search Index Controller
-        searchIndexChunkCompilerQueueController = SearchIndexChunkCompilerQueueController(
-            dbSessionCreator=self.dbSessionCreator,
-            statusController=statusController,
-            clientSearchIndexUpdateHandler=clientSearchIndexChunkUpdateHandler
-        )
-        self._loadedObjects.append(searchIndexChunkCompilerQueueController)
-
-        # ----------------
         # Search Object Controller
-        searchObjectChunkCompilerQueueController = SearchObjectChunkCompilerQueueController(
+        objectChunkCompilerQueueController = SearchObjectChunkCompilerQueueController(
             dbSessionCreator=self.dbSessionCreator,
             statusController=statusController,
             clientSearchObjectUpdateHandler=clientSearchObjectChunkUpdateHandler
         )
-        self._loadedObjects.append(searchObjectChunkCompilerQueueController)
+        self._loadedObjects.append(objectChunkCompilerQueueController)
+
+        # ----------------
+        # Search Index Controller
+        indexChunkCompilerQueueController = SearchIndexChunkCompilerQueueController(
+            dbSessionCreator=self.dbSessionCreator,
+            statusController=statusController,
+            clientSearchIndexUpdateHandler=clientSearchIndexChunkUpdateHandler,
+            isProcessorEnabledCallable=objectChunkCompilerQueueController.isQueueEmpty
+        )
+        self._loadedObjects.append(indexChunkCompilerQueueController)
 
         # ----------------
         # Import Controller
@@ -218,10 +219,10 @@ class ServerEntryHook(PluginServerEntryHookABC,
         settings = yield self._loadSettings()
 
         if settings[KEYWORD_COMPILER_ENABLED]:
-            searchIndexChunkCompilerQueueController.start()
+            indexChunkCompilerQueueController.start()
 
         if settings[OBJECT_COMPILER_ENABLED]:
-            searchObjectChunkCompilerQueueController.start()
+            objectChunkCompilerQueueController.start()
 
         # self._test()
 

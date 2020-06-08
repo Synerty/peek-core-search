@@ -6,12 +6,13 @@ from datetime import datetime
 from typing import List, Set
 
 import pytz
+from sqlalchemy import select
+
 from peek_core_search._private.storage.SearchIndex import SearchIndex
 from peek_core_search._private.storage.SearchIndexCompilerQueue import \
     SearchIndexCompilerQueue
 from peek_core_search._private.worker.tasks._CalcChunkKey import makeSearchIndexChunkKey
 from peek_plugin_base.worker import CeleryDbConn
-from sqlalchemy import select
 
 logger = logging.getLogger(__name__)
 
@@ -91,7 +92,7 @@ def reindexSearchObject(conn, objectsToIndex: List[ObjectToIndexTuple]) -> None:
 # lemmatizer = WordNetLemmatizer()
 
 
-def _splitFullKeywords(keywordStr: str) -> Set[str]:
+def __splitFullTokens(keywordStr: str) -> Set[str]:
     if not keywordStr:
         return set()
 
@@ -107,9 +108,13 @@ def _splitFullKeywords(keywordStr: str) -> Set[str]:
     return set(tokens)
 
 
+def _splitFullKeywords(keywordStr: str) -> Set[str]:
+    return set(['^%s$' % t for t in __splitFullTokens(keywordStr)])
+
+
 def _splitPartialKeywords(keywordStr: str) -> Set[str]:
     # Strip and Split words, filter out words less than three letters
-    tokens = _splitFullKeywords(keywordStr)
+    tokens = __splitFullTokens(keywordStr)
 
     if not keywordStr:
         return set()
@@ -118,8 +123,7 @@ def _splitPartialKeywords(keywordStr: str) -> Set[str]:
     tokenSet = set()
     for token in tokens:
         for index in range(len(token) - 2):
-            tokenSet.add(token[index:index + 3])
-            pass
+            tokenSet.add(('' if index else '^') + token[index:index + 3])
 
     return tokenSet
 
