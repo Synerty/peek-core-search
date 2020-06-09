@@ -180,22 +180,23 @@ class ServerEntryHook(PluginServerEntryHookABC,
         self._loadedObjects.append(mainController)
 
         # ----------------
-        # Search Index Controller
-        searchIndexChunkCompilerQueueController = SearchIndexChunkCompilerQueueController(
-            dbSessionCreator=self.dbSessionCreator,
-            statusController=statusController,
-            clientSearchIndexUpdateHandler=clientSearchIndexChunkUpdateHandler
-        )
-        self._loadedObjects.append(searchIndexChunkCompilerQueueController)
-
-        # ----------------
         # Search Object Controller
-        searchObjectChunkCompilerQueueController = SearchObjectChunkCompilerQueueController(
+        objectChunkCompilerQueueController = SearchObjectChunkCompilerQueueController(
             dbSessionCreator=self.dbSessionCreator,
             statusController=statusController,
             clientSearchObjectUpdateHandler=clientSearchObjectChunkUpdateHandler
         )
-        self._loadedObjects.append(searchObjectChunkCompilerQueueController)
+        self._loadedObjects.append(objectChunkCompilerQueueController)
+
+        # ----------------
+        # Search Index Controller
+        indexChunkCompilerQueueController = SearchIndexChunkCompilerQueueController(
+            dbSessionCreator=self.dbSessionCreator,
+            statusController=statusController,
+            clientSearchIndexUpdateHandler=clientSearchIndexChunkUpdateHandler,
+            isProcessorEnabledCallable=objectChunkCompilerQueueController.isQueueEmpty
+        )
+        self._loadedObjects.append(indexChunkCompilerQueueController)
 
         # ----------------
         # Import Controller
@@ -218,10 +219,10 @@ class ServerEntryHook(PluginServerEntryHookABC,
         settings = yield self._loadSettings()
 
         if settings[KEYWORD_COMPILER_ENABLED]:
-            searchIndexChunkCompilerQueueController.start()
+            indexChunkCompilerQueueController.start()
 
         if settings[OBJECT_COMPILER_ENABLED]:
-            searchObjectChunkCompilerQueueController.start()
+            objectChunkCompilerQueueController.start()
 
         # self._test()
 
@@ -233,7 +234,8 @@ class ServerEntryHook(PluginServerEntryHookABC,
         searchObjects = []
         so1 = ImportSearchObjectTuple(
             key="so1key",
-            properties={
+            fullKeywords={},
+            partialKeywords={
                 "name": "134 Ocean Parade, Circuit breaker 1",
                 "alias": "SO1ALIAS"
             }
@@ -254,7 +256,8 @@ class ServerEntryHook(PluginServerEntryHookABC,
         searchObjects.append(so1)
         so2 = ImportSearchObjectTuple(
             key="so2key",
-            properties={
+            fullKeywords={},
+            partialKeywords={
                 "name": "69 Sheep Farmers Rd Sub TX breaker",
                 "alias": "SO2ALIAS"
             }
@@ -280,13 +283,16 @@ class ServerEntryHook(PluginServerEntryHookABC,
 
         searchObjects = []
         # Try an update of the object, it should add to the props
-        so1v2 = ImportSearchObjectTuple(key="so1key", properties={"additional": "ADMS"})
+        so1v2 = ImportSearchObjectTuple(key="so1key",
+                                        fullKeywords={},
+                                        partialKeywords={"additional": "ADMS"})
         searchObjects.append(so1v2)
 
         # This should do nothing
         so2v2 = ImportSearchObjectTuple(
             key="so2key",
-            properties=None,
+            fullKeywords=None,
+            partialKeywords=None,
             objectType='Equipment'
         )
         searchObjects.append(so2v2)
@@ -295,7 +301,8 @@ class ServerEntryHook(PluginServerEntryHookABC,
         # This should do nothing
         so3v2 = ImportSearchObjectTuple(
             key="so3key",
-            properties=None,
+            fullKeywords=None,
+            partialKeywords=None,
             objectType='Job'
         )
         searchObjects.append(so3v2)
@@ -330,7 +337,7 @@ class ServerEntryHook(PluginServerEntryHookABC,
     @property
     def publishedServerApi(self) -> object:
         """ Published Server API
-    
+
         :return  class that implements the API that can be used by other Plugins on this
         platform service.
         """

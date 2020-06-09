@@ -16,7 +16,8 @@ from peek_plugin_base.worker import CeleryDbConn
 
 logger = logging.getLogger(__name__)
 
-ObjectToIndexTuple = namedtuple("ObjectToIndexTuple", ["id", "props"])
+ObjectToIndexTuple = namedtuple("ObjectToIndexTuple", ["id", "fullKwProps",
+                                                       "partialKwProps"])
 
 
 def removeObjectIdsFromSearchIndex(deletedObjectIds: List[int]) -> None:
@@ -75,7 +76,7 @@ def reindexSearchObject(conn, objectsToIndex: List[ObjectToIndexTuple]) -> None:
         )
 
     logger.info("Inserted %s SearchIndex keywords in %s",
-                 len(newSearchIndexes), (datetime.now(pytz.utc) - startTime))
+                len(newSearchIndexes), (datetime.now(pytz.utc) - startTime))
 
 
 # stopwords = set()  # nltk.corpus.stopwords.words('english'))
@@ -91,7 +92,7 @@ def reindexSearchObject(conn, objectsToIndex: List[ObjectToIndexTuple]) -> None:
 # lemmatizer = WordNetLemmatizer()
 
 
-def _splitKeywords(keywordStr: str) -> Set[str]:
+def __splitFullTokens(keywordStr: str) -> Set[str]:
     if not keywordStr:
         return set()
 
@@ -101,8 +102,30 @@ def _splitKeywords(keywordStr: str) -> Set[str]:
     # Remove punctuation
     tokens = ''.join([c for c in keywordStr if c not in string.punctuation])
 
-    tokens = set([w.strip() for w in tokens.split(' ') if w.strip()])
-    return tokens
+    # Strip and Split words, filter out words less than three letters
+    tokens = [w.strip() for w in tokens.split(' ') if 2 < len(w.strip())]
+
+    return set(tokens)
+
+
+def _splitFullKeywords(keywordStr: str) -> Set[str]:
+    return set(['^%s$' % t for t in __splitFullTokens(keywordStr)])
+
+
+def _splitPartialKeywords(keywordStr: str) -> Set[str]:
+    # Strip and Split words, filter out words less than three letters
+    tokens = __splitFullTokens(keywordStr)
+
+    if not keywordStr:
+        return set()
+
+    # Split the words up into tokens, this creates partial keyword search support
+    tokenSet = set()
+    for token in tokens:
+        for index in range(len(token) - 2):
+            tokenSet.add(('' if index else '^') + token[index:index + 3])
+
+    return tokenSet
 
 
 def _indexObject(objectToIndex: ObjectToIndexTuple) -> List[SearchIndex]:
@@ -119,8 +142,19 @@ def _indexObject(objectToIndex: ObjectToIndexTuple) -> List[SearchIndex]:
     """
     searchIndexes = []
 
-    for propKey, text in objectToIndex.props.items():
-        for token in _splitKeywords(text):
+    for propKey, text in objectToIndex.fullKwProps.items():
+        for token in _splitFullKeywords(text):
+            searchIndexes.append(
+                SearchIndex(
+                    chunkKey=makeSearchIndexChunkKey(token),
+                    keyword=token,
+                    propertyName=propKey,
+                    objectId=objectToIndex.id
+                )
+            )
+
+    for propKey, text in objectToIndex.partialKwProps.items():
+        for token in _splitPartialKeywords(text):
             searchIndexes.append(
                 SearchIndex(
                     chunkKey=makeSearchIndexChunkKey(token),

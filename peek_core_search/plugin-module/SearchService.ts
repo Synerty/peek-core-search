@@ -12,7 +12,6 @@ import {PrivateSearchObjectLoaderService} from "./_private/search-object-loader"
 import {SearchResultObjectTuple} from "./SearchResultObjectTuple";
 import {SearchObjectTypeTuple} from "./SearchObjectTypeTuple";
 import {OfflineConfigTuple, SearchPropertyTuple, SearchTupleService} from "./_private";
-import {keywordSplitter} from "./_private/KeywordSplitter";
 import {KeywordAutoCompleteTupleAction} from "./_private/tuples/KeywordAutoCompleteTupleAction";
 
 
@@ -98,16 +97,6 @@ export class SearchService extends ComponentLifecycleEventEmitter {
     }
 
 
-    /** Split Keywords
-     *
-     * @param {string} keywordStr: The keywords as one string
-     * @returns {string[]} The keywords as an array
-     */
-    private splitKeywords(keywordStr: string): string[] {
-        return keywordSplitter(keywordStr);
-    }
-
-
     /** Get Locations
      *
      * Get the objects with matching keywords from the index..
@@ -117,16 +106,13 @@ export class SearchService extends ComponentLifecycleEventEmitter {
                objectTypeId: number | null,
                keywordsString: string): Promise<SearchResultObjectTuple[]> {
 
-        let keywords = this.splitKeywords(keywordsString);
-        console.log(keywords);
-
         // If there is no offline support, or we're online
         if (!this.offlineConfig.cacheChunksForOffline
             || this.vortexStatusService.snapshot.isOnline) {
             let ts = new TupleSelector(SearchResultObjectTuple.tupleName, {
                 "propertyName": propertyName,
                 "objectTypeId": objectTypeId,
-                "keywords": keywords
+                "keywordsString": keywordsString
             });
 
             let isOnlinePromise: any = this.vortexStatusService.snapshot.isOnline ?
@@ -142,15 +128,12 @@ export class SearchService extends ComponentLifecycleEventEmitter {
         }
 
         // If we do have offline support
-        return this.searchIndexLoader.getObjectIds(propertyName, keywords)
+        return this.searchIndexLoader.getObjectIds(propertyName, keywordsString)
             .then((objectIds: number[]) => {
                 if (objectIds.length == 0) {
-                    console.log("There were no keyword search results for : " + keywords);
+                    console.log("There were no keyword search results for : " + keywordsString);
                     return [];
                 }
-
-                // Limit to 20 results
-                objectIds = objectIds.slice(0, 20);
 
                 return this.searchObjectLoader.getObjects(objectTypeId, objectIds)
                     .then(v => this._loadObjectTypes(v));
@@ -164,7 +147,7 @@ export class SearchService extends ComponentLifecycleEventEmitter {
 
         const autoCompleteAction = new KeywordAutoCompleteTupleAction();
         autoCompleteAction.searchString = keywordsString;
-        autoCompleteAction.propertyKey = propertyName;
+        autoCompleteAction.propertyName = propertyName;
         autoCompleteAction.objectTypeId = objectTypeId;
 
         let results = await <any>this.tupleService.action.pushAction(autoCompleteAction);

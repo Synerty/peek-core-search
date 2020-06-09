@@ -18,7 +18,7 @@ class KeywordAutoCompleteTupleAction(TupleActionABC):
     objectTypeId: Optional[int] = TupleField()
 
     #:  The property key to restrict to
-    propertyKey: Optional[str] = TupleField()
+    propertyName: Optional[str] = TupleField()
 
     #:  The search string to search for
     searchString: str = TupleField()

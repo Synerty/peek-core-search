@@ -10,7 +10,7 @@ export class KeywordAutoCompleteTupleAction extends TupleActionABC {
     objectTypeId: number | null = null;
 
     //  The property key to restrict to
-    propertyKey: string | null = null;
+    propertyName: string | null = null;
 
     //  The partial keywords to search for
     searchString: string = null;

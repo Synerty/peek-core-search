@@ -23,6 +23,7 @@ import {SearchIndexUpdateDateTuple} from "./SearchIndexUpdateDateTuple";
 import {OfflineConfigTuple} from "../tuples/OfflineConfigTuple";
 import {SearchTupleService} from "../SearchTupleService";
 import {PrivateSearchIndexLoaderStatusTuple} from "./PrivateSearchIndexLoaderStatusTuple";
+import {splitFullKeywords, splitPartialKeywords} from "../KeywordSplitter";
 
 
 // ----------------------------------------------------------------------------
@@ -412,18 +413,15 @@ export class PrivateSearchIndexLoaderService extends ComponentLifecycleEventEmit
      * Get the objects with matching keywords from the index..
      *
      */
-    getObjectIds(propertyName: string | null, keywords: string[]): Promise<number[]> {
-        if (keywords == null || keywords.length == 0) {
-            throw new Error("We've been passed a null/empty keywords");
-        }
+    getObjectIds(propertyName: string | null, searchString: string): Promise<number[]> {
 
         if (this.isReady())
-            return this.getObjectIdsWhenReady(propertyName, keywords);
+            return this.getObjectIdsForSearchString(searchString, propertyName);
 
         return this.isReadyObservable()
             .first()
             .toPromise()
-            .then(() => this.getObjectIdsWhenReady(propertyName, keywords));
+            .then(() => this.getObjectIdsForSearchString(searchString, propertyName));
     }
 
 
@@ -431,41 +429,93 @@ export class PrivateSearchIndexLoaderService extends ComponentLifecycleEventEmit
      *
      * Get the objects with matching keywords from the index..
      *
+     * This should match FastKeywordController.py
      */
-    private getObjectIdsWhenReady(propertyName: string | null, keywords: string[]): Promise<number[]> {
-        let promises = [];
-        for (let keyword of keywords) {
-            promises.push(this.getObjectIdsForKeyword(propertyName, keyword));
+    private async getObjectIdsForSearchString(searchString: string,
+                                              propertyName: string | null): Promise<number[]> {
+
+        // Split the keywords into full keywords
+        const fullKwTokens = splitFullKeywords(searchString)
+
+        // If there are no tokens then return nothing
+        if (fullKwTokens == null || fullKwTokens.length == 0) {
+            return [];
         }
 
-        return Promise.all(promises)
-            .then((results: number[][]) => {
+        // First find all the results from the full kw tokens
+        const resultsByFullKw: { [token: string]: number[] } = await this
+            .loadObjectIdsFromIndex(fullKwTokens, propertyName);
 
-                // Create a list of objectIds
-                let objectIds: number[] = [];
-                for (let result of results) {
-                    objectIds.add(result);
-                }
+        // Filter out the no matches
+        for (let token of Object.keys(resultsByFullKw)) {
+            if (resultsByFullKw[token] == null)
+                delete resultsByFullKw[token];
+        }
 
-                // Create RANK dict
-                let matchesByObjectId = {};
-                for (let objectId of objectIds) {
-                    if (matchesByObjectId[objectId] == null)
-                        matchesByObjectId[objectId] = 1;
-                    else
-                        matchesByObjectId[objectId] = matchesByObjectId[objectId] + 1;
-                }
+        // Get the remaining tokens to try the partial keyword search in
+        const remainingSearchString = fullKwTokens
+            .filter(kw => resultsByFullKw[kw] == null)
+            .join(' ');
 
-                objectIds = [];
+        // Now lookup any remaining keywords, if any
+        const partialKwTokens = splitPartialKeywords(remainingSearchString);
+        const resultsByPartialKw: { [token: string]: number[] } = await this
+            .loadObjectIdsFromIndex(partialKwTokens, propertyName);
 
-                // Find object ids where all keywords match
-                for (let objectId of Object.keys(matchesByObjectId)) {
-                    if (matchesByObjectId[objectId] == keywords.length) {
-                        objectIds.push(parseInt(objectId));
-                    }
-                }
-                return objectIds;
-            });
+        // Merge the results
+        const results = {};
+        Object.assign(results, resultsByFullKw);
+        Object.assign(results, resultsByPartialKw);
+
+        // If there are no results, then return
+        if (Object.keys(results).length !== 0)
+            return []
+
+        // Now, return the ObjectIDs that exist in all keyword lookups
+        const keys = Object.keys(results);
+
+        let objectIdsUnion: any = new Set<number>(results[keys.pop()]);
+        for (let key of keys) {
+            const thisSet = new Set<number>(results[key]);
+            objectIdsUnion = new Set<number>([...objectIdsUnion]
+                .filter(x => thisSet.has(x)));
+        }
+
+        // Limit to 50 and return
+        return [...objectIdsUnion].slice(0, 50);
+    }
+
+
+    private async loadObjectIdsFromIndex(tokens: string[],
+                                         propertyName: string | null): Promise<{ [token: string]: number[] }> {
+
+        const tokensByChunkKey: { [chunkKey: number]: string[] } = {};
+
+        // Group the keys for
+        for (let token of tokens) {
+            if (tokensByChunkKey[keywordChunk(token)] == null)
+                tokensByChunkKey[keywordChunk(token)] = [];
+            tokensByChunkKey[keywordChunk(token)].push(token);
+        }
+
+        const promises = [];
+        for (let chunkKey of Object.keys(tokensByChunkKey)) {
+            const tokensInChunk = tokensByChunkKey[chunkKey];
+            const chunkKeyInt = parseInt(chunkKey.toString());
+            promises.push(
+                this.getObjectIdsForKeyword(propertyName, chunkKeyInt, tokensInChunk)
+            );
+        }
+
+
+        const allResults = await Promise.all(promises);
+        const mergedResults: { [token: string]: number[] } = {};
+        for (let results of allResults) {
+            Object.assign(mergedResults, results);
+        }
+
+        return mergedResults;
+
     }
 
 
@@ -474,53 +524,53 @@ export class PrivateSearchIndexLoaderService extends ComponentLifecycleEventEmit
      * Get the objects with matching keywords from the index..
      *
      */
-    private getObjectIdsForKeyword(propertyName: string | null, keyword: string): Promise<number[]> {
-        if (keyword == null || keyword.length == 0) {
+    private async getObjectIdsForKeyword(propertyName: string | null,
+                                         chunkKey: number,
+                                         tokens: string[]): Promise<{ [token: string]: number[] }> {
+        if (tokens == null || tokens.length == 0) {
             throw new Error("We've been passed a null/empty keyword");
         }
 
-        let chunkKey: number = keywordChunk(keyword);
-
         if (!this.index.updateDateByChunkKey.hasOwnProperty(chunkKey)) {
-            console.log(`keyword: ${keyword} doesn't appear in the index`);
-            return Promise.resolve([]);
+            console.log(`keyword: ${tokens} doesn't appear in the index`);
+            return {};
         }
 
-        let retPromise: any;
-        retPromise = this.storage.loadTuplesEncoded(new SearchIndexChunkTupleSelector(chunkKey))
-            .then((vortexMsg: string) => {
-                if (vortexMsg == null) {
-                    return [];
+        const objectIdsByToken: { [token: string]: number[] } = {};
+
+        const vortexMsg = await this.storage
+            .loadTuplesEncoded(new SearchIndexChunkTupleSelector(chunkKey));
+
+        if (vortexMsg == null)
+            return {};
+
+        const payload = await Payload.fromEncodedPayload(vortexMsg);
+        const chunkData = payload.tuples;
+
+        for (let token of tokens) {
+            const objectIds = [];
+            objectIdsByToken[token] = objectIds;
+
+            // TODO Binary Search, the data IS sorted
+            for (let keywordIndex of chunkData) {
+                // Find the keyword, we're just iterating
+                if (keywordIndex[0] != token)
+                    continue;
+
+                // If the property is set, then make sure it matches
+                if (propertyName != null && keywordIndex[1] != propertyName)
+                    continue;
+
+                // This is stored as a string, so we don't have to construct
+                // so much data when deserialising the chunk
+                let thisObjectIds = JSON.parse(keywordIndex[2]);
+                for (let thisObjectId of thisObjectIds) {
+                    objectIds.push(thisObjectId);
                 }
+            }
+        }
 
-                return Payload.fromEncodedPayload(vortexMsg)
-                    .then((payload: Payload) => payload.tuples)
-                    .then((chunkData: string[][]) => {
-                        let objectIds = [];
-
-                        // TODO Binary Search, the data IS sorted
-                        for (let keywordIndex of chunkData) {
-                            // Find the keyword, we're just iterating
-                            if (keywordIndex[0] != keyword)
-                                continue;
-
-                            // If the property is set, then make sure it matches
-                            if (propertyName != null && keywordIndex[1] != propertyName)
-                                continue;
-
-                            // This is stored as a string, so we don't have to construct
-                            // so much data when deserialising the chunk
-                            let thisObjectIds = JSON.parse(keywordIndex[2]);
-                            for (let thisObjectId of thisObjectIds) {
-                                objectIds.push(thisObjectId);
-                            }
-                        }
-
-                        return objectIds;
-
-                    });
-            });
-        return retPromise;
+        return objectIdsByToken;
 
     }
 
