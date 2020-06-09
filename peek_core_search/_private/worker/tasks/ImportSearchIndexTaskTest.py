@@ -16,6 +16,9 @@ class ImportSearchIndexTaskTest(unittest.TestCase):
         self.assertEqual({'^and$'}, _splitFullKeywords("and"))
         self.assertEqual(set(), _splitFullKeywords("to"))
 
+        self.assertEqual(_splitFullKeywords("Milton Unit 22"),
+                         {'^milton$', '^unit$'})
+
     def testPartialKeywordSplit(self):
         self.assertEqual(_splitPartialKeywords("smith"), {'^smi', 'mit', 'ith'})
         self.assertEqual(_splitPartialKeywords("ZORRO-REYNER"),
@@ -25,3 +28,7 @@ class ImportSearchIndexTaskTest(unittest.TestCase):
 
         self.assertEqual(_splitPartialKeywords("and"), {'^and'})
         self.assertEqual(_splitPartialKeywords("to"), set())
+
+        self.assertEqual(_splitPartialKeywords("Milton Unit 22"),
+                         {'^mil', 'ilt', 'lto', 'ton',
+                          '^uni', 'nit'})

@@ -35,7 +35,7 @@ import {SearchObjectTypeTuple} from "../../SearchObjectTypeTuple";
 // ----------------------------------------------------------------------------
 
 let clientSearchObjectWatchUpdateFromDeviceFilt = extend(
-    {'key': "clientSearchObjectWatchUpdateFromDevice"},
+    {"key": "clientSearchObjectWatchUpdateFromDevice"},
     searchFilt
 );
 
@@ -171,6 +171,25 @@ export class PrivateSearchObjectLoaderService extends ComponentLifecycleEventEmi
         return this._status;
     }
 
+    /** Get Objects
+     *
+     * Get the objects with matching keywords from the index..
+     *
+     */
+    getObjects(objectTypeId: number | null, objectIds: number[]): Promise<SearchResultObjectTuple[]> {
+        if (objectIds == null || objectIds.length == 0) {
+            throw new Error("We've been passed a null/empty objectIds");
+        }
+
+        if (this.isReady())
+            return this.getObjectsWhenReady(objectTypeId, objectIds);
+
+        return this.isReadyObservable()
+            .first()
+            .toPromise()
+            .then(() => this.getObjectsWhenReady(objectTypeId, objectIds));
+    }
+
     private _notifyStatus(): void {
         this._status.cacheForOfflineEnabled = this.offlineConfig.cacheChunksForOffline;
         this._status.initialLoadComplete = this.index.initialLoadComplete;
@@ -181,7 +200,6 @@ export class PrivateSearchObjectLoaderService extends ComponentLifecycleEventEmi
 
         this._statusSubject.next(this._status);
     }
-
 
     /** Initial load
      *
@@ -231,7 +249,6 @@ export class PrivateSearchObjectLoaderService extends ComponentLifecycleEventEmi
             && this.vortexStatusService.snapshot.isOnline;
     }
 
-
     /** Ask Server For Updates
      *
      * Tell the server the state of the chunks in our index and ask if there
@@ -270,7 +287,6 @@ export class PrivateSearchObjectLoaderService extends ComponentLifecycleEventEmi
                 this.queueChunksToAskServer(keysNeedingUpdate);
             });
     }
-
 
     /** Queue Chunks To Ask Server
      *
@@ -318,7 +334,6 @@ export class PrivateSearchObjectLoaderService extends ComponentLifecycleEventEmi
         this._status.lastCheck = new Date();
         this._notifyStatus();
     }
-
 
     /** Process SearchObjects From Server
      *
@@ -403,27 +418,6 @@ export class PrivateSearchObjectLoaderService extends ComponentLifecycleEventEmi
         return retPromise;
     }
 
-
-    /** Get Objects
-     *
-     * Get the objects with matching keywords from the index..
-     *
-     */
-    getObjects(objectTypeId: number | null, objectIds: number[]): Promise<SearchResultObjectTuple[]> {
-        if (objectIds == null || objectIds.length == 0) {
-            throw new Error("We've been passed a null/empty objectIds");
-        }
-
-        if (this.isReady())
-            return this.getObjectsWhenReady(objectTypeId, objectIds);
-
-        return this.isReadyObservable()
-            .first()
-            .toPromise()
-            .then(() => this.getObjectsWhenReady(objectTypeId, objectIds));
-    }
-
-
     /** Get Objects When Ready
      *
      * Get the objects with matching keywords from the index..
@@ -454,7 +448,7 @@ export class PrivateSearchObjectLoaderService extends ComponentLifecycleEventEmi
         return Promise.all(promises)
             .then((results: SearchResultObjectTuple[][]) => {
                 let objects: SearchResultObjectTuple[] = [];
-                for (let result of  results) {
+                for (let result of results) {
                     objects.add(result);
                 }
                 return objects;
@@ -504,19 +498,19 @@ export class PrivateSearchObjectLoaderService extends ComponentLifecycleEventEmi
                             let objectProps: {} = JSON.parse(chunkData[objectId]);
 
                             // Get out the object type
-                            let thisObjectTypeId = objectProps['_otid_'];
-                            delete objectProps['_otid_'];
+                            let thisObjectTypeId = objectProps["_otid_"];
+                            delete objectProps["_otid_"];
 
                             // If the property is set, then make sure it matches
                             if (objectTypeId != null && objectTypeId != thisObjectTypeId)
                                 continue;
 
                             // Get out the routes
-                            let routes: string[][] = objectProps['_r_'];
-                            delete objectProps['_r_'];
+                            let routes: string[][] = objectProps["_r_"];
+                            delete objectProps["_r_"];
 
                             // Get the key
-                            let objectKey: string = objectProps['key'];
+                            let objectKey: string = objectProps["key"];
 
                             // Create the new object
                             let newObject = new SearchResultObjectTuple();
