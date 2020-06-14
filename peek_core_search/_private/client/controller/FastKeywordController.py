@@ -24,8 +24,10 @@ from peek_core_search._private.storage.EncodedSearchIndexChunk import \
     EncodedSearchIndexChunk
 from peek_core_search._private.tuples.KeywordAutoCompleteTupleAction import \
     KeywordAutoCompleteTupleAction
-from peek_core_search._private.worker.tasks.ImportSearchIndexTask import \
-    _splitFullKeywords, _splitPartialKeywords
+from peek_core_search._private.tuples.search_object.SearchResultObjectTuple import \
+    SearchResultObjectTuple
+from peek_core_search._private.worker.tasks.KeywordSplitter import \
+    splitPartialKeywords, splitFullKeywords, _splitFullTokens
 from peek_core_search._private.worker.tasks._CalcChunkKey import makeSearchIndexChunkKey
 
 logger = logging.getLogger(__name__)
@@ -51,13 +53,15 @@ class FastKeywordController(TupleActionProcessorDelegateABC):
 
         startTime = datetime.now(pytz.utc)
 
-        objectIds = yield self.getObjectIdsForSearchString(
+        objectIds = yield self._getObjectIdsForSearchString(
             tupleAction.searchString, tupleAction.propertyName
         )
 
-        results = yield self._objectCacheController.getObjects(
-            tupleAction.objectTypeId, objectIds
-        )
+        results = yield self._objectCacheController \
+            .getObjects(tupleAction.objectTypeId, objectIds)
+
+        results = yield self._filterObjectsForSearchString(
+            results, tupleAction.searchString, tupleAction.propertyName)
 
         logger.debug("Completed search for |%s|, returning %s objects, in %s",
                      tupleAction.searchString,
@@ -66,59 +70,89 @@ class FastKeywordController(TupleActionProcessorDelegateABC):
         return results
 
     @deferToThreadWrapWithLogger(logger)
-    def getObjectIdsForSearchString(self, searchString: str,
-                                    propertyName: Optional[str]) -> Deferred:
+    def _filterObjectsForSearchString(self, results: List[SearchResultObjectTuple],
+                                      searchString: str,
+                                      propertyName: Optional[str]) -> Deferred:
+        """ Filter Objects For Search String
+
+        STAGE 2 of the search.
+
+        This method filters the loaded objects to ensure we have full matches.
+
+        :param results:
+        :param searchString:
+        :param propertyName:
+        :return:
+        """
+
+        noFulls = lambda t: not t.endswith('$')
+
+        # Get the partial tokens, and match them
+        tokens = set(filter(noFulls, splitPartialKeywords(searchString)))
+
+        def filterResult(result: SearchResultObjectTuple) -> bool:
+            props = result.properties
+            if propertyName:
+                props = {propertyName: props[propertyName]}
+
+            allPropVals = ' '.join(props.values())
+            theseTokens = set(filter(noFulls, splitPartialKeywords(allPropVals)))
+            return bool(tokens & theseTokens)
+
+        return list(filter(filterResult, results))
+
+    @deferToThreadWrapWithLogger(logger)
+    def _getObjectIdsForSearchString(self, searchString: str,
+                                     propertyName: Optional[str]) -> Deferred:
         """ Get ObjectIds For Search String
+
+        STAGE 1 of the search.
+
+        This method loads all of the search objects that match the search strings.
+
+        This will load in some false matches, they are filtered out in
+        _filterObjectsForSearchString
+
+        Searching is complex because we don't know if we're looking for a full
+        or partial tokenizing.
 
         :rtype List[int]
 
         """
-        # Split the keywords into full keywords
-        fullKwTokens = _splitFullKeywords(searchString)
+        logger.debug("Started search with string |%s|", searchString)
 
-        # If there are no tokens then return
-        if not fullKwTokens:
-            return []
+        # ---------------
+        # Search for fulls
+        fullTokens = splitFullKeywords(searchString)
 
-        logger.debug("Searching for full tokens |%s|", fullKwTokens)
+        logger.debug("Searching for full tokens |%s|", fullTokens)
 
-        # First find all the results from the full kw tokens
-        resultsByFullKw = self._getObjectIdsForTokensBlocking(fullKwTokens, propertyName)
-        logger.debug("Found results for full tokens |%s|", resultsByFullKw)
-
-        # Filter out the no matches
-        resultsByFullKw = {k: v for k, v in resultsByFullKw.items() if v}
-
-        # Filter for the ObjectIds that are in every kw result
-        objectIdsUnion = self._setIntersectFilterIndexResults(resultsByFullKw)
-        resultsByFullKw = {k: objectIdsUnion for k in resultsByFullKw}
+        # Now lookup any remaining keywords, if any
+        resultsByFullKw = self._getObjectIdsForTokensBlocking(fullTokens,
+                                                              propertyName)
 
         logger.debug("Found results for full tokens |%s|", set(resultsByFullKw))
 
-        # Get the remaining tokens to try the partial keyword search in
-        remainingSearchString = ' '.join([kw.strip('^$')
-                                          for kw in (fullKwTokens - set(resultsByFullKw))])
-
-        # Create the partial Keyword tokens
-        partialKwTokens = _splitPartialKeywords(remainingSearchString)
-        logger.debug("Searching for partial tokens |%s|", remainingSearchString)
+        # ---------------
+        # Search for partials
+        partialTokens = splitPartialKeywords(searchString)
+        logger.debug("Searching for partial tokens |%s|", partialTokens)
 
         # Now lookup any remaining keywords, if any
-        resultsByPartialKw = {}
-        if partialKwTokens:
-            resultsByPartialKw = self._getObjectIdsForTokensBlocking(partialKwTokens,
-                                                                     propertyName)
+        resultsByPartialKw = self._getObjectIdsForTokensBlocking(partialTokens,
+                                                                 propertyName)
 
         logger.debug("Found results for partial tokens |%s|", set(resultsByPartialKw))
 
-        # Merge the results
-        resultsByKw = {}
-        resultsByKw.update(resultsByFullKw)
-        resultsByKw.update(resultsByPartialKw)
+        # ---------------
+        # Process the results
 
-        # If there are no results, then return
-        if not resultsByKw:
-            return []
+        # Merge partial kw results with full kw results.
+        resultsByKw = self._mergePartialAndFullMatches(searchString,
+                                                       resultsByFullKw,
+                                                       resultsByPartialKw)
+
+        logger.debug("Merged tokens |%s|", set(resultsByKw))
 
         # Now, return the ObjectIDs that exist in all keyword lookups
         objectIdsUnion = self._setIntersectFilterIndexResults(resultsByKw)
@@ -126,16 +160,74 @@ class FastKeywordController(TupleActionProcessorDelegateABC):
         # Limit to 50 and return
         return list(objectIdsUnion)[:50]
 
+    def _mergePartialAndFullMatches(self, searchString: str,
+                                    resultsByFullKw: Dict[str, List[int]],
+                                    resultsByPartialKw: Dict[str, List[int]]
+                                    ) -> Dict[str, List[int]]:
+        """ Merge Partial """
+
+        # Copy this, because we want to modify it and don't want to affect other logic
+        resultsByPartialKw = resultsByPartialKw.copy()
+        resultsByPartialKwSet = set(resultsByPartialKw)
+
+        mergedResultsByKw = {}
+
+        for fullKw, fullObjectIds in resultsByFullKw.items():
+            # Merge in full
+            fullKw = fullKw.strip('^$')
+            existing = mergedResultsByKw.get(fullKw.strip('^$'), list())
+
+            # Include the fulls
+            existing.extend(fullObjectIds)
+
+            mergedResultsByKw[fullKw] = existing
+
+        tokens = _splitFullTokens(searchString)
+        for token in tokens:
+            token = token.strip('^$')
+            existing = mergedResultsByKw.get(token.strip('^$'), list())
+            partialKws = splitPartialKeywords(token)
+
+            if not partialKws <= resultsByPartialKwSet:
+                continue
+
+            # Union all
+            objectIdsForToken = set(resultsByPartialKw[partialKws.pop()])
+            while partialKws:
+                objectIdsForToken &= set(resultsByPartialKw[partialKws.pop()])
+
+            existing.extend(list(objectIdsForToken))
+
+            mergedResultsByKw[token] = existing
+
+        return mergedResultsByKw
+
     def _setIntersectFilterIndexResults(self, objectIdsByKw: Dict[str, List[int]]
                                         ) -> Set[int]:
 
         if not objectIdsByKw:
             return set()
 
+        keys = set(objectIdsByKw)
+        twoCharTokens_ = set([t for t in keys if len(t) == 2])
+        keys -= twoCharTokens_
+
         # Now, return the ObjectIDs that exist in all keyword lookups
-        objectIdsUnion = set(objectIdsByKw.popitem()[1])
-        while objectIdsByKw:
-            objectIdsUnion &= set(objectIdsByKw.popitem()[1])
+        if keys:
+            objectIdsUnion = set(objectIdsByKw[keys.pop()])
+        else:
+            objectIdsUnion = set(objectIdsByKw[twoCharTokens_.pop()])
+
+        while keys:
+            objectIdsUnion &= set(objectIdsByKw[keys.pop()])
+
+        # Optionally, include two char tokens, if any exist.
+        # The goal of this is to NOT show zero results if a two letter token doesn't match
+        while twoCharTokens_:
+            objectIdsUnionNoTwoChars = \
+                objectIdsUnion & set(objectIdsByKw[twoCharTokens_.pop()])
+            if objectIdsUnionNoTwoChars:
+                objectIdsUnion = objectIdsUnionNoTwoChars
 
         return objectIdsUnion
 
