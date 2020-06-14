@@ -93,7 +93,8 @@ class FastKeywordController(TupleActionProcessorDelegateABC):
         def filterResult(result: SearchResultObjectTuple) -> bool:
             props = result.properties
             if propertyName:
-                props = {propertyName: props[propertyName]}
+                props = {propertyName: props[propertyName]} \
+                    if propertyName in props else {}
 
             allPropVals = ' '.join(props.values())
             theseTokens = set(filter(noFulls, splitPartialKeywords(allPropVals)))
@@ -130,6 +131,7 @@ class FastKeywordController(TupleActionProcessorDelegateABC):
         # Now lookup any remaining keywords, if any
         resultsByFullKw = self._getObjectIdsForTokensBlocking(fullTokens,
                                                               propertyName)
+        resultsByFullKw = {k: v for k, v in resultsByFullKw.items() if v}
 
         logger.debug("Found results for full tokens |%s|", set(resultsByFullKw))
 
@@ -141,6 +143,7 @@ class FastKeywordController(TupleActionProcessorDelegateABC):
         # Now lookup any remaining keywords, if any
         resultsByPartialKw = self._getObjectIdsForTokensBlocking(partialTokens,
                                                                  propertyName)
+        resultsByPartialKw = {k: v for k, v in resultsByPartialKw.items() if v}
 
         logger.debug("Found results for partial tokens |%s|", set(resultsByPartialKw))
 
