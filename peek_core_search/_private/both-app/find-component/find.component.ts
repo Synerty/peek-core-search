@@ -11,7 +11,7 @@ import {
     TupleSelector,
     VortexStatusService
 } from "@synerty/vortexjs";
-import {Ng2BalloonMsgService} from "@synerty/ng2-balloon-msg";
+import { BalloonMsgService } from "@synerty/peek-plugin-base-js"
 import {Subject} from "rxjs";
 import {debounceTime, distinctUntilChanged} from "rxjs/operators";
 
@@ -49,7 +49,7 @@ export class FindComponent extends ComponentLifecycleEventEmitter implements OnI
 
     constructor(private vortexStatusService: VortexStatusService,
                 private searchService: SearchService,
-                private balloonMsg: Ng2BalloonMsgService,
+                private balloonMsg: BalloonMsgService,
                 private tupleService: SearchTupleService) {
         super();
         this.searchProperty.title = this.ALL;

@@ -1,5 +1,5 @@
 import {Component} from "@angular/core";
-import {Ng2BalloonMsgService} from "@synerty/ng2-balloon-msg";
+import { BalloonMsgService } from "@synerty/peek-plugin-base-js"
 import {
     ComponentLifecycleEventEmitter,
     extend,
@@ -23,7 +23,7 @@ export class EditSettingComponent extends ComponentLifecycleEventEmitter {
 
     loader: TupleLoader;
 
-    constructor(private balloonMsg: Ng2BalloonMsgService,
+    constructor(private balloonMsg: BalloonMsgService,
                 vortexService: VortexService) {
         super();
 
