@@ -1,7 +1,7 @@
 import {ChangeDetectorRef, Component, Input, OnInit} from "@angular/core";
 import {Router} from "@angular/router";
 
-import {ComponentLifecycleEventEmitter} from "@synerty/vortexjs";
+import { NgLifeCycleEvents } from "@synerty/peek-plugin-base-js"
 import * as $ from "jquery";
 
 import {
@@ -33,7 +33,7 @@ interface ObjectTypeResultsI {
     styleUrls: ["result.component.web.scss"],
     moduleId: module.id,
 })
-export class ResultComponent extends ComponentLifecycleEventEmitter implements OnInit {
+export class ResultComponent extends NgLifeCycleEvents implements OnInit {
 
     resultObjectTypes: ObjectTypeResultsI[] = [];
 
