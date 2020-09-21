@@ -1,7 +1,7 @@
 import { Component } from "@angular/core"
 import { BalloonMsgService, NgLifeCycleEvents } from "@synerty/peek-plugin-base-js"
 import { extend, TupleLoader, VortexService } from "@synerty/vortexjs"
-import { searchFilt, SearchPropertyTuple } from "@peek/peek_core_search/_private"
+import { searchFilt, SearchPropertyTuple } from "@_peek/peek_core_search/_private"
 
 @Component({
     selector: "pl-search-edit-property",

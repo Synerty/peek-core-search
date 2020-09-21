@@ -3,12 +3,12 @@ import { TupleSelector } from "@synerty/vortexjs"
 import {
     PrivateSearchIndexLoaderService,
     PrivateSearchIndexLoaderStatusTuple
-} from "@peek/peek_core_search/_private/search-index-loader"
+} from "@_peek/peek_core_search/_private/search-index-loader"
 import {
     PrivateSearchObjectLoaderService,
     PrivateSearchObjectLoaderStatusTuple
-} from "@peek/peek_core_search/_private/search-object-loader"
-import { OfflineConfigTuple, SearchTupleService } from "@peek/peek_core_search/_private"
+} from "@_peek/peek_core_search/_private/search-object-loader"
+import { OfflineConfigTuple, SearchTupleService } from "@_peek/peek_core_search/_private"
 import { NgLifeCycleEvents } from "@synerty/peek-plugin-base-js"
 
 @Component({

@@ -1,5 +1,5 @@
 import {addTupleType, TupleActionABC} from "@synerty/vortexjs";
-import {searchTuplePrefix} from "@peek/peek_core_search/_private/PluginNames";
+import {searchTuplePrefix} from "@_peek/peek_core_search/_private/PluginNames";
 
 
 @addTupleType
