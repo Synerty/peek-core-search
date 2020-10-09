@@ -1,6 +1,6 @@
 import { Component, OnInit } from "@angular/core"
-import { SearchObjectTypeTuple, SearchResultObjectTuple, SearchService } from "@_peek/peek_core_search"
-import { SearchPropertyTuple, SearchTupleService } from "@_peek/peek_core_search/_private"
+import { SearchObjectTypeTuple, SearchResultObjectTuple, SearchService } from "@peek/peek_core_search"
+import { SearchPropertyTuple, SearchTupleService } from "@peek/peek_core_search/_private"
 import { BalloonMsgService, NgLifeCycleEvents } from "@synerty/peek-plugin-base-js"
 import { TupleSelector, VortexStatusService } from "@synerty/vortexjs"
 import { Subject } from "rxjs"

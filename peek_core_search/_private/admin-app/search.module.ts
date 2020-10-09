@@ -22,7 +22,7 @@ import {
     searchFilt,
     searchObservableName,
     searchTupleOfflineServiceName
-} from "@_peek/peek_core_search/_private";
+} from "@peek/peek_core_search/_private";
 import { NzSwitchModule } from 'ng-zorro-antd/switch';
 
 

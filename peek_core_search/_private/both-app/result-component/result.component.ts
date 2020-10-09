@@ -10,10 +10,10 @@ import {
     SearchResultObjectRouteTuple,
     SearchResultObjectTuple,
     SearchService
-} from "@_peek/peek_core_search";
-import {searchPluginName} from "@_peek/peek_core_search/_private";
+} from "@peek/peek_core_search";
+import {searchPluginName} from "@peek/peek_core_search/_private";
 
-import {DocDbPopupService, DocDbPopupTypeE} from "@_peek/peek_plugin_docdb";
+import {DocDbPopupService, DocDbPopupTypeE} from "@peek/peek_plugin_docdb";
 
 interface ItemResultI {
     key: string;
