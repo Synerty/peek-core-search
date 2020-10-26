@@ -11,7 +11,6 @@ export class SearchComponent { // This is a root/global component
     private _showSearch = false;
 
     constructor(private objectPopupService: DocDbPopupService) {
-
         this.objectPopupService
             .popupClosedObservable(DocDbPopupTypeE.summaryPopup)
             .filter(reason => reason == DocDbPopupClosedReasonE.userClickedAction)
