@@ -4,8 +4,7 @@ import {DocDbPopupService, DocDbPopupTypeE, DocDbPopupClosedReasonE} from "@peek
 @Component({
     selector: 'plugin-search',
     templateUrl: 'search.component.web.html',
-    styleUrls: ["search.component.web.scss"],
-    moduleId: module.id
+    styleUrls: ["search.component.web.scss"]
 })
 export class SearchComponent { // This is a root/global component
     private _showSearch = false;

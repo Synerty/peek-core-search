@@ -31,7 +31,6 @@ interface ObjectTypeResultsI {
     selector: 'plugin-search-result',
     templateUrl: 'result.component.web.html',
     styleUrls: ["result.component.web.scss"],
-    moduleId: module.id,
 })
 export class ResultComponent extends NgLifeCycleEvents implements OnInit {
 

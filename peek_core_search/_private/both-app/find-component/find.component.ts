@@ -9,8 +9,7 @@ import { debounceTime, distinctUntilChanged } from "rxjs/operators"
 @Component({
     selector: "plugin-search-find",
     templateUrl: "find.component.web.html",
-    styleUrls: ["find.component.web.scss"],
-    moduleId: module.id
+    styleUrls: ["find.component.web.scss"]
 })
 export class FindComponent extends NgLifeCycleEvents implements OnInit {
     
