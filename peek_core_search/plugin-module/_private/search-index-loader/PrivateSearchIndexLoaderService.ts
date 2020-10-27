@@ -13,7 +13,7 @@ import {
 } from "@synerty/vortexjs"
 import { searchFilt, searchIndexCacheStorageName, searchTuplePrefix } from "../PluginNames"
 
-import { Subject } from "rxjs/Subject"
+import { Subject } from "rxjs"
 import { Observable } from "rxjs/Observable"
 
 import { EncodedSearchIndexChunkTuple } from "./EncodedSearchIndexChunkTuple"

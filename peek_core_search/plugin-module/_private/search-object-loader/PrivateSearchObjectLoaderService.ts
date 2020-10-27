@@ -14,7 +14,7 @@ import {
 
 import { searchFilt, searchObjectCacheStorageName, searchTuplePrefix } from "../PluginNames"
 
-import { Subject } from "rxjs/Subject"
+import { Subject } from "rxjs"
 import { Observable } from "rxjs/Observable"
 import { EncodedSearchObjectChunkTuple } from "./EncodedSearchObjectChunkTuple"
 import { SearchObjectUpdateDateTuple } from "./SearchObjectUpdateDateTuple"
