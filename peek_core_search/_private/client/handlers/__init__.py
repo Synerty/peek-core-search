@@ -1,4 +1,4 @@
-__author__ = 'peek_server'
+__author__ = 'peek_logic_service'
 
 from txhttputil.util.ModuleUtil import filterModules
 

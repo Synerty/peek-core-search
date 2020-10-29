@@ -1,5 +1,5 @@
 import {Component, EventEmitter, Input, Output} from "@angular/core";
-import {DocDbPopupService, DocDbPopupTypeE, DocDbPopupClosedReasonE} from "@peek/peek_plugin_docdb";
+import {DocDbPopupService, DocDbPopupTypeE, DocDbPopupClosedReasonE} from "@peek/peek_core_docdb";
 
 @Component({
     selector: 'plugin-search',
