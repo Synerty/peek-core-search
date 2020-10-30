@@ -14,9 +14,8 @@
         "agent",
         "storage",
         "admin",
-        "client",
-        "mobile",
-        "desktop",
+        "field",
+        "office",
         "doc-dev",
         "doc-admin"
     ],
@@ -40,9 +39,8 @@
         "appModule": "search.module#SearchModule",
         "moduleDir": "plugin-module"
     },
-    "client": {
-    },
-    "mobile": {
+
+    "field": {
         "showHomeLink": false,
         "cfgDir": "_private/both-cfg",
         "cfgModule": "search-cfg.module#SearchCfgModule",
@@ -74,7 +72,7 @@
     },
     "agent": {
     },
-    "desktop": {
+    "office": {
         "showHomeLink": false,
         "appDir": "_private/both-app",
         "appModule": "search.module#SearchModule",
