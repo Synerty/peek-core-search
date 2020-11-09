@@ -1,0 +1,10 @@
+<nz-modal
+  [(nzVisible)]="showSearch"
+  [nzTitle]="null"
+  [nzFooter]="null"
+  (nzOnCancel)="showSearch=false"
+  nzWidth="600px"
+  [nzStyle]="{'top':'0px'}"
+>
+  <plugin-search-find></plugin-search-find>
+</nz-modal>

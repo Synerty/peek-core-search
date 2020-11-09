@@ -1,5 +1,9 @@
 import { Component, OnInit } from "@angular/core"
-import { SearchObjectTypeTuple, SearchResultObjectTuple, SearchService } from "@peek/peek_core_search"
+import {
+    SearchObjectTypeTuple,
+    SearchResultObjectTuple,
+    SearchService
+} from "@peek/peek_core_search"
 import { SearchPropertyTuple, SearchTupleService } from "@peek/peek_core_search/_private"
 import { BalloonMsgService, NgLifeCycleEvents } from "@synerty/peek-plugin-base-js"
 import { TupleSelector, VortexStatusService } from "@synerty/vortexjs"
@@ -8,11 +12,10 @@ import { debounceTime, distinctUntilChanged } from "rxjs/operators"
 
 @Component({
     selector: "plugin-search-find",
-    templateUrl: "find.component.web.html",
-    styleUrls: ["find.component.web.scss"]
+    templateUrl: "find.component.html",
+    styleUrls: ["find.component.scss"]
 })
 export class FindComponent extends NgLifeCycleEvents implements OnInit {
-    
     searchString: string = ""
     resultObjects: SearchResultObjectTuple[] = []
     searchInProgress: boolean = false
@@ -55,7 +58,6 @@ export class FindComponent extends NgLifeCycleEvents implements OnInit {
     }
     
     ngOnInit() {
-        
         let propTs = new TupleSelector(SearchPropertyTuple.tupleName, {})
         this.tupleService.offlineObserver
             .subscribeToTupleSelector(propTs)
@@ -119,25 +121,6 @@ export class FindComponent extends NgLifeCycleEvents implements OnInit {
             .isOnline
             .takeUntil(this.onDestroyEvent)
             .subscribe(() => this.performAutoComplete())
-        
-    }
-    
-    nsSelectProperty(index: number): void {
-        this.searchProperty = this.searchProperties[index]
-        this.performAutoComplete()
-    }
-    
-    nsEditPropertyFonticon(): string {
-        return this.searchPropertyNsPicking ? "fa-check" : "fa-pencil"
-    }
-    
-    nsSelectObjectType(index: number): void {
-        this.searchObjectType = this.searchObjectTypes[index]
-        this.performAutoComplete()
-    }
-    
-    nsEditObjectTypeFonticon(): string {
-        return this.searchObjectTypesNsPicking ? "fa-check" : "fa-pencil"
     }
     
     searchKeywordOnChange($event): void {
@@ -222,5 +205,4 @@ export class FindComponent extends NgLifeCycleEvents implements OnInit {
                 this.firstSearchHasRun = true
             })
     }
-    
 }

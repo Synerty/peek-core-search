@@ -1,8 +1,8 @@
-import {ChangeDetectorRef, Component, Input, OnInit} from "@angular/core";
-import {Router} from "@angular/router";
+import { ChangeDetectorRef, Component, Input, OnInit } from "@angular/core"
+import { Router } from "@angular/router"
 
 import { NgLifeCycleEvents } from "@synerty/peek-plugin-base-js"
-import * as $ from "jquery";
+import * as $ from "jquery"
 
 import {
     SearchObjectTypeTuple,
@@ -10,10 +10,10 @@ import {
     SearchResultObjectRouteTuple,
     SearchResultObjectTuple,
     SearchService
-} from "@peek/peek_core_search";
-import {searchPluginName} from "@peek/peek_core_search/_private";
+} from "@peek/peek_core_search"
+import { searchPluginName } from "@peek/peek_core_search/_private"
 
-import {DocDbPopupService, DocDbPopupTypeE} from "@peek/peek_core_docdb";
+import { DocDbPopupService, DocDbPopupTypeE } from "@peek/peek_core_docdb"
 
 interface ItemResultI {
     key: string;
@@ -28,77 +28,78 @@ interface ObjectTypeResultsI {
 }
 
 @Component({
-    selector: 'plugin-search-result',
-    templateUrl: 'result.component.web.html',
-    styleUrls: ["result.component.web.scss"],
+    selector: "plugin-search-result",
+    templateUrl: "result.component.html",
+    styleUrls: ["result.component.scss"],
 })
 export class ResultComponent extends NgLifeCycleEvents implements OnInit {
-
-    resultObjectTypes: ObjectTypeResultsI[] = [];
-
-
-    constructor(private objectPopupService: DocDbPopupService,
-                private cdr: ChangeDetectorRef,
-                private router: Router,
-                private searchService: SearchService) {
-        super();
-
-    }
-
-    ngOnInit() {
-    }
-
-
+    
     @Input("resultObjects")
     set resultObjects(resultObjects: SearchResultObjectTuple[]) {
-        const resultsGroupByType: { [id: number]: ObjectTypeResultsI } = {};
-        this.resultObjectTypes = [];
+        const resultsGroupByType: { [id: number]: ObjectTypeResultsI } = {}
+        this.resultObjectTypes = []
         for (const object of resultObjects) {
-            let typeResult = resultsGroupByType[object.objectType.id];
-
+            let typeResult = resultsGroupByType[object.objectType.id]
+            
             if (typeResult == null) {
                 typeResult = resultsGroupByType[object.objectType.id] = {
                     type: object.objectType,
                     results: []
-                };
-                this.resultObjectTypes.push(typeResult);
+                }
+                this.resultObjectTypes.push(typeResult)
             }
-
+            
             const props = this.searchService
                 .getNiceOrderedProperties(object)
-                .filter(p => p.showOnResult);
-
+                .filter(p => p.showOnResult)
+            
             typeResult.results.push({
                 key: object.key,
-                modelSetKey: 'pofDiagram',
+                modelSetKey: "pofDiagram",
                 header: this.headerProps(props),
                 bodyProps: this.bodyProps(props)
-            });
+            })
         }
-
-        this.resultObjectTypes.sort((a, b) => {
-            if (a.type.order < b.type.order) return -1;
-            if (a.type.order > b.type.order) return 1;
-            if (a.type.title < b.type.title) return -1;
-            if (a.type.title > b.type.title) return 1;
-            return 0;
-        });
-
+        
+        this.resultObjectTypes.sort((
+            a,
+            b
+        ) => {
+            if (a.type.order < b.type.order) return -1
+            if (a.type.order > b.type.order) return 1
+            if (a.type.title < b.type.title) return -1
+            if (a.type.title > b.type.title) return 1
+            return 0
+        })
     }
-
-
+    
+    resultObjectTypes: ObjectTypeResultsI[] = []
+    
+    constructor(
+        private objectPopupService: DocDbPopupService,
+        private cdr: ChangeDetectorRef,
+        private router: Router,
+        private searchService: SearchService,
+    ) {
+        super()
+    }
+    
     headerProps(props: SearchPropT[]): string {
         return props.filter(p => p.showInHeader)
             .map(p => p.value)
-            .join();
+            .join()
     }
-
+    
     bodyProps(props: SearchPropT[]): SearchPropT[] {
-        return props.filter(p => !p.showInHeader);
+        return props.filter(p => !p.showInHeader)
     }
-
-    tooltipEnter($event: MouseEvent, result: ItemResultI) {
-        const offset = $(".scroll-container").offset();
+    
+    tooltipEnter(
+        $event: MouseEvent,
+        result: ItemResultI
+    ) {
+        const offset = $(".scroll-container")
+            .offset()
         this.objectPopupService
             .showPopup(
                 DocDbPopupTypeE.tooltipPopup,
@@ -108,32 +109,33 @@ export class ResultComponent extends NgLifeCycleEvents implements OnInit {
                     y: $event.y
                 },
                 result.modelSetKey,
-                result.key);
-
+                result.key
+            )
     }
-
-    tooltipExit($event: MouseEvent, result: ItemResultI) {
-        this.objectPopupService.hidePopup(DocDbPopupTypeE.tooltipPopup);
-
+    
+    tooltipExit(
+        $event: MouseEvent,
+        result: ItemResultI
+    ) {
+        this.objectPopupService.hidePopup(DocDbPopupTypeE.tooltipPopup)
     }
-
-    showSummaryPopup($event: MouseEvent, result: ItemResultI) {
-        this.objectPopupService.hidePopup(DocDbPopupTypeE.tooltipPopup);
+    
+    showSummaryPopup(
+        $event: MouseEvent,
+        result: ItemResultI
+    ) {
+        this.objectPopupService.hidePopup(DocDbPopupTypeE.tooltipPopup)
         this.objectPopupService
             .showPopup(
                 DocDbPopupTypeE.summaryPopup,
                 searchPluginName,
                 $event,
                 result.modelSetKey,
-                result.key);
-
+                result.key
+            )
     }
-
-
+    
     navTo(objectRoute: SearchResultObjectRouteTuple): void {
-        objectRoute.navTo(this.router);
-
+        objectRoute.navTo(this.router)
     }
-
-
 }
