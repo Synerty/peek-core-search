@@ -1,11 +1,12 @@
-import { Component, EventEmitter, Input, Output } from "@angular/core"
+import { Component, EventEmitter, Input, Output, ChangeDetectionStrategy } from "@angular/core"
 import { DocDbPopupClosedReasonE, DocDbPopupService, DocDbPopupTypeE } from "@peek/peek_core_docdb"
 
 // This is a root/global component
 @Component({
     selector: "plugin-search",
     templateUrl: "search.component.html",
-    styleUrls: ["search.component.scss"]
+    styleUrls: ["search.component.scss"],
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class SearchComponent {
     @Output("showSearchChange") showSearchChange = new EventEmitter()
@@ -34,5 +35,9 @@ export class SearchComponent {
             .popupClosedObservable(DocDbPopupTypeE.detailPopup)
             .filter(reason => reason == DocDbPopupClosedReasonE.userClickedAction)
             .subscribe(() => this.showSearch = false)
+    }
+    
+    closeModal(): void {
+        this.showSearch = false
     }
 }

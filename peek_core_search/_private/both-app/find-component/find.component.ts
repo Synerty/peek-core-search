@@ -1,4 +1,4 @@
-import { Component, OnInit } from "@angular/core"
+import { Component, OnInit, ChangeDetectionStrategy } from "@angular/core"
 import {
     SearchObjectTypeTuple,
     SearchResultObjectTuple,
@@ -7,30 +7,61 @@ import {
 import { SearchPropertyTuple, SearchTupleService } from "@peek/peek_core_search/_private"
 import { BalloonMsgService, NgLifeCycleEvents } from "@synerty/peek-plugin-base-js"
 import { TupleSelector, VortexStatusService } from "@synerty/vortexjs"
-import { Subject } from "rxjs"
+import { Subject, BehaviorSubject } from "rxjs"
 import { debounceTime, distinctUntilChanged } from "rxjs/operators"
 
 @Component({
     selector: "plugin-search-find",
     templateUrl: "find.component.html",
-    styleUrls: ["find.component.scss"]
+    styleUrls: ["find.component.scss"],
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class FindComponent extends NgLifeCycleEvents implements OnInit {
     searchString: string = ""
-    resultObjects: SearchResultObjectTuple[] = []
-    searchInProgress: boolean = false
+    resultObjects$ = new BehaviorSubject<SearchResultObjectTuple[]>([])
+    searchInProgress$ = new BehaviorSubject<boolean>(false)
     searchProperties: SearchPropertyTuple[] = []
     searchPropertyStrings: string[] = []
     searchProperty: SearchPropertyTuple = new SearchPropertyTuple()
-    searchPropertyNsPicking = false
     searchObjectTypes: SearchObjectTypeTuple[] = []
     searchObjectTypeStrings: string[] = []
     searchObjectType: SearchObjectTypeTuple = new SearchObjectTypeTuple()
-    searchObjectTypesNsPicking = false
-    optionsShown = false
+    optionsShown$ = new BehaviorSubject<boolean>(false)
+    firstSearchHasRun$ = new BehaviorSubject<boolean>(false)
     private readonly ALL = "All"
     private performAutoCompleteSubject: Subject<string> = new Subject<string>()
-    private firstSearchHasRun: boolean = false
+    
+    get resultObjects() {
+        return this.resultObjects$.getValue()
+    }
+    
+    set resultObjects(value) {
+        this.resultObjects$.next(value)
+    }
+    
+    get searchInProgress() {
+        return this.searchInProgress$.getValue()
+    }
+    
+    set searchInProgress(value) {
+        this.searchInProgress$.next(value)
+    }
+    
+    get optionsShown() {
+        return this.optionsShown$.getValue()
+    }
+    
+    set optionsShown(value) {
+        this.optionsShown$.next(value)
+    }
+    
+    get firstSearchHasRun() {
+        return this.firstSearchHasRun$.getValue()
+    }
+    
+    set firstSearchHasRun(value) {
+        this.firstSearchHasRun$.next(value)
+    }
     
     constructor(
         private vortexStatusService: VortexStatusService,
@@ -123,6 +154,13 @@ export class FindComponent extends NgLifeCycleEvents implements OnInit {
             .subscribe(() => this.performAutoComplete())
     }
     
+    resetSearch(): void {
+        this.searchString = ""
+        this.resultObjects = []
+        this.firstSearchHasRun = false
+        this.searchInProgress = false
+    }
+    
     searchKeywordOnChange($event): void {
         if (!this.vortexStatusService.snapshot.isOnline)
             return
@@ -142,7 +180,6 @@ export class FindComponent extends NgLifeCycleEvents implements OnInit {
     }
     
     find() {
-        
         if (this.searchString == null || this.searchString.length == 0) {
             this.balloonMsg.showWarning("Please enter something to search for")
             return
@@ -154,18 +191,14 @@ export class FindComponent extends NgLifeCycleEvents implements OnInit {
             .getObjects(this.getSearchPropertyName,
                 this.getSearchObjectTypeId,
                 this.searchString)
-            .then((results: SearchResultObjectTuple[]) => this.resultObjects = results)
+            .then((results: SearchResultObjectTuple[]) => {
+                this.resultObjects = results
+            })
             .catch((e: string) => this.balloonMsg.showError(`Find Failed:${e}`))
             .then(() => {
                 this.searchInProgress = false
                 this.firstSearchHasRun = true
             })
-    }
-    
-    noResults(): boolean {
-        return this.resultObjects.length == 0 && !this.searchInProgress
-            && this.firstSearchHasRun
-        
     }
     
     offlineSearchEnabled(): boolean {

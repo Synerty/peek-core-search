@@ -1,13 +1,41 @@
+@import "src/variables.scss";
 
-#searchPropertyId {
-  min-width: 150px;
-}
+:host {
+  .search-input {
+    display: flex;
 
-#searchObjectTypesId {
-  min-width: 150px;
-}
+    > * {
+      flex: 1;
+    }
 
+    > button {
+      min-width: 32px;
+      max-width: 32px;
+      margin-left: 8px;
+    }
+  }
 
-.search-row {
-  padding-right: 56px - 24px;
+  .search-filter {
+    display: flex;
+    margin-top: 16px;
+
+    > * {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      margin-bottom: 0;
+
+      > * {
+        text-align: left;
+      }
+    }
+
+    > *:not(:nth-child(1)) {
+      margin-left: 8px;
+    }
+  }
+
+  .result-alert {
+    margin-top: 16px;
+  }
 }

@@ -1,12 +1,12 @@
-import {CommonModule} from "@angular/common";
-import {FormsModule} from "@angular/forms";
-import {NgModule} from "@angular/core";
-import {RouterModule, Routes} from "@angular/router";
-import {EditPropertyComponent} from "./edit-property-table/edit.component";
-import {EditObjectTypeComponent} from "./edit-object-type-table/edit.component";
-import {EditSettingComponent} from "./edit-setting-table/edit.component";
-import {SearchComponent} from "./search.component";
-import {StatusComponent} from "./status/status.component";
+import { CommonModule } from "@angular/common"
+import { FormsModule } from "@angular/forms"
+import { NgModule } from "@angular/core"
+import { RouterModule, Routes } from "@angular/router"
+import { EditPropertyComponent } from "./edit-property-table/edit.component"
+import { EditObjectTypeComponent } from "./edit-object-type-table/edit.component"
+import { EditSettingComponent } from "./edit-setting-table/edit.component"
+import { SearchComponent } from "./search-component/search.component"
+import { StatusComponent } from "./status-component/status.component"
 import {
     TupleActionPushNameService,
     TupleActionPushService,
@@ -15,39 +15,37 @@ import {
     TupleDataOfflineObserverService,
     TupleOfflineStorageNameService,
     TupleOfflineStorageService
-} from "@synerty/vortexjs";
-
+} from "@synerty/vortexjs"
 import {
     searchActionProcessorName,
     searchFilt,
     searchObservableName,
     searchTupleOfflineServiceName
-} from "@peek/peek_core_search/_private";
-import { NzSwitchModule } from 'ng-zorro-antd/switch';
-
+} from "@peek/peek_core_search/_private"
+import { NzSwitchModule } from "ng-zorro-antd/switch"
 
 export function tupleActionPushNameServiceFactory() {
     return new TupleActionPushNameService(
-        searchActionProcessorName, searchFilt);
+        searchActionProcessorName, searchFilt)
 }
 
 export function tupleDataObservableNameServiceFactory() {
     return new TupleDataObservableNameService(
-        searchObservableName, searchFilt);
+        searchObservableName, searchFilt)
 }
 
 export function tupleOfflineStorageNameServiceFactory() {
-    return new TupleOfflineStorageNameService(searchTupleOfflineServiceName);
+    return new TupleOfflineStorageNameService(searchTupleOfflineServiceName)
 }
 
 // Define the routes for this Angular module
 export const pluginRoutes: Routes = [
     {
-        path: '',
+        path: "",
         component: SearchComponent
     }
 
-];
+]
 
 // Define the module
 @NgModule({

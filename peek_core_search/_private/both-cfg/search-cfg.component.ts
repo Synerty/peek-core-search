@@ -13,7 +13,7 @@ import { NgLifeCycleEvents } from "@synerty/peek-plugin-base-js"
 
 @Component({
     selector: "peek-plugin-diagram-cfg",
-    templateUrl: "search-cfg.component.web.html"
+    templateUrl: "search-cfg.component.html"
 })
 export class SearchCfgComponent extends NgLifeCycleEvents {
     indexStatus: PrivateSearchIndexLoaderStatusTuple = new PrivateSearchIndexLoaderStatusTuple()

@@ -23,7 +23,5 @@ export class StatusComponent extends NgLifeCycleEvents {
             .subscribe((tuples: AdminStatusTuple[]) => {
                 this.item = tuples[0]
             })
-        
     }
-    
 }
