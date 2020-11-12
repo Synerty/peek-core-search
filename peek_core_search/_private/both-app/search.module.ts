@@ -18,6 +18,11 @@ import { NzTableModule } from "ng-zorro-antd/table"
 import { HttpClientModule } from "@angular/common/http"
 
 @NgModule({
+    declarations: [
+        SearchComponent,
+        FindComponent,
+        ResultComponent
+    ],
     imports: [
         CommonModule,
         FormsModule,
@@ -34,8 +39,7 @@ import { HttpClientModule } from "@angular/common/http"
         NzTableModule,
         HttpClientModule,
     ],
-    exports: [SearchComponent],
-    providers: [],
-    declarations: [SearchComponent, FindComponent, ResultComponent],
+    exports: [SearchComponent]
 })
-export class SearchModule { }
+export class SearchModule {
+}

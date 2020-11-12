@@ -16,6 +16,7 @@
       (ngModelChange)="searchKeywordOnChange($event)"
       placeholder="Search..."
       [(ngModel)]="searchString"
+      autofocus
     />
     <ng-template #suffixTemplate>
       <i nz-icon nzType="close" nzTheme="outline" (click)="resetSearch()" *ngIf="searchString"></i>

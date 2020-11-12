@@ -1,7 +1,6 @@
-import { ChangeDetectorRef, Component, Input, OnInit, ChangeDetectionStrategy } from "@angular/core"
+import { ChangeDetectorRef, Component, Input, ChangeDetectionStrategy } from "@angular/core"
 import { Router } from "@angular/router"
 import { NgLifeCycleEvents } from "@synerty/peek-plugin-base-js"
-import * as $ from "jquery"
 import {
     SearchObjectTypeTuple,
     SearchPropT,
@@ -13,16 +12,16 @@ import { searchPluginName } from "@peek/peek_core_search/_private"
 import { DocDbPopupService, DocDbPopupTypeE } from "@peek/peek_core_docdb"
 import { BehaviorSubject } from "rxjs"
 
-interface ItemResultI {
+interface IItemResult {
     key: string;
     modelSetKey: string;
     header: string,
     bodyProps: SearchPropT[]
 }
 
-interface ObjectTypeResultsI {
+interface IObjectTypeResults {
     type: SearchObjectTypeTuple,
-    results: ItemResultI[]
+    results: IItemResult[]
 }
 
 @Component({
@@ -31,29 +30,19 @@ interface ObjectTypeResultsI {
     styleUrls: ["result.component.scss"],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class ResultComponent extends NgLifeCycleEvents implements OnInit {
-    
-    resultObjectTypes$ = new BehaviorSubject<ObjectTypeResultsI[]>([])
-    
-    constructor(
-        private objectPopupService: DocDbPopupService,
-        private cdr: ChangeDetectorRef,
-        private router: Router,
-        private searchService: SearchService,
-    ) {
-        super()
-    }
-    
+export class ResultComponent extends NgLifeCycleEvents {
     @Input("firstSearchHasRun")
     firstSearchHasRun: boolean
     
     @Input("resultObjects")
     set resultObjects(resultObjects: SearchResultObjectTuple[]) {
-        if (!resultObjects)
+        if (!resultObjects) {
             return
+        }
         
-        const resultsGroupByType: { [id: number]: ObjectTypeResultsI } = {}
+        const resultsGroupByType: { [id: number]: IObjectTypeResults } = {}
         let resultObjectTypes = []
+        
         for (const object of resultObjects) {
             let typeResult = resultsGroupByType[object.objectType.id]
             
@@ -89,6 +78,17 @@ export class ResultComponent extends NgLifeCycleEvents implements OnInit {
         }))
     }
     
+    resultObjectTypes$ = new BehaviorSubject<IObjectTypeResults[]>([])
+    
+    constructor(
+        private objectPopupService: DocDbPopupService,
+        private cdr: ChangeDetectorRef,
+        private router: Router,
+        private searchService: SearchService,
+    ) {
+        super()
+    }
+    
     headerProps(props: SearchPropT[]): string {
         return props.filter(p => p.showInHeader)
             .map(p => p.value)
@@ -99,35 +99,33 @@ export class ResultComponent extends NgLifeCycleEvents implements OnInit {
         return props.filter(p => !p.showInHeader)
     }
     
-    tooltipEnter(
-        $event: MouseEvent,
-        result: ItemResultI
+    showTooltipPopup(
+        event: MouseEvent,
+        result: IItemResult
     ) {
-        const offset = $(".scroll-container")
-            .offset()
         this.objectPopupService
             .showPopup(
                 DocDbPopupTypeE.tooltipPopup,
                 searchPluginName,
                 {
-                    x: $event.x + 50,
-                    y: $event.y
+                    x: event.x,
+                    y: event.y
                 },
                 result.modelSetKey,
                 result.key
             )
     }
     
-    tooltipExit(
+    hideTooltipPopup(
         $event: MouseEvent,
-        result: ItemResultI
+        result: IItemResult
     ) {
         this.objectPopupService.hidePopup(DocDbPopupTypeE.tooltipPopup)
     }
     
     showSummaryPopup(
         $event: MouseEvent,
-        result: ItemResultI
+        result: IItemResult
     ) {
         this.objectPopupService.hidePopup(DocDbPopupTypeE.tooltipPopup)
         this.objectPopupService
