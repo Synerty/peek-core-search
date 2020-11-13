@@ -99,30 +99,6 @@ export class ResultComponent extends NgLifeCycleEvents {
         return props.filter(p => !p.showInHeader)
     }
     
-    showTooltipPopup(
-        event: MouseEvent,
-        result: IItemResult
-    ) {
-        this.objectPopupService
-            .showPopup(
-                DocDbPopupTypeE.tooltipPopup,
-                searchPluginName,
-                {
-                    x: event.x,
-                    y: event.y
-                },
-                result.modelSetKey,
-                result.key
-            )
-    }
-    
-    hideTooltipPopup(
-        $event: MouseEvent,
-        result: IItemResult
-    ) {
-        this.objectPopupService.hidePopup(DocDbPopupTypeE.tooltipPopup)
-    }
-    
     showSummaryPopup(
         $event: MouseEvent,
         result: IItemResult
@@ -130,6 +106,7 @@ export class ResultComponent extends NgLifeCycleEvents {
         this.objectPopupService.hidePopup(DocDbPopupTypeE.tooltipPopup)
         this.objectPopupService
             .showPopup(
+                true,
                 DocDbPopupTypeE.summaryPopup,
                 searchPluginName,
                 $event,
