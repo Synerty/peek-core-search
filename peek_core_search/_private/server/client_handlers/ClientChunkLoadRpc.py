@@ -10,7 +10,7 @@ from peek_core_search._private.storage.EncodedSearchIndexChunk import \
     EncodedSearchIndexChunk
 from peek_core_search._private.storage.EncodedSearchObjectChunk import \
     EncodedSearchObjectChunk
-from peek_plugin_base.PeekVortexUtil import peekServerName, peekClientName
+from peek_plugin_base.PeekVortexUtil import peekServerName, peekBackendNames
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +31,7 @@ class ClientChunkLoadRpc(ACIChunkLoadRpcABC):
         logger.debug("RPCs started")
 
     # -------------
-    @vortexRPC(peekServerName, acceptOnlyFromVortex=peekClientName, timeoutSeconds=60,
+    @vortexRPC(peekServerName, acceptOnlyFromVortex=peekBackendNames, timeoutSeconds=60,
                additionalFilt=searchFilt, deferToThread=True)
     def loadSearchIndexChunks(self, offset: int, count: int) -> Optional[bytes]:
         """ Update Page Loader Status
@@ -43,7 +43,7 @@ class ClientChunkLoadRpc(ACIChunkLoadRpcABC):
                                                         EncodedSearchIndexChunk)
 
     # -------------
-    @vortexRPC(peekServerName, acceptOnlyFromVortex=peekClientName, timeoutSeconds=60,
+    @vortexRPC(peekServerName, acceptOnlyFromVortex=peekBackendNames, timeoutSeconds=60,
                additionalFilt=searchFilt, deferToThread=True)
     def loadSearchObjectChunks(self, offset: int, count: int) -> Optional[bytes]:
         """ Update Page Loader Status
