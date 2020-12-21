@@ -9,7 +9,7 @@ from datetime import datetime
 from typing import Optional, List, Dict, Iterable, Set
 
 import pytz
-import ujson
+import json
 from twisted.internet.defer import inlineCallbacks, Deferred
 from vortex.DeferUtil import deferToThreadWrapWithLogger
 from vortex.Payload import Payload
@@ -298,6 +298,6 @@ class FastKeywordController(TupleActionProcessorDelegateABC):
             propertyName = data[EncodedSearchIndexChunk.ENCODED_DATA_PROPERTY_MAME_NUM]
             objectIdsJson = data[
                 EncodedSearchIndexChunk.ENCODED_DATA_OBJECT_IDS_JSON_INDEX]
-            chunkData[propertyName][keyword] = ujson.loads(objectIdsJson)
+            chunkData[propertyName][keyword] = json.loads(objectIdsJson)
 
         self._objectIdsByKeywordByPropertyKeyByChunkKey[chunk.chunkKey] = chunkData
