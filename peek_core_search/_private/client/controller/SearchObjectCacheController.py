@@ -2,7 +2,7 @@ import logging
 from collections import defaultdict
 from typing import List, Optional
 
-import ujson
+import json
 from vortex.DeferUtil import deferToThreadWrapWithLogger
 from vortex.Payload import Payload
 
@@ -69,7 +69,7 @@ class SearchObjectCacheController(ACICacheControllerABC):
             return []
 
         objectPropsByIdStr = Payload().fromEncodedPayload(chunk.encodedData).tuples[0]
-        objectPropsById = ujson.loads(objectPropsByIdStr)
+        objectPropsById = json.loads(objectPropsByIdStr)
 
         foundObjects: List[SearchResultObjectTuple] = []
 
@@ -82,7 +82,7 @@ class SearchObjectCacheController(ACICacheControllerABC):
                 continue
 
             # Reconstruct the data
-            objectProps: {} = ujson.loads(objectPropsById[str(objectId)])
+            objectProps: {} = json.loads(objectPropsById[str(objectId)])
 
             # Get out the object type
             thisObjectTypeId = objectProps['_otid_']
