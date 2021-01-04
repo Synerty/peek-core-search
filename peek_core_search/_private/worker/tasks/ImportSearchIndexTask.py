@@ -7,17 +7,21 @@ import pytz
 from sqlalchemy import select
 
 from peek_core_search._private.storage.SearchIndex import SearchIndex
-from peek_core_search._private.storage.SearchIndexCompilerQueue import \
-    SearchIndexCompilerQueue
-from peek_core_search._private.worker.tasks.KeywordSplitter import splitFullKeywords, \
-    splitPartialKeywords
+from peek_core_search._private.storage.SearchIndexCompilerQueue import (
+    SearchIndexCompilerQueue,
+)
+from peek_core_search._private.worker.tasks.KeywordSplitter import (
+    splitFullKeywords,
+    splitPartialKeywords,
+)
 from peek_core_search._private.worker.tasks._CalcChunkKey import makeSearchIndexChunkKey
 from peek_plugin_base.worker import CeleryDbConn
 
 logger = logging.getLogger(__name__)
 
-ObjectToIndexTuple = namedtuple("ObjectToIndexTuple", ["id", "fullKwProps",
-                                                       "partialKwProps"])
+ObjectToIndexTuple = namedtuple(
+    "ObjectToIndexTuple", ["id", "fullKwProps", "partialKwProps"]
+)
 
 
 def removeObjectIdsFromSearchIndex(deletedObjectIds: List[int]) -> None:
@@ -25,7 +29,7 @@ def removeObjectIdsFromSearchIndex(deletedObjectIds: List[int]) -> None:
 
 
 def reindexSearchObject(conn, objectsToIndex: List[ObjectToIndexTuple]) -> None:
-    """ Reindex Search Object
+    """Reindex Search Object
 
     :param conn:
     :param objectsToIndex: Object To Index
@@ -52,17 +56,20 @@ def reindexSearchObject(conn, objectsToIndex: List[ObjectToIndexTuple]) -> None:
         newSearchIndex.id = next(newIdGen)
         searchIndexChunksToQueue.add(newSearchIndex.chunkKey)
 
-    results = conn.execute(select(
-        columns=[searchIndexTable.c.chunkKey],
-        whereclause=searchIndexTable.c.objectId.in_(objectIds)
-    ))
+    results = conn.execute(
+        select(
+            columns=[searchIndexTable.c.chunkKey],
+            whereclause=searchIndexTable.c.objectId.in_(objectIds),
+        )
+    )
 
     for result in results:
         searchIndexChunksToQueue.add(result.chunkKey)
 
     if objectIds:
-        conn.execute(searchIndexTable
-                     .delete(searchIndexTable.c.objectId.in_(objectIds)))
+        conn.execute(
+            searchIndexTable.delete(searchIndexTable.c.objectId.in_(objectIds))
+        )
 
     if newSearchIndexes:
         logger.debug("Inserting %s SearchIndex", len(newSearchIndexes))
@@ -71,12 +78,14 @@ def reindexSearchObject(conn, objectsToIndex: List[ObjectToIndexTuple]) -> None:
 
     if searchIndexChunksToQueue:
         conn.execute(
-            queueTable.insert(),
-            [dict(chunkKey=k) for k in searchIndexChunksToQueue]
+            queueTable.insert(), [dict(chunkKey=k) for k in searchIndexChunksToQueue]
         )
 
-    logger.info("Inserted %s SearchIndex keywords in %s",
-                len(newSearchIndexes), (datetime.now(pytz.utc) - startTime))
+    logger.info(
+        "Inserted %s SearchIndex keywords in %s",
+        len(newSearchIndexes),
+        (datetime.now(pytz.utc) - startTime),
+    )
 
 
 # stopwords = set()  # nltk.corpus.stopwords.words('english'))
@@ -91,8 +100,9 @@ def reindexSearchObject(conn, objectsToIndex: List[ObjectToIndexTuple]) -> None:
 #
 # lemmatizer = WordNetLemmatizer()
 
+
 def _indexObject(objectToIndex: ObjectToIndexTuple) -> List[SearchIndex]:
-    """ Index Object
+    """Index Object
 
     This method creates  the "SearchIndex" objects to insert into the DB.
 
@@ -112,7 +122,7 @@ def _indexObject(objectToIndex: ObjectToIndexTuple) -> List[SearchIndex]:
                     chunkKey=makeSearchIndexChunkKey(token),
                     keyword=token,
                     propertyName=propKey,
-                    objectId=objectToIndex.id
+                    objectId=objectToIndex.id,
                 )
             )
 
@@ -123,11 +133,12 @@ def _indexObject(objectToIndex: ObjectToIndexTuple) -> List[SearchIndex]:
                     chunkKey=makeSearchIndexChunkKey(token),
                     keyword=token,
                     propertyName=propKey,
-                    objectId=objectToIndex.id
+                    objectId=objectToIndex.id,
                 )
             )
 
     return searchIndexes
+
 
 # if __name__ == '__main__':
 #     objectToIndex = ObjectToIndexTuple(

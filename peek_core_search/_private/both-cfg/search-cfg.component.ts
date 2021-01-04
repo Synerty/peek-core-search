@@ -8,7 +8,10 @@ import {
     PrivateSearchObjectLoaderService,
     PrivateSearchObjectLoaderStatusTuple
 } from "@peek/peek_core_search/_private/search-object-loader"
-import { OfflineConfigTuple, SearchTupleService } from "@peek/peek_core_search/_private"
+import {
+    OfflineConfigTuple,
+    SearchTupleService
+} from "@peek/peek_core_search/_private"
 import { NgLifeCycleEvents } from "@synerty/peek-plugin-base-js"
 
 @Component({

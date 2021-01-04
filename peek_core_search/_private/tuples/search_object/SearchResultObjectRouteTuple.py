@@ -4,12 +4,13 @@ from vortex.Tuple import Tuple, addTupleType, TupleField
 
 @addTupleType
 class SearchResultObjectRouteTuple(Tuple):
-    """ Import Search Object Route
+    """Import Search Object Route
 
     This tuple is used to import object routes into the search plugin
 
     """
-    __tupleType__ = searchTuplePrefix + 'SearchResultObjectRouteTuple'
+
+    __tupleType__ = searchTuplePrefix + "SearchResultObjectRouteTuple"
 
     #:  The title of the route, that the user will see
     title: str = TupleField()

@@ -1,4 +1,3 @@
-
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm.collections import attribute_mapped_collection
@@ -10,7 +9,6 @@ from vortex.Tuple import Tuple, addTupleType
 
 from peek_core_search._private.PluginNames import searchTuplePrefix
 from .DeclarativeBase import DeclarativeBase
-
 
 """Mapping a polymorphic-valued vertical table as a dictionary.
 
@@ -38,6 +36,7 @@ class ProxiedDictMixin(object):
     should have an attribute called ``_proxied`` which points to a dictionary.
 
     """
+
     _proxied = None
 
     def __len__(self):
@@ -95,9 +94,7 @@ class PolymorphicVerticalProperty(object):
 
     @value.comparator
     class value(PropComparator):
-        """A comparator for .value, builds a polymorphic comparison via CASE.
-
-        """
+        """A comparator for .value, builds a polymorphic comparison via CASE."""
 
         def __init__(self, cls):
             self.cls = cls
@@ -107,8 +104,9 @@ class PolymorphicVerticalProperty(object):
             whens = [
                 (
                     literal_column("'%s'" % discriminator),
-                    cast(getattr(self.cls, attribute), String)
-                ) for attribute, discriminator in pairs
+                    cast(getattr(self.cls, attribute), String),
+                )
+                for attribute, discriminator in pairs
                 if attribute is not None
             ]
             return case(whens, self.cls.type, null())
@@ -120,55 +118,55 @@ class PolymorphicVerticalProperty(object):
             return self._case() != cast(other, String)
 
     def __repr__(self):
-        return '<%s %r=%r>' % (self.__class__.__name__, self.key, self.value)
+        return "<%s %r=%r>" % (self.__class__.__name__, self.key, self.value)
 
 
 @addTupleType
 class SettingProperty(PolymorphicVerticalProperty, Tuple, DeclarativeBase):
     """A setting property."""
 
-    __tablename__ = 'SettingProperty'
+    __tablename__ = "SettingProperty"
     __tupleType__ = searchTuplePrefix + __tablename__
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    settingId = Column(ForeignKey('Setting.id'), nullable=False)
+    settingId = Column(ForeignKey("Setting.id"), nullable=False)
     key = Column(String(50), nullable=False)
     type = Column(String(16))
 
     # add information about storage for different types
     # in the info dictionary of Columns
-    int_value = Column(Integer, info={'type': (int, 'integer')})
-    char_value = Column(String, info={'type': (str, 'string')})
-    boolean_value = Column(Boolean, info={'type': (bool, 'boolean')})
+    int_value = Column(Integer, info={"type": (int, "integer")})
+    char_value = Column(String, info={"type": (str, "string")})
+    boolean_value = Column(Boolean, info={"type": (bool, "boolean")})
 
     def __init__(self, key=None, value=None):
         PolymorphicVerticalProperty.__init__(self, key=key, value=value)
         Tuple.__init__(self)
 
-    __table_args__ = (
-        Index("idx_SettingProperty_settingId", settingId),
-    )
+    __table_args__ = (Index("idx_SettingProperty_settingId", settingId),)
 
 
 @addTupleType
 class Setting(ProxiedDictMixin, Tuple, DeclarativeBase):
     """an Animal"""
 
-    __tablename__ = 'Setting'
+    __tablename__ = "Setting"
     __tupleType__ = searchTuplePrefix + __tablename__
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String)
 
-    properties = relationship("SettingProperty",
-                              collection_class=attribute_mapped_collection('key'))
+    properties = relationship(
+        "SettingProperty", collection_class=attribute_mapped_collection("key")
+    )
 
     propertyObjects = relationship("SettingProperty", viewonly=True, lazy=False)
 
-    _proxied = association_proxy("properties", "value",
-                                 creator=
-                                 lambda key, value: SettingProperty(key=key,
-                                                                    value=value))
+    _proxied = association_proxy(
+        "properties",
+        "value",
+        creator=lambda key, value: SettingProperty(key=key, value=value),
+    )
 
     def __init__(self, name=None):
         self.name = name
@@ -181,20 +179,19 @@ class Setting(ProxiedDictMixin, Tuple, DeclarativeBase):
         return self.properties.any(key=key, value=value)
 
 
-@event.listens_for(SettingProperty, "mapper_configured",
-                   propagate=True)
+@event.listens_for(SettingProperty, "mapper_configured", propagate=True)
 def on_new_class(mapper, cls_):
     """Look for Column objects with type info in them, and work up
     a lookup table."""
 
     info_dict = {}
-    info_dict[type(None)] = (None, 'none')
-    info_dict['none'] = (None, 'none')
+    info_dict[type(None)] = (None, "none")
+    info_dict["none"] = (None, "none")
 
     for k in list(mapper.c.keys()):
         col = mapper.c[k]
-        if 'type' in col.info:
-            python_type, discriminator = col.info['type']
+        if "type" in col.info:
+            python_type, discriminator = col.info["type"]
             info_dict[python_type] = (k, discriminator)
             info_dict[discriminator] = (k, discriminator)
     cls_.type_map = info_dict
@@ -258,8 +255,10 @@ def globalSetting(ormSession, key=None, value=None):
     return _getSetting(ormSession, "Global", globalProperties, key=key, value=value)
 
 
-OBJECT_COMPILER_ENABLED = PropertyKey('Object Compiler Enabled', True,
-                                    propertyDict=globalProperties)
+OBJECT_COMPILER_ENABLED = PropertyKey(
+    "Object Compiler Enabled", True, propertyDict=globalProperties
+)
 
-KEYWORD_COMPILER_ENABLED = PropertyKey('Keyword Compiler Enabled', True,
-                                    propertyDict=globalProperties)
+KEYWORD_COMPILER_ENABLED = PropertyKey(
+    "Keyword Compiler Enabled", True, propertyDict=globalProperties
+)

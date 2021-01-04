@@ -7,7 +7,6 @@ logger = logging.getLogger(__name__)
 
 
 class AgentEntryHook(PluginAgentEntryHookABC):
-
     def load(self) -> None:
         # Load public tuples so they can be serialised in the agent
         loadPublicTuples()

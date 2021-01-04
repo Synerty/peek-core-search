@@ -3,8 +3,10 @@ from typing import List
 
 from twisted.internet.defer import inlineCallbacks
 
-from peek_core_search._private.worker.tasks.ImportSearchObjectTask import \
-    importSearchObjectTask, removeSearchObjectTask
+from peek_core_search._private.worker.tasks.ImportSearchObjectTask import (
+    importSearchObjectTask,
+    removeSearchObjectTask,
+)
 
 logger = logging.getLogger(__name__)
 

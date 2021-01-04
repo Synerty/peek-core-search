@@ -14,11 +14,13 @@ from sqlalchemy import MetaData, Integer, String, Column
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-from peek_core_search._private.worker.tasks._CalcChunkKey import \
-    makeSearchIndexChunkKey, makeSearchObjectChunkKey
+from peek_core_search._private.worker.tasks._CalcChunkKey import (
+    makeSearchIndexChunkKey,
+    makeSearchObjectChunkKey,
+)
 
-revision = 'c18d0a2ab678'
-down_revision = '2c6cad1f280e'
+revision = "c18d0a2ab678"
+down_revision = "2c6cad1f280e"
 branch_labels = None
 depends_on = None
 
@@ -27,10 +29,12 @@ from alembic import op
 __DeclarativeBase = declarative_base(metadata=MetaData(schema="core_search"))
 
 import logging
+
 logger = logging.getLogger(__name__)
 
+
 class __SearchIndex(__DeclarativeBase):
-    __tablename__ = 'SearchIndex'
+    __tablename__ = "SearchIndex"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
 
@@ -39,7 +43,7 @@ class __SearchIndex(__DeclarativeBase):
 
 
 class __SearchObject(__DeclarativeBase):
-    __tablename__ = 'SearchObject'
+    __tablename__ = "SearchObject"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     key = Column(String, nullable=False)
@@ -52,15 +56,20 @@ def _loadSearchObjects(session, _Declarative):
     while True:
         rows = (
             session.query(_Declarative)
-                .order_by(_Declarative.id)
-                .offset(lastOffset)
-                .limit(FETCH_SIZE)
-                .yield_per(FETCH_SIZE)
-                .all()
+            .order_by(_Declarative.id)
+            .offset(lastOffset)
+            .limit(FETCH_SIZE)
+            .yield_per(FETCH_SIZE)
+            .all()
         )
-        if not rows: return
-        logger.info("Loading %s-%s for %s",
-                    lastOffset, lastOffset+FETCH_SIZE, _Declarative.__name__)
+        if not rows:
+            return
+        logger.info(
+            "Loading %s-%s for %s",
+            lastOffset,
+            lastOffset + FETCH_SIZE,
+            _Declarative.__name__,
+        )
         yield rows
         lastOffset += FETCH_SIZE
 
@@ -86,20 +95,24 @@ def upgrade():
     op.execute(' TRUNCATE TABLE core_search."EncodedSearchIndexChunk" ')
     op.execute(' TRUNCATE TABLE core_search."SearchIndexCompilerQueue" ')
 
-    op.execute('''INSERT INTO core_search."SearchIndexCompilerQueue"
+    op.execute(
+        """INSERT INTO core_search."SearchIndexCompilerQueue"
                             ("chunkKey")
                             SELECT DISTINCT "chunkKey"
                             FROM core_search."SearchIndex"
-                         ''')
+                         """
+    )
 
     op.execute(' TRUNCATE TABLE core_search."EncodedSearchObjectChunk" ')
     op.execute(' TRUNCATE TABLE core_search."SearchObjectCompilerQueue" ')
 
-    op.execute('''INSERT INTO core_search."SearchObjectCompilerQueue"
+    op.execute(
+        """INSERT INTO core_search."SearchObjectCompilerQueue"
                             ("chunkKey")
                             SELECT DISTINCT "chunkKey"
                             FROM core_search."SearchObject"
-                         ''')
+                         """
+    )
 
 
 def downgrade():

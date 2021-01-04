@@ -12,7 +12,11 @@ import {
     VortexStatusService
 } from "@synerty/vortexjs"
 
-import { searchFilt, searchObjectCacheStorageName, searchTuplePrefix } from "../PluginNames"
+import {
+    searchFilt,
+    searchObjectCacheStorageName,
+    searchTuplePrefix
+} from "../PluginNames"
 
 import { Subject } from "rxjs"
 import { Observable } from "rxjs"

@@ -1,20 +1,28 @@
 import logging
 
-from peek_abstract_chunked_index.private.server.controller.ACIProcessorQueueControllerABC import \
-    ACIProcessorQueueControllerABC, ACIProcessorQueueBlockItem
-from peek_abstract_chunked_index.private.server.controller.ACIProcessorStatusNotifierABC import \
-    ACIProcessorStatusNotifierABC
-from peek_abstract_chunked_index.private.tuples.ACIProcessorQueueTupleABC import \
-    ACIProcessorQueueTupleABC
-from peek_core_search._private.server.client_handlers.ClientSearchObjectChunkUpdateHandler import \
-    ClientSearchObjectChunkUpdateHandler
-from peek_core_search._private.server.controller.StatusController import \
-    StatusController
-from peek_core_search._private.storage.EncodedSearchObjectChunk import \
-    EncodedSearchObjectChunk
+from peek_abstract_chunked_index.private.server.controller.ACIProcessorQueueControllerABC import (
+    ACIProcessorQueueControllerABC,
+    ACIProcessorQueueBlockItem,
+)
+from peek_abstract_chunked_index.private.server.controller.ACIProcessorStatusNotifierABC import (
+    ACIProcessorStatusNotifierABC,
+)
+from peek_abstract_chunked_index.private.tuples.ACIProcessorQueueTupleABC import (
+    ACIProcessorQueueTupleABC,
+)
+from peek_core_search._private.server.client_handlers.ClientSearchObjectChunkUpdateHandler import (
+    ClientSearchObjectChunkUpdateHandler,
+)
+from peek_core_search._private.server.controller.StatusController import (
+    StatusController,
+)
+from peek_core_search._private.storage.EncodedSearchObjectChunk import (
+    EncodedSearchObjectChunk,
+)
 from peek_core_search._private.storage.SearchObject import SearchObject
-from peek_core_search._private.storage.SearchObjectCompilerQueue import \
-    SearchObjectCompilerQueue
+from peek_core_search._private.storage.SearchObjectCompilerQueue import (
+    SearchObjectCompilerQueue,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +37,9 @@ class _Notifier(ACIProcessorStatusNotifierABC):
         self._adminStatusController.notify()
 
     def addToProcessorTotal(self, delta: int):
-        self._adminStatusController.status.searchObjectCompilerQueueProcessedTotal += delta
+        self._adminStatusController.status.searchObjectCompilerQueueProcessedTotal += (
+            delta
+        )
         self._adminStatusController.notify()
 
     def setProcessorError(self, error: str):
@@ -48,20 +58,29 @@ class SearchObjectChunkCompilerQueueController(ACIProcessorQueueControllerABC):
 
     _logger = logger
     _QueueDeclarative: ACIProcessorQueueTupleABC = SearchObjectCompilerQueue
-    _VacuumDeclaratives = (SearchObjectCompilerQueue,
-                           SearchObject, EncodedSearchObjectChunk)
+    _VacuumDeclaratives = (
+        SearchObjectCompilerQueue,
+        SearchObject,
+        EncodedSearchObjectChunk,
+    )
 
-    def __init__(self, dbSessionCreator,
-                 statusController: StatusController,
-                 clientSearchObjectUpdateHandler: ClientSearchObjectChunkUpdateHandler):
-        ACIProcessorQueueControllerABC.__init__(self, dbSessionCreator,
-                                                _Notifier(statusController))
-        self._clientSearchObjectUpdateHandler: ClientSearchObjectChunkUpdateHandler \
-            = clientSearchObjectUpdateHandler
+    def __init__(
+        self,
+        dbSessionCreator,
+        statusController: StatusController,
+        clientSearchObjectUpdateHandler: ClientSearchObjectChunkUpdateHandler,
+    ):
+        ACIProcessorQueueControllerABC.__init__(
+            self, dbSessionCreator, _Notifier(statusController)
+        )
+        self._clientSearchObjectUpdateHandler: ClientSearchObjectChunkUpdateHandler = (
+            clientSearchObjectUpdateHandler
+        )
 
     def _sendToWorker(self, block: ACIProcessorQueueBlockItem):
-        from peek_core_search._private.worker.tasks.SearchObjectChunkCompilerTask import \
-            compileSearchObjectChunk
+        from peek_core_search._private.worker.tasks.SearchObjectChunkCompilerTask import (
+            compileSearchObjectChunk,
+        )
 
         return compileSearchObjectChunk.delay(block.itemsEncodedPayload)
 
@@ -69,7 +88,7 @@ class SearchObjectChunkCompilerQueueController(ACIProcessorQueueControllerABC):
         self._clientSearchObjectUpdateHandler.sendChunks(results)
 
     def _dedupeQueueSql(self, lastFetchedId: int, dedupeLimit: int):
-        return '''
+        return """
                  with sq_raw as (
                     SELECT "id", "chunkKey"
                     FROM core_search."SearchObjectCompilerQueue"
@@ -88,4 +107,7 @@ class SearchObjectChunkCompilerQueueController(ACIProcessorQueueControllerABC):
                     AND core_search."SearchObjectCompilerQueue"."id" > %(id)s
                     AND core_search."SearchObjectCompilerQueue"."chunkKey" = sq1."chunkKey"
 
-            ''' % {'id': lastFetchedId, 'limit': dedupeLimit}
+            """ % {
+            "id": lastFetchedId,
+            "limit": dedupeLimit,
+        }

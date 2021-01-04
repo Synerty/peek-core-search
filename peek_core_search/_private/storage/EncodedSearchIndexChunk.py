@@ -5,17 +5,17 @@ from sqlalchemy import Integer, String
 from sqlalchemy.sql.schema import Index
 from vortex.Tuple import Tuple, addTupleType
 
-from peek_abstract_chunked_index.private.tuples.ACIEncodedChunkTupleABC import \
-    ACIEncodedChunkTupleABC
+from peek_abstract_chunked_index.private.tuples.ACIEncodedChunkTupleABC import (
+    ACIEncodedChunkTupleABC,
+)
 from peek_core_search._private.PluginNames import searchTuplePrefix
 from peek_core_search._private.storage.DeclarativeBase import DeclarativeBase
 
 
 @addTupleType
-class EncodedSearchIndexChunk(Tuple, DeclarativeBase,
-                              ACIEncodedChunkTupleABC):
-    __tablename__ = 'EncodedSearchIndexChunk'
-    __tupleType__ = searchTuplePrefix + 'EncodedSearchIndexChunkTable'
+class EncodedSearchIndexChunk(Tuple, DeclarativeBase, ACIEncodedChunkTupleABC):
+    __tablename__ = "EncodedSearchIndexChunk"
+    __tupleType__ = searchTuplePrefix + "EncodedSearchIndexChunkTable"
 
     ENCODED_DATA_KEYWORD_NUM = 0
     ENCODED_DATA_PROPERTY_MAME_NUM = 1
@@ -28,9 +28,7 @@ class EncodedSearchIndexChunk(Tuple, DeclarativeBase,
     encodedHash = Column(String, nullable=False)
     lastUpdate = Column(String, nullable=False)
 
-    __table_args__ = (
-        Index("idx_EncodedSearchIndex_chunkKey", chunkKey, unique=True),
-    )
+    __table_args__ = (Index("idx_EncodedSearchIndex_chunkKey", chunkKey, unique=True),)
 
     @property
     def ckiChunkKey(self):
@@ -54,8 +52,10 @@ class EncodedSearchIndexChunk(Tuple, DeclarativeBase,
 
     @classmethod
     def sqlCoreLoad(cls, row):
-        return EncodedSearchIndexChunk(id=row.id,
-                                       chunkKey=row.chunkKey,
-                                       encodedData=row.encodedData,
-                                       encodedHash=row.encodedHash,
-                                       lastUpdate=row.lastUpdate)
+        return EncodedSearchIndexChunk(
+            id=row.id,
+            chunkKey=row.chunkKey,
+            encodedData=row.encodedData,
+            encodedHash=row.encodedHash,
+            lastUpdate=row.lastUpdate,
+        )

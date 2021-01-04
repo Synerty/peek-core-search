@@ -11,11 +11,13 @@ from sqlalchemy import select
 from txcelery.defer import DeferrableTask
 from vortex.Payload import Payload
 
-from peek_core_search._private.storage.EncodedSearchObjectChunk import \
-    EncodedSearchObjectChunk
+from peek_core_search._private.storage.EncodedSearchObjectChunk import (
+    EncodedSearchObjectChunk,
+)
 from peek_core_search._private.storage.SearchObject import SearchObject
-from peek_core_search._private.storage.SearchObjectCompilerQueue import \
-    SearchObjectCompilerQueue
+from peek_core_search._private.storage.SearchObjectCompilerQueue import (
+    SearchObjectCompilerQueue,
+)
 from peek_plugin_base.worker import CeleryDbConn
 from peek_plugin_base.worker.CeleryApp import celeryApp
 
@@ -34,7 +36,7 @@ Compile the search indexes
 @DeferrableTask
 @celeryApp.task(bind=True)
 def compileSearchObjectChunk(self, payloadEncodedArgs: bytes) -> List[str]:
-    """ Compile Search Index Task
+    """Compile Search Index Task
 
     :param self: A celery reference to this task
     :param payloadEncodedArgs: An encoded payload containing the queue tuples.
@@ -57,8 +59,11 @@ def compileSearchObjectChunk(self, payloadEncodedArgs: bytes) -> List[str]:
     transaction = conn.begin()
     try:
 
-        logger.debug("Staring compile of %s queueItems in %s",
-                     len(queueItems), (datetime.now(pytz.utc) - startTime))
+        logger.debug(
+            "Staring compile of %s queueItems in %s",
+            len(queueItems),
+            (datetime.now(pytz.utc) - startTime),
+        )
 
         # Get Model Sets
 
@@ -81,11 +86,14 @@ def compileSearchObjectChunk(self, payloadEncodedArgs: bytes) -> List[str]:
                     continue
 
             chunksToDelete.append(chunkKey)
-            inserts.append(dict(
-                chunkKey=chunkKey,
-                encodedData=searchIndexChunkEncodedPayload,
-                encodedHash=encodedHash,
-                lastUpdate=lastUpdate))
+            inserts.append(
+                dict(
+                    chunkKey=chunkKey,
+                    encodedData=searchIndexChunkEncodedPayload,
+                    encodedHash=encodedHash,
+                    lastUpdate=lastUpdate,
+                )
+            )
 
         # Add any chnuks that we need to delete that we don't have new data for, here
         chunksToDelete.extend(list(existingHashes))
@@ -107,17 +115,23 @@ def compileSearchObjectChunk(self, payloadEncodedArgs: bytes) -> List[str]:
         if inserts:
             conn.execute(compiledTable.insert(), inserts)
 
-        logger.debug("Compiled %s SearchObjects, %s missing, in %s",
-                     len(inserts),
-                     len(chunkKeys) - len(inserts), (datetime.now(pytz.utc) - startTime))
+        logger.debug(
+            "Compiled %s SearchObjects, %s missing, in %s",
+            len(inserts),
+            len(chunkKeys) - len(inserts),
+            (datetime.now(pytz.utc) - startTime),
+        )
 
         total += len(inserts)
 
         conn.execute(queueTable.delete(queueTable.c.id.in_(queueItemIds)))
 
         transaction.commit()
-        logger.info("Compiled and Committed %s EncodedSearchObjectChunks in %s",
-                    total, (datetime.now(pytz.utc) - startTime))
+        logger.info(
+            "Compiled and Committed %s EncodedSearchObjectChunks in %s",
+            total,
+            (datetime.now(pytz.utc) - startTime),
+        )
 
         return chunkKeys
 
@@ -134,10 +148,12 @@ def compileSearchObjectChunk(self, payloadEncodedArgs: bytes) -> List[str]:
 def _loadExistingHashes(conn, chunkKeys: List[str]) -> Dict[str, str]:
     compiledTable = EncodedSearchObjectChunk.__table__
 
-    results = conn.execute(select(
-        columns=[compiledTable.c.chunkKey, compiledTable.c.encodedHash],
-        whereclause=compiledTable.c.chunkKey.in_(chunkKeys)
-    )).fetchall()
+    results = conn.execute(
+        select(
+            columns=[compiledTable.c.chunkKey, compiledTable.c.encodedHash],
+            whereclause=compiledTable.c.chunkKey.in_(chunkKeys),
+        )
+    ).fetchall()
 
     return {result[0]: result[1] for result in results}
 
@@ -147,12 +163,14 @@ def _buildIndex(chunkKeys) -> Dict[str, bytes]:
 
     try:
         indexQry = (
-            session.query(SearchObject.chunkKey, SearchObject.id, SearchObject.packedJson)
-                .filter(SearchObject.chunkKey.in_(chunkKeys))
-                .filter(SearchObject.packedJson != None)
-                .order_by(SearchObject.id)
-                .yield_per(1000)
-                .all()
+            session.query(
+                SearchObject.chunkKey, SearchObject.id, SearchObject.packedJson
+            )
+            .filter(SearchObject.chunkKey.in_(chunkKeys))
+            .filter(SearchObject.packedJson != None)
+            .order_by(SearchObject.id)
+            .yield_per(1000)
+            .all()
         )
 
         # Create the ChunkKey -> {id -> packedJson, id -> packedJson, ....]

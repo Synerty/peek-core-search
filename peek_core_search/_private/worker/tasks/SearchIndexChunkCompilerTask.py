@@ -12,11 +12,13 @@ from sqlalchemy import select
 from txcelery.defer import DeferrableTask
 from vortex.Payload import Payload
 
-from peek_core_search._private.storage.EncodedSearchIndexChunk import \
-    EncodedSearchIndexChunk
+from peek_core_search._private.storage.EncodedSearchIndexChunk import (
+    EncodedSearchIndexChunk,
+)
 from peek_core_search._private.storage.SearchIndex import SearchIndex
-from peek_core_search._private.storage.SearchIndexCompilerQueue import \
-    SearchIndexCompilerQueue
+from peek_core_search._private.storage.SearchIndexCompilerQueue import (
+    SearchIndexCompilerQueue,
+)
 from peek_plugin_base.worker import CeleryDbConn
 from peek_plugin_base.worker.CeleryApp import celeryApp
 
@@ -35,7 +37,7 @@ Compile the search indexes
 @DeferrableTask
 @celeryApp.task(bind=True)
 def compileSearchIndexChunk(self, payloadEncodedArgs: bytes) -> List[str]:
-    """ Compile Search Index Task
+    """Compile Search Index Task
 
     :param self: A celery reference to this task
     :param payloadEncodedArgs: An encoded payload containing the queue tuples.
@@ -58,8 +60,11 @@ def compileSearchIndexChunk(self, payloadEncodedArgs: bytes) -> List[str]:
     transaction = conn.begin()
     try:
 
-        logger.debug("Staring compile of %s queueItems in %s",
-                     len(queueItems), (datetime.now(pytz.utc) - startTime))
+        logger.debug(
+            "Staring compile of %s queueItems in %s",
+            len(queueItems),
+            (datetime.now(pytz.utc) - startTime),
+        )
 
         # Get Model Sets
 
@@ -82,11 +87,14 @@ def compileSearchIndexChunk(self, payloadEncodedArgs: bytes) -> List[str]:
                     continue
 
             chunksToDelete.append(chunkKey)
-            inserts.append(dict(
-                chunkKey=chunkKey,
-                encodedData=searchIndexChunkEncodedPayload,
-                encodedHash=encodedHash,
-                lastUpdate=lastUpdate))
+            inserts.append(
+                dict(
+                    chunkKey=chunkKey,
+                    encodedData=searchIndexChunkEncodedPayload,
+                    encodedHash=encodedHash,
+                    lastUpdate=lastUpdate,
+                )
+            )
 
         # Add any chnuks that we need to delete that we don't have new data for, here
         chunksToDelete.extend(list(existingHashes))
@@ -108,17 +116,23 @@ def compileSearchIndexChunk(self, payloadEncodedArgs: bytes) -> List[str]:
         if inserts:
             conn.execute(compiledTable.insert(), inserts)
 
-        logger.debug("Compiled %s SearchIndexes, %s missing, in %s",
-                     len(inserts),
-                     len(chunkKeys) - len(inserts), (datetime.now(pytz.utc) - startTime))
+        logger.debug(
+            "Compiled %s SearchIndexes, %s missing, in %s",
+            len(inserts),
+            len(chunkKeys) - len(inserts),
+            (datetime.now(pytz.utc) - startTime),
+        )
 
         total += len(inserts)
 
         conn.execute(queueTable.delete(queueTable.c.id.in_(queueItemIds)))
 
         transaction.commit()
-        logger.info("Compiled and Committed %s EncodedSearchIndexChunks in %s",
-                    total, (datetime.now(pytz.utc) - startTime))
+        logger.info(
+            "Compiled and Committed %s EncodedSearchIndexChunks in %s",
+            total,
+            (datetime.now(pytz.utc) - startTime),
+        )
 
         return chunkKeys
 
@@ -135,10 +149,12 @@ def compileSearchIndexChunk(self, payloadEncodedArgs: bytes) -> List[str]:
 def _loadExistingHashes(conn, chunkKeys: List[str]) -> Dict[str, str]:
     compiledTable = EncodedSearchIndexChunk.__table__
 
-    results = conn.execute(select(
-        columns=[compiledTable.c.chunkKey, compiledTable.c.encodedHash],
-        whereclause=compiledTable.c.chunkKey.in_(chunkKeys)
-    )).fetchall()
+    results = conn.execute(
+        select(
+            columns=[compiledTable.c.chunkKey, compiledTable.c.encodedHash],
+            whereclause=compiledTable.c.chunkKey.in_(chunkKeys),
+        )
+    ).fetchall()
 
     return {result[0]: result[1] for result in results}
 
@@ -146,11 +162,17 @@ def _loadExistingHashes(conn, chunkKeys: List[str]) -> Dict[str, str]:
 def _buildIndex(conn, chunkKeys) -> Dict[str, bytes]:
     indexTable = SearchIndex.__table__
 
-    results = conn.execute(select(
-        columns=[indexTable.c.chunkKey, indexTable.c.keyword,
-                 indexTable.c.propertyName, indexTable.c.objectId],
-        whereclause=indexTable.c.chunkKey.in_(chunkKeys)
-    ))
+    results = conn.execute(
+        select(
+            columns=[
+                indexTable.c.chunkKey,
+                indexTable.c.keyword,
+                indexTable.c.propertyName,
+                indexTable.c.objectId,
+            ],
+            whereclause=indexTable.c.chunkKey.in_(chunkKeys),
+        )
+    )
 
     encKwPayloadByChunkKey = {}
 
@@ -161,18 +183,20 @@ def _buildIndex(conn, chunkKeys) -> Dict[str, bytes]:
 
     for item in results:
         (
-            objIdsByPropByKwByChunkKey
-            [item.chunkKey]
-            [item.keyword]
-            [item.propertyName]
-                .append(item.objectId)
+            objIdsByPropByKwByChunkKey[item.chunkKey][item.keyword][
+                item.propertyName
+            ].append(item.objectId)
         )
 
     def _sortSearchIndex(o1, o2):
-        if o1[0] < o2[0]: return -1
-        if o1[0] > o2[0]: return 1
-        if o1[1] < o2[1]: return -1
-        if o1[1] > o2[1]: return 1
+        if o1[0] < o2[0]:
+            return -1
+        if o1[0] > o2[0]:
+            return 1
+        if o1[1] < o2[1]:
+            return -1
+        if o1[1] > o2[1]:
+            return 1
         return 0
 
     # Sort each bucket by the key
@@ -181,8 +205,11 @@ def _buildIndex(conn, chunkKeys) -> Dict[str, bytes]:
 
         for keyword, objIdsByProp in objIdsByPropByKw.items():
             if len(objIdsByProp) > 1000:
-                logger.error("Too many items in bucket for keyword %s",
-                             keyword, len(objIdsByProp))
+                logger.error(
+                    "Too many items in bucket for keyword %s",
+                    keyword,
+                    len(objIdsByProp),
+                )
 
             for propertyName, objectIds in objIdsByProp.items():
                 compileSearchIndexChunks.append(
@@ -194,6 +221,7 @@ def _buildIndex(conn, chunkKeys) -> Dict[str, bytes]:
         # Create the blob data for this index.
         # It will be searched by a binary sort
         encKwPayloadByChunkKey[chunkKey] = Payload(
-            tuples=compileSearchIndexChunks).toEncodedPayload()
+            tuples=compileSearchIndexChunks
+        ).toEncodedPayload()
 
     return encKwPayloadByChunkKey

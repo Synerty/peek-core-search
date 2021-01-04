@@ -4,12 +4,13 @@ from vortex.Tuple import Tuple, addTupleType, TupleField
 
 @addTupleType
 class ImportSearchObjectRouteTuple(Tuple):
-    """ Import Search Object Route
+    """Import Search Object Route
 
     This tuple is used to import object routes into the search plugin
 
     """
-    __tupleType__ = searchTuplePrefix + 'ImportSearchObjectRouteTuple'
+
+    __tupleType__ = searchTuplePrefix + "ImportSearchObjectRouteTuple"
 
     #:  A unique string describing this group being imported
     # This can be used for deleting as well

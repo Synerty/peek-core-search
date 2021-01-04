@@ -16,30 +16,42 @@ from vortex.Payload import Payload
 from vortex.TupleAction import TupleActionABC
 from vortex.handler.TupleActionProcessor import TupleActionProcessorDelegateABC
 
-from peek_core_search._private.client.controller.SearchIndexCacheController import \
-    SearchIndexCacheController
-from peek_core_search._private.client.controller.SearchObjectCacheController import \
-    SearchObjectCacheController
-from peek_core_search._private.storage.EncodedSearchIndexChunk import \
-    EncodedSearchIndexChunk
-from peek_core_search._private.tuples.KeywordAutoCompleteTupleAction import \
-    KeywordAutoCompleteTupleAction
-from peek_core_search._private.tuples.search_object.SearchResultObjectTuple import \
-    SearchResultObjectTuple
-from peek_core_search._private.worker.tasks.KeywordSplitter import \
-    splitPartialKeywords, splitFullKeywords, _splitFullTokens
+from peek_core_search._private.client.controller.SearchIndexCacheController import (
+    SearchIndexCacheController,
+)
+from peek_core_search._private.client.controller.SearchObjectCacheController import (
+    SearchObjectCacheController,
+)
+from peek_core_search._private.storage.EncodedSearchIndexChunk import (
+    EncodedSearchIndexChunk,
+)
+from peek_core_search._private.tuples.KeywordAutoCompleteTupleAction import (
+    KeywordAutoCompleteTupleAction,
+)
+from peek_core_search._private.tuples.search_object.SearchResultObjectTuple import (
+    SearchResultObjectTuple,
+)
+from peek_core_search._private.worker.tasks.KeywordSplitter import (
+    splitPartialKeywords,
+    splitFullKeywords,
+    _splitFullTokens,
+)
 from peek_core_search._private.worker.tasks._CalcChunkKey import makeSearchIndexChunkKey
 
 logger = logging.getLogger(__name__)
 
 
 class FastKeywordController(TupleActionProcessorDelegateABC):
-    def __init__(self, objectCacheController: SearchObjectCacheController,
-                 indexCacheController: SearchIndexCacheController):
+    def __init__(
+        self,
+        objectCacheController: SearchObjectCacheController,
+        indexCacheController: SearchIndexCacheController,
+    ):
         self._objectCacheController = objectCacheController
         self._indexCacheController = indexCacheController
         self._objectIdsByKeywordByPropertyKeyByChunkKey: Dict[
-            str, Dict[str, Dict[str, List[int]]]] = {}
+            str, Dict[str, Dict[str, List[int]]]
+        ] = {}
 
     def shutdown(self):
         self._objectCacheController = None
@@ -48,8 +60,9 @@ class FastKeywordController(TupleActionProcessorDelegateABC):
 
     @inlineCallbacks
     def processTupleAction(self, tupleAction: TupleActionABC) -> Deferred:
-        assert isinstance(tupleAction, KeywordAutoCompleteTupleAction), \
-            "Tuple is not a KeywordAutoCompleteTupleAction"
+        assert isinstance(
+            tupleAction, KeywordAutoCompleteTupleAction
+        ), "Tuple is not a KeywordAutoCompleteTupleAction"
 
         startTime = datetime.now(pytz.utc)
 
@@ -57,23 +70,31 @@ class FastKeywordController(TupleActionProcessorDelegateABC):
             tupleAction.searchString, tupleAction.propertyName
         )
 
-        results = yield self._objectCacheController \
-            .getObjects(tupleAction.objectTypeId, objectIds)
+        results = yield self._objectCacheController.getObjects(
+            tupleAction.objectTypeId, objectIds
+        )
 
         results = yield self._filterObjectsForSearchString(
-            results, tupleAction.searchString, tupleAction.propertyName)
+            results, tupleAction.searchString, tupleAction.propertyName
+        )
 
-        logger.debug("Completed search for |%s|, returning %s objects, in %s",
-                     tupleAction.searchString,
-                     len(results), (datetime.now(pytz.utc) - startTime))
+        logger.debug(
+            "Completed search for |%s|, returning %s objects, in %s",
+            tupleAction.searchString,
+            len(results),
+            (datetime.now(pytz.utc) - startTime),
+        )
 
         return results
 
     @deferToThreadWrapWithLogger(logger)
-    def _filterObjectsForSearchString(self, results: List[SearchResultObjectTuple],
-                                      searchString: str,
-                                      propertyName: Optional[str]) -> Deferred:
-        """ Filter Objects For Search String
+    def _filterObjectsForSearchString(
+        self,
+        results: List[SearchResultObjectTuple],
+        searchString: str,
+        propertyName: Optional[str],
+    ) -> Deferred:
+        """Filter Objects For Search String
 
         STAGE 2 of the search.
 
@@ -85,7 +106,7 @@ class FastKeywordController(TupleActionProcessorDelegateABC):
         :return:
         """
 
-        noFulls = lambda t: not t.endswith('$')
+        noFulls = lambda t: not t.endswith("$")
 
         # Get the partial tokens, and match them
         tokens = set(filter(noFulls, splitPartialKeywords(searchString)))
@@ -93,19 +114,21 @@ class FastKeywordController(TupleActionProcessorDelegateABC):
         def filterResult(result: SearchResultObjectTuple) -> bool:
             props = result.properties
             if propertyName:
-                props = {propertyName: props[propertyName]} \
-                    if propertyName in props else {}
+                props = (
+                    {propertyName: props[propertyName]} if propertyName in props else {}
+                )
 
-            allPropVals = ' '.join(props.values())
+            allPropVals = " ".join(props.values())
             theseTokens = set(filter(noFulls, splitPartialKeywords(allPropVals)))
             return bool(tokens & theseTokens)
 
         return list(filter(filterResult, results))
 
     @deferToThreadWrapWithLogger(logger)
-    def _getObjectIdsForSearchString(self, searchString: str,
-                                     propertyName: Optional[str]) -> Deferred:
-        """ Get ObjectIds For Search String
+    def _getObjectIdsForSearchString(
+        self, searchString: str, propertyName: Optional[str]
+    ) -> Deferred:
+        """Get ObjectIds For Search String
 
         STAGE 1 of the search.
 
@@ -129,8 +152,7 @@ class FastKeywordController(TupleActionProcessorDelegateABC):
         logger.debug("Searching for full tokens |%s|", fullTokens)
 
         # Now lookup any remaining keywords, if any
-        resultsByFullKw = self._getObjectIdsForTokensBlocking(fullTokens,
-                                                              propertyName)
+        resultsByFullKw = self._getObjectIdsForTokensBlocking(fullTokens, propertyName)
         resultsByFullKw = {k: v for k, v in resultsByFullKw.items() if v}
 
         logger.debug("Found results for full tokens |%s|", set(resultsByFullKw))
@@ -141,8 +163,9 @@ class FastKeywordController(TupleActionProcessorDelegateABC):
         logger.debug("Searching for partial tokens |%s|", partialTokens)
 
         # Now lookup any remaining keywords, if any
-        resultsByPartialKw = self._getObjectIdsForTokensBlocking(partialTokens,
-                                                                 propertyName)
+        resultsByPartialKw = self._getObjectIdsForTokensBlocking(
+            partialTokens, propertyName
+        )
         resultsByPartialKw = {k: v for k, v in resultsByPartialKw.items() if v}
 
         logger.debug("Found results for partial tokens |%s|", set(resultsByPartialKw))
@@ -151,9 +174,9 @@ class FastKeywordController(TupleActionProcessorDelegateABC):
         # Process the results
 
         # Merge partial kw results with full kw results.
-        resultsByKw = self._mergePartialAndFullMatches(searchString,
-                                                       resultsByFullKw,
-                                                       resultsByPartialKw)
+        resultsByKw = self._mergePartialAndFullMatches(
+            searchString, resultsByFullKw, resultsByPartialKw
+        )
 
         logger.debug("Merged tokens |%s|", set(resultsByKw))
 
@@ -163,10 +186,12 @@ class FastKeywordController(TupleActionProcessorDelegateABC):
         # Limit to 50 and return
         return list(objectIdsUnion)[:50]
 
-    def _mergePartialAndFullMatches(self, searchString: str,
-                                    resultsByFullKw: Dict[str, List[int]],
-                                    resultsByPartialKw: Dict[str, List[int]]
-                                    ) -> Dict[str, List[int]]:
+    def _mergePartialAndFullMatches(
+        self,
+        searchString: str,
+        resultsByFullKw: Dict[str, List[int]],
+        resultsByPartialKw: Dict[str, List[int]],
+    ) -> Dict[str, List[int]]:
         """ Merge Partial """
 
         # Copy this, because we want to modify it and don't want to affect other logic
@@ -177,8 +202,8 @@ class FastKeywordController(TupleActionProcessorDelegateABC):
 
         for fullKw, fullObjectIds in resultsByFullKw.items():
             # Merge in full
-            fullKw = fullKw.strip('^$')
-            existing = mergedResultsByKw.get(fullKw.strip('^$'), list())
+            fullKw = fullKw.strip("^$")
+            existing = mergedResultsByKw.get(fullKw.strip("^$"), list())
 
             # Include the fulls
             existing.extend(fullObjectIds)
@@ -187,8 +212,8 @@ class FastKeywordController(TupleActionProcessorDelegateABC):
 
         tokens = _splitFullTokens(searchString)
         for token in tokens:
-            token = token.strip('^$')
-            existing = mergedResultsByKw.get(token.strip('^$'), list())
+            token = token.strip("^$")
+            existing = mergedResultsByKw.get(token.strip("^$"), list())
             partialKws = splitPartialKeywords(token)
 
             if not partialKws <= resultsByPartialKwSet:
@@ -205,8 +230,9 @@ class FastKeywordController(TupleActionProcessorDelegateABC):
 
         return mergedResultsByKw
 
-    def _setIntersectFilterIndexResults(self, objectIdsByKw: Dict[str, List[int]]
-                                        ) -> Set[int]:
+    def _setIntersectFilterIndexResults(
+        self, objectIdsByKw: Dict[str, List[int]]
+    ) -> Set[int]:
 
         if not objectIdsByKw:
             return set()
@@ -227,16 +253,17 @@ class FastKeywordController(TupleActionProcessorDelegateABC):
         # Optionally, include two char tokens, if any exist.
         # The goal of this is to NOT show zero results if a two letter token doesn't match
         while twoCharTokens_:
-            objectIdsUnionNoTwoChars = \
-                objectIdsUnion & set(objectIdsByKw[twoCharTokens_.pop()])
+            objectIdsUnionNoTwoChars = objectIdsUnion & set(
+                objectIdsByKw[twoCharTokens_.pop()]
+            )
             if objectIdsUnionNoTwoChars:
                 objectIdsUnion = objectIdsUnionNoTwoChars
 
         return objectIdsUnion
 
-    def _getObjectIdsForTokensBlocking(self, tokens: Iterable[str],
-                                       propertyName: Optional[str]
-                                       ) -> Dict[str, List[int]]:
+    def _getObjectIdsForTokensBlocking(
+        self, tokens: Iterable[str], propertyName: Optional[str]
+    ) -> Dict[str, List[int]]:
         # Create the structure to hold the IDs, for a match, we need an object id to be
         # in every row.
         results = {kw: [] for kw in tokens}
@@ -248,8 +275,9 @@ class FastKeywordController(TupleActionProcessorDelegateABC):
 
         # Iterate through each of the chunks we need
         for chunkKey, keywordsInThisChunk in keywordsByChunkKey.items():
-            objectIdsByKeywordByPropertyKey = self \
-                ._objectIdsByKeywordByPropertyKeyByChunkKey.get(chunkKey)
+            objectIdsByKeywordByPropertyKey = (
+                self._objectIdsByKeywordByPropertyKeyByChunkKey.get(chunkKey)
+            )
 
             if not objectIdsByKeywordByPropertyKey:
                 logger.debug("No SearchIndex chunk exists with chunkKey |%s|", chunkKey)
@@ -264,7 +292,8 @@ class FastKeywordController(TupleActionProcessorDelegateABC):
             elif propertyName in objectIdsByKeywordByPropertyKey:
                 # A specific property key
                 objectIdsByKeywordListOfDicts = [
-                    objectIdsByKeywordByPropertyKey[propertyName]]
+                    objectIdsByKeywordByPropertyKey[propertyName]
+                ]
 
             # Iterate through each of the property keys, this isn't a big list
             for objectIdsByKeyword in objectIdsByKeywordListOfDicts:
@@ -276,7 +305,7 @@ class FastKeywordController(TupleActionProcessorDelegateABC):
 
     @inlineCallbacks
     def notifyOfUpdate(self, chunkKeys: List[str]):
-        """ Notify of Segment Updates
+        """Notify of Segment Updates
 
         This method is called by the client.SearchIndexCacheController when it receives
          updates from the server.
@@ -297,7 +326,8 @@ class FastKeywordController(TupleActionProcessorDelegateABC):
             keyword = data[EncodedSearchIndexChunk.ENCODED_DATA_KEYWORD_NUM]
             propertyName = data[EncodedSearchIndexChunk.ENCODED_DATA_PROPERTY_MAME_NUM]
             objectIdsJson = data[
-                EncodedSearchIndexChunk.ENCODED_DATA_OBJECT_IDS_JSON_INDEX]
+                EncodedSearchIndexChunk.ENCODED_DATA_OBJECT_IDS_JSON_INDEX
+            ]
             chunkData[propertyName][keyword] = json.loads(objectIdsJson)
 
         self._objectIdsByKeywordByPropertyKeyByChunkKey[chunk.chunkKey] = chunkData

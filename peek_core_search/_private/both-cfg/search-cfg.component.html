@@ -4,28 +4,33 @@
 
 <div class="peek-nav-bar-padding ">
     <div class="peek-information-section">
-        <button class="btn" [class.bg-success]="indexStatus.cacheForOfflineEnabled"
-                (click)="toggleOfflineMode()">
+        <button
+            (click)="toggleOfflineMode()"
+            [class.bg-success]="indexStatus.cacheForOfflineEnabled"
+            class="btn"
+        >
             {{indexStatus.cacheForOfflineEnabled
             ? 'Disable Offline Support'
             : 'Enable Offline Support'}}
         </button>
         <p>
-
+            
             Search Index Offline Mode Enabled :
-            {{indexStatus.cacheForOfflineEnabled}}<br/>
-            Search Index Load Complete : {{indexStatus.initialLoadComplete}}<br/>
+            {{indexStatus.cacheForOfflineEnabled}}<br />
+            Search Index Load Complete :
+            {{indexStatus.initialLoadComplete}}<br />
             Search Index Load Progress :
-            {{indexStatus.loadProgress}}/{{indexStatus.loadTotal}}<br/>
-            Search Index Last Check : {{indexStatus.lastCheck}}<br/>
-
+            {{indexStatus.loadProgress}}/{{indexStatus.loadTotal}}<br />
+            Search Index Last Check : {{indexStatus.lastCheck}}<br />
+            
             Search Object Offline Mode Enabled :
-            {{objectStatus.cacheForOfflineEnabled}}<br/>
-            Search Object Load Complete : {{objectStatus.initialLoadComplete}}<br/>
+            {{objectStatus.cacheForOfflineEnabled}}<br />
+            Search Object Load Complete :
+            {{objectStatus.initialLoadComplete}}<br />
             Search Object Load Progress :
-            {{objectStatus.loadProgress}}/{{objectStatus.loadTotal}}<br/>
-            Search Object Last Check : {{objectStatus.lastCheck}}<br/>
+            {{objectStatus.loadProgress}}/{{objectStatus.loadTotal}}<br />
+            Search Object Last Check : {{objectStatus.lastCheck}}<br />
         </p>
-
+    
     </div>
 </div>

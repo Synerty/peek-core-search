@@ -21,8 +21,9 @@ class __CrudHandler(OrmCrudHandler):
 
 # This method creates an instance of the handler class.
 def makeSettingPropertyHandler(dbSessionCreator):
-    handler = __CrudHandler(dbSessionCreator, SettingProperty,
-                            filtKey, retreiveAll=True)
+    handler = __CrudHandler(
+        dbSessionCreator, SettingProperty, filtKey, retreiveAll=True
+    )
 
     logger.debug("Started")
     return handler

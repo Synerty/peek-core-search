@@ -1,13 +1,16 @@
 import logging
 from typing import List, Any
 
-from peek_abstract_chunked_index.private.client.controller.ACICacheControllerABC import \
-    ACICacheControllerABC
+from peek_abstract_chunked_index.private.client.controller.ACICacheControllerABC import (
+    ACICacheControllerABC,
+)
 from peek_core_search._private.PluginNames import searchFilt
-from peek_core_search._private.server.client_handlers.ClientChunkLoadRpc import \
-    ClientChunkLoadRpc
-from peek_core_search._private.storage.EncodedSearchIndexChunk import \
-    EncodedSearchIndexChunk
+from peek_core_search._private.server.client_handlers.ClientChunkLoadRpc import (
+    ClientChunkLoadRpc,
+)
+from peek_core_search._private.storage.EncodedSearchIndexChunk import (
+    EncodedSearchIndexChunk,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +19,7 @@ clientSearchIndexUpdateFromServerFilt.update(searchFilt)
 
 
 class SearchIndexCacheController(ACICacheControllerABC):
-    """ SearchIndex Cache Controller
+    """SearchIndex Cache Controller
 
     The SearchIndex cache controller stores all the chunks in memory,
     allowing fast access from the mobile and desktop devices.

@@ -9,40 +9,48 @@
                 <tr *ngFor="let item of items">
                     <td>{{item.key}}</td>
                     <td *ngIf="item.type == 'boolean' ">
-                        <Button class="btn"
-                                [class.btn-success]="item.boolean_value"
-                                [class.btn-danger]="!item.boolean_value"
-                                (click)="item.boolean_value = ! item.boolean_value">
+                        <Button
+                            (click)="item.boolean_value = ! item.boolean_value"
+                            [class.btn-danger]="!item.boolean_value"
+                            [class.btn-success]="item.boolean_value"
+                            class="btn"
+                        >
                             {{item.boolean_value ? "True" : "False"}}
                         </Button>
                     </td>
                     <td *ngIf="item.type == 'integer' ">
-                        <input [(ngModel)]="item.int_value"
-                               [name]="item.key"
-                               type="number"
-                               step="1"
-                               class="form-control input-sm"/>
+                        <input
+                            [(ngModel)]="item.int_value"
+                            [name]="item.key"
+                            class="form-control input-sm"
+                            step="1"
+                            type="number"
+                        />
                     </td>
                     <td *ngIf="item.key.endsWith('pass') && item.type == 'string' ">
-                        <input [(ngModel)]="item.char_value"
-                               [name]="item.key"
-                               type="password"
-                               class="form-control input-sm"/>
+                        <input
+                            [(ngModel)]="item.char_value"
+                            [name]="item.key"
+                            class="form-control input-sm"
+                            type="password"
+                        />
                     </td>
                     <td *ngIf="!item.key.endsWith('pass') && item.type == 'string' ">
-                        <input [(ngModel)]="item.char_value"
-                               [name]="item.key"
-                               class="form-control input-sm"/>
+                        <input
+                            [(ngModel)]="item.char_value"
+                            [name]="item.key"
+                            class="form-control input-sm"
+                        />
                     </td>
                 </tr>
             </table>
-
+            
             <div class="btn-toolbar">
                 <div class="btn-group">
-                    <div class="btn btn-default" (click)='saveClicked()'>
+                    <div (click)="saveClicked()" class="btn btn-default">
                         Save
                     </div>
-                    <div class="btn btn-default" (click)='resetClicked()'>
+                    <div (click)="resetClicked()" class="btn btn-default">
                         Reset
                     </div>
                 </div>

@@ -10,14 +10,14 @@ def _splitFullTokens(keywordStr: str) -> Set[str]:
     keywordStr = keywordStr.lower()
 
     # Remove punctuation
-    tokens = ''.join([c for c in keywordStr if c not in string.punctuation])
+    tokens = "".join([c for c in keywordStr if c not in string.punctuation])
 
     # Strip and Split words, filter out words less than three letters
-    return set([w.strip() for w in tokens.split(' ') if 2 <= len(w)])
+    return set([w.strip() for w in tokens.split(" ") if 2 <= len(w)])
 
 
 def splitFullKeywords(keywordStr: str) -> Set[str]:
-    """ Split Full Keywords
+    """Split Full Keywords
 
     This tokenizer function is used for search strings loaded into
     the fullKwPropertiesJson field of the SearchObject.
@@ -27,13 +27,13 @@ def splitFullKeywords(keywordStr: str) -> Set[str]:
 
     """
     tokens = _splitFullTokens(keywordStr)
-    tokens = ['^%s$' % t for t in tokens if 2 <= len(t)]
+    tokens = ["^%s$" % t for t in tokens if 2 <= len(t)]
 
     return set(tokens)
 
 
 def splitPartialKeywords(keywordStr: str) -> Set[str]:
-    """ Split Partial Keywords
+    """Split Partial Keywords
 
     This tokenizer function is used for search strings loaded into the
     partialKwPropertiesJson field of the SearchObject.
@@ -54,16 +54,16 @@ def splitPartialKeywords(keywordStr: str) -> Set[str]:
     for token in tempTokens:
         # Partial tokenize the other words.
         for index in range(max(1, len(token) - 2)):
-            tokens.append(('' if index else '^') + token[index:index + 3])
+            tokens.append(("" if index else "^") + token[index : index + 3])
 
     return set(tokens)
 
 
 def twoCharTokens(tokens: Set[str]) -> Set[str]:
     def isTwoChar(token: str) -> bool:
-        if token.endswith('$') and len(token) == 4:
+        if token.endswith("$") and len(token) == 4:
             return True
-        if token.startswith('^') and len(token) == 3:
+        if token.startswith("^") and len(token) == 3:
             return True
         return False
 

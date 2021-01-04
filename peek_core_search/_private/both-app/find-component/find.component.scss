@@ -1,41 +1,41 @@
 @import "src/variables.scss";
 
 :host {
-  .search-input {
-    display: flex;
+    .search-input {
+        display: flex;
 
-    > * {
-      flex: 1;
+        > * {
+            flex: 1;
+        }
+
+        > button {
+            min-width: 32px;
+            max-width: 32px;
+            margin-left: 8px;
+        }
     }
 
-    > button {
-      min-width: 32px;
-      max-width: 32px;
-      margin-left: 8px;
-    }
-  }
+    .search-filter {
+        display: flex;
+        margin-top: 16px;
 
-  .search-filter {
-    display: flex;
-    margin-top: 16px;
+        > * {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            margin-bottom: 0;
 
-    > * {
-      display: flex;
-      flex-direction: column;
-      flex: 1;
-      margin-bottom: 0;
+            > * {
+                text-align: left;
+            }
+        }
 
-      > * {
-        text-align: left;
-      }
+        > *:not(:nth-child(1)) {
+            margin-left: 8px;
+        }
     }
 
-    > *:not(:nth-child(1)) {
-      margin-left: 8px;
+    .result-alert {
+        margin-top: 16px;
     }
-  }
-
-  .result-alert {
-    margin-top: 16px;
-  }
 }

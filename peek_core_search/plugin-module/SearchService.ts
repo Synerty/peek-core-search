@@ -5,7 +5,11 @@ import { PrivateSearchIndexLoaderService } from "./_private/search-index-loader"
 import { PrivateSearchObjectLoaderService } from "./_private/search-object-loader"
 import { SearchResultObjectTuple } from "./SearchResultObjectTuple"
 import { SearchObjectTypeTuple } from "./SearchObjectTypeTuple"
-import { OfflineConfigTuple, SearchPropertyTuple, SearchTupleService } from "./_private"
+import {
+    OfflineConfigTuple,
+    SearchPropertyTuple,
+    SearchTupleService
+} from "./_private"
 import { KeywordAutoCompleteTupleAction } from "./_private/tuples/KeywordAutoCompleteTupleAction"
 
 export interface SearchPropT {

@@ -1,9 +1,9 @@
 <nz-modal
-  [(nzVisible)]="showSearch"
-  [nzTitle]="'Search Peek'"
-  [nzFooter]="null"
-  (nzOnCancel)="closeModal()"
-  nzWidth="600px"
+    (nzOnCancel)="closeModal()"
+    [(nzVisible)]="showSearch"
+    [nzFooter]="null"
+    [nzTitle]="'Search Peek'"
+    nzWidth="600px"
 >
-  <plugin-search-find></plugin-search-find>
+    <plugin-search-find></plugin-search-find>
 </nz-modal>

@@ -1,12 +1,11 @@
-import { CommonModule } from "@angular/common";
-import { NgModule } from "@angular/core";
-import { Routes } from "@angular/router";
-import { FormsModule } from "@angular/forms";
-import { NzIconModule } from "ng-zorro-antd/icon";
-import { RouterModule } from "@angular/router";
-import { HttpClientModule } from "@angular/common/http";
-import { SearchCfgComponent } from "./search-cfg.component";
-
+import { CommonModule } from "@angular/common"
+import { NgModule } from "@angular/core"
+import { Routes } from "@angular/router"
+import { FormsModule } from "@angular/forms"
+import { NzIconModule } from "ng-zorro-antd/icon"
+import { RouterModule } from "@angular/router"
+import { HttpClientModule } from "@angular/common/http"
+import { SearchCfgComponent } from "./search-cfg.component"
 
 // Define the child routes for this plugin.
 export const pluginRoutes: Routes = [
@@ -19,7 +18,7 @@ export const pluginRoutes: Routes = [
         pathMatch: "full",
         component: SearchCfgComponent,
     },
-];
+]
 
 // Define the root module for this plugin.
 // This module is loaded by the lazy loader, what ever this defines is what is started.
@@ -36,4 +35,5 @@ export const pluginRoutes: Routes = [
     providers: [],
     declarations: [SearchCfgComponent],
 })
-export class SearchCfgModule {}
+export class SearchCfgModule {
+}

@@ -4,11 +4,12 @@ from vortex.Tuple import Tuple, addTupleType, TupleField
 
 @addTupleType
 class SearchResultOpenHandlerTuple(Tuple):
-    """ Search Result Tuple
+    """Search Result Tuple
 
     This tuple represents a search result
     """
-    __tupleType__ = searchTuplePrefix + 'SearchResultOpenHandlerTuple'
+
+    __tupleType__ = searchTuplePrefix + "SearchResultOpenHandlerTuple"
 
     #:  The key of a registered open handler
     key: str = TupleField()

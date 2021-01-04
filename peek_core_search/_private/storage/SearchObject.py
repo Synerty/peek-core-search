@@ -13,15 +13,15 @@ logger = logging.getLogger(__name__)
 
 @addTupleType
 class SearchObject(Tuple, DeclarativeBase):
-    __tablename__ = 'SearchObject'
-    __tupleType__ = searchTuplePrefix + 'SearchObjectTable'
+    __tablename__ = "SearchObject"
+    __tupleType__ = searchTuplePrefix + "SearchObjectTable"
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
 
     #:  The object that this routs is for
-    objectTypeId = Column(Integer,
-                          ForeignKey('SearchObjectType.id', ondelete='CASCADE'),
-                          nullable=False)
+    objectTypeId = Column(
+        Integer, ForeignKey("SearchObjectType.id", ondelete="CASCADE"), nullable=False
+    )
 
     key = Column(String, nullable=False)
 

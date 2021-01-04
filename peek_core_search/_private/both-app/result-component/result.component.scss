@@ -1,11 +1,11 @@
 @import "src/variables.scss";
 
 :host {
-  .results {
-    margin-top: 16px;
-  }
+    .results {
+        margin-top: 16px;
+    }
 
-  .result-row {
-    cursor: pointer;
-  }
+    .result-row {
+        cursor: pointer;
+    }
 }

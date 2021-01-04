@@ -9,8 +9,8 @@ Create Date: 2020-05-01 23:58:53.051782
 """
 
 # revision identifiers, used by Alembic.
-revision = '0736e757d1ec'
-down_revision = '5e2b9afbb499'
+revision = "0736e757d1ec"
+down_revision = "5e2b9afbb499"
 branch_labels = None
 depends_on = None
 
@@ -18,7 +18,7 @@ from alembic import op
 
 
 def _alterColumnPkBigInt(schemaName, tableName):
-    return '''
+    return """
         
         DO $$
             DECLARE
@@ -67,9 +67,9 @@ def _alterColumnPkBigInt(schemaName, tableName):
         ALTER TABLE %(schemaName)s."%(tableName)s"
         ALTER COLUMN "%(columnName)s" SET DEFAULT 
             nextval('%(schemaName)s."%(tableName)s_%(columnName)s_seq"'::regclass);
-        ''' % dict(schemaName=schemaName,
-                   tableName=tableName,
-                   columnName='id')
+        """ % dict(
+        schemaName=schemaName, tableName=tableName, columnName="id"
+    )
 
 
 def upgrade():

@@ -2,30 +2,39 @@ import logging
 
 from twisted.internet.defer import inlineCallbacks
 
-from peek_core_search._private.client.DeviceTupleProcessorActionProxy import \
-    makeTupleActionProcessorProxy
-from peek_core_search._private.client.controller.FastKeywordController import \
-    FastKeywordController
+from peek_core_search._private.client.DeviceTupleProcessorActionProxy import (
+    makeTupleActionProcessorProxy,
+)
+from peek_core_search._private.client.controller.FastKeywordController import (
+    FastKeywordController,
+)
 from peek_plugin_base.PeekVortexUtil import peekServerName
 from peek_plugin_base.client.PluginClientEntryHookABC import PluginClientEntryHookABC
 from peek_core_search._private.PluginNames import searchActionProcessorName
 from peek_core_search._private.PluginNames import searchFilt
 from peek_core_search._private.PluginNames import searchObservableName
-from peek_core_search._private.client.TupleDataObservable import \
-    makeClientTupleDataObservableHandler
-from peek_core_search._private.client.controller.SearchIndexCacheController import \
-    SearchIndexCacheController
-from peek_core_search._private.client.controller.SearchObjectCacheController import \
-    SearchObjectCacheController
-from peek_core_search._private.client.handlers.SearchIndexCacheHandler import \
-    SearchIndexCacheHandler
-from peek_core_search._private.client.handlers.SearchObjectCacheHandler import \
-    SearchObjectCacheHandler
+from peek_core_search._private.client.TupleDataObservable import (
+    makeClientTupleDataObservableHandler,
+)
+from peek_core_search._private.client.controller.SearchIndexCacheController import (
+    SearchIndexCacheController,
+)
+from peek_core_search._private.client.controller.SearchObjectCacheController import (
+    SearchObjectCacheController,
+)
+from peek_core_search._private.client.handlers.SearchIndexCacheHandler import (
+    SearchIndexCacheHandler,
+)
+from peek_core_search._private.client.handlers.SearchObjectCacheHandler import (
+    SearchObjectCacheHandler,
+)
 from peek_core_search._private.storage.DeclarativeBase import loadStorageTuples
 from peek_core_search._private.tuples import loadPrivateTuples
 from peek_core_search.tuples import loadPublicTuples
 from vortex.handler.TupleActionProcessorProxy import TupleActionProcessorProxy
-from vortex.handler.TupleDataObservableProxyHandler import TupleDataObservableProxyHandler
+from vortex.handler.TupleDataObservableProxyHandler import (
+    TupleDataObservableProxyHandler,
+)
 from vortex.handler.TupleDataObserverClient import TupleDataObserverClient
 
 logger = logging.getLogger(__name__)
@@ -41,7 +50,7 @@ class ClientEntryHook(PluginClientEntryHookABC):
         self._loadedObjects = []
 
     def load(self) -> None:
-        """ Load
+        """Load
 
         This will be called when the plugin is loaded, just after the db is migrated.
         Place any custom initialiastion steps here.
@@ -57,7 +66,7 @@ class ClientEntryHook(PluginClientEntryHookABC):
 
     @inlineCallbacks
     def start(self):
-        """ Load
+        """Load
 
         This will be called when the plugin is loaded, just after the db is migrated.
         Place any custom initialiastion steps here.
@@ -70,7 +79,8 @@ class ClientEntryHook(PluginClientEntryHookABC):
             observableName=searchObservableName,
             proxyToVortexName=peekServerName,
             additionalFilt=searchFilt,
-            observerName="Proxy to devices")
+            observerName="Proxy to devices",
+        )
         self._loadedObjects.append(tupleDataObservableProxyHandler)
 
         # ----------------
@@ -80,27 +90,23 @@ class ClientEntryHook(PluginClientEntryHookABC):
             observableName=searchObservableName,
             destVortexName=peekServerName,
             additionalFilt=searchFilt,
-            observerName="Data for client"
+            observerName="Data for client",
         )
         self._loadedObjects.append(serverTupleObserver)
 
         # ----------------
         # Search Index Cache Controller
 
-        searchIndexCacheController = SearchIndexCacheController(
-            self.platform.serviceId
-        )
+        searchIndexCacheController = SearchIndexCacheController(self.platform.serviceId)
         self._loadedObjects.append(searchIndexCacheController)
 
         # This is the custom handler for the client
         searchIndexCacheHandler = SearchIndexCacheHandler(
-            cacheController=searchIndexCacheController,
-            clientId=self.platform.serviceId
+            cacheController=searchIndexCacheController, clientId=self.platform.serviceId
         )
         self._loadedObjects.append(searchIndexCacheHandler)
 
-        searchIndexCacheController \
-            .setCacheHandler(searchIndexCacheHandler)
+        searchIndexCacheController.setCacheHandler(searchIndexCacheHandler)
 
         # ----------------
         # Search Object Cache Controller
@@ -113,20 +119,17 @@ class ClientEntryHook(PluginClientEntryHookABC):
         # This is the custom handler for the client
         searchObjectCacheHandler = SearchObjectCacheHandler(
             cacheController=searchObjectCacheController,
-            clientId=self.platform.serviceId
+            clientId=self.platform.serviceId,
         )
         self._loadedObjects.append(searchObjectCacheHandler)
 
-        searchObjectCacheController.setCacheHandler(
-            searchObjectCacheHandler
-        )
+        searchObjectCacheController.setCacheHandler(searchObjectCacheHandler)
 
         # ----------------
         # Fast Keyword Controller
 
         fastKeywordController = FastKeywordController(
-            searchObjectCacheController,
-            searchIndexCacheController
+            searchObjectCacheController, searchIndexCacheController
         )
         self._loadedObjects.append(fastKeywordController)
 
@@ -142,7 +145,7 @@ class ClientEntryHook(PluginClientEntryHookABC):
         makeClientTupleDataObservableHandler(
             tupleDataObservableProxyHandler,
             searchIndexCacheController,
-            searchObjectCacheController
+            searchObjectCacheController,
         )
 
         # ----------------
@@ -153,7 +156,7 @@ class ClientEntryHook(PluginClientEntryHookABC):
         logger.debug("Started")
 
     def stop(self):
-        """ Stop
+        """Stop
 
         This method is called by the platform to tell the peek app to shutdown and stop
         everything it's doing

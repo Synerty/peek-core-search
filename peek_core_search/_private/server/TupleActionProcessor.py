@@ -9,5 +9,6 @@ def makeTupleActionProcessorHandler(mainController: MainController):
     processor = TupleActionProcessor(
         tupleActionProcessorName=searchActionProcessorName,
         additionalFilt=searchFilt,
-        defaultDelegate=mainController)
+        defaultDelegate=mainController,
+    )
     return processor

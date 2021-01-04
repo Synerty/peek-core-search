@@ -6,18 +6,25 @@ from jsoncfg.value_mappers import require_string
 from sqlalchemy import MetaData
 
 from peek_plugin_base.server.PluginLogicEntryHookABC import PluginLogicEntryHookABC
-from peek_plugin_base.server.PluginServerStorageEntryHookABC import \
-    PluginServerStorageEntryHookABC
-from peek_plugin_base.server.PluginServerWorkerEntryHookABC import \
-    PluginServerWorkerEntryHookABC
+from peek_plugin_base.server.PluginServerStorageEntryHookABC import (
+    PluginServerStorageEntryHookABC,
+)
+from peek_plugin_base.server.PluginServerWorkerEntryHookABC import (
+    PluginServerWorkerEntryHookABC,
+)
 from peek_core_search._private.storage import DeclarativeBase
 from peek_core_search._private.storage.DeclarativeBase import loadStorageTuples
-from peek_core_search._private.storage.Setting import globalSetting, \
-    KEYWORD_COMPILER_ENABLED, OBJECT_COMPILER_ENABLED, globalProperties
+from peek_core_search._private.storage.Setting import (
+    globalSetting,
+    KEYWORD_COMPILER_ENABLED,
+    OBJECT_COMPILER_ENABLED,
+    globalProperties,
+)
 from peek_core_search._private.tuples import loadPrivateTuples
 from peek_core_search.tuples import loadPublicTuples
-from peek_core_search.tuples.ImportSearchObjectRouteTuple import \
-    ImportSearchObjectRouteTuple
+from peek_core_search.tuples.ImportSearchObjectRouteTuple import (
+    ImportSearchObjectRouteTuple,
+)
 from peek_core_search.tuples.ImportSearchObjectTuple import ImportSearchObjectTuple
 from twisted.internet.defer import inlineCallbacks
 from vortex.DeferUtil import vortexLogFailure, deferToThreadWrapWithLogger
@@ -29,24 +36,30 @@ from .TupleDataObservable import makeTupleDataObservableHandler
 from .admin_backend import makeAdminBackendHandlers
 from .api.SearchApi import SearchApi
 from .client_handlers.ClientChunkLoadRpc import ClientChunkLoadRpc
-from .client_handlers.ClientSearchIndexChunkUpdateHandler import \
-    ClientSearchIndexChunkUpdateHandler
-from .client_handlers.ClientSearchObjectChunkUpdateHandler import \
-    ClientSearchObjectChunkUpdateHandler
+from .client_handlers.ClientSearchIndexChunkUpdateHandler import (
+    ClientSearchIndexChunkUpdateHandler,
+)
+from .client_handlers.ClientSearchObjectChunkUpdateHandler import (
+    ClientSearchObjectChunkUpdateHandler,
+)
 from .controller.MainController import MainController
-from .controller.SearchIndexChunkCompilerQueueController import \
-    SearchIndexChunkCompilerQueueController
-from .controller.SearchObjectChunkCompilerQueueController import \
-    SearchObjectChunkCompilerQueueController
+from .controller.SearchIndexChunkCompilerQueueController import (
+    SearchIndexChunkCompilerQueueController,
+)
+from .controller.SearchObjectChunkCompilerQueueController import (
+    SearchObjectChunkCompilerQueueController,
+)
 from .controller.SearchObjectImportController import SearchObjectImportController
 from .controller.StatusController import StatusController
 
 logger = logging.getLogger(__name__)
 
 
-class LogicEntryHook(PluginLogicEntryHookABC,
-                      PluginServerStorageEntryHookABC,
-                      PluginServerWorkerEntryHookABC):
+class LogicEntryHook(
+    PluginLogicEntryHookABC,
+    PluginServerStorageEntryHookABC,
+    PluginServerWorkerEntryHookABC,
+):
     def __init__(self, *args, **kwargs):
         """" Constructor """
         # Call the base classes constructor
@@ -58,7 +71,7 @@ class LogicEntryHook(PluginLogicEntryHookABC,
         self._api = None
 
     def _migrateStorageSchema(self, metadata: MetaData) -> None:
-        """ Migrate Storage Schema
+        """Migrate Storage Schema
 
         Rename the schema
 
@@ -66,17 +79,18 @@ class LogicEntryHook(PluginLogicEntryHookABC,
 
         relDir = self._packageCfg.config.storage.alembicDir(require_string)
         alembicDir = os.path.join(self.rootDir, relDir)
-        if not os.path.isdir(alembicDir): raise NotADirectoryError(alembicDir)
+        if not os.path.isdir(alembicDir):
+            raise NotADirectoryError(alembicDir)
 
         dbConn = DbConnection(
             dbConnectString=self.platform.dbConnectString,
             metadata=metadata,
             alembicDir=alembicDir,
-            enableCreateAll=False
+            enableCreateAll=False,
         )
 
         # Rename the plugin schema to core.
-        renameToCoreSql = '''
+        renameToCoreSql = """
             DO $$
             BEGIN
                 IF EXISTS(
@@ -90,7 +104,7 @@ class LogicEntryHook(PluginLogicEntryHookABC,
                 END IF;
             END
             $$;
-        '''
+        """
 
         dbSession = dbConn.ormSessionCreator()
         try:
@@ -103,9 +117,8 @@ class LogicEntryHook(PluginLogicEntryHookABC,
 
         PluginServerStorageEntryHookABC._migrateStorageSchema(self, metadata)
 
-
     def load(self) -> None:
-        """ Load
+        """Load
 
         This will be called when the plugin is loaded, just after the db is migrated.
         Place any custom initialiastion steps here.
@@ -122,7 +135,7 @@ class LogicEntryHook(PluginLogicEntryHookABC,
 
     @inlineCallbacks
     def start(self):
-        """ Start
+        """Start
 
         This will be called when the plugin is loaded, just after the db is migrated.
         Place any custom initialiastion steps here.
@@ -156,8 +169,7 @@ class LogicEntryHook(PluginLogicEntryHookABC,
         # ----------------
         # Tuple Observable
         tupleObservable = makeTupleDataObservableHandler(
-            dbSessionCreator=self.dbSessionCreator,
-            statusController=statusController
+            dbSessionCreator=self.dbSessionCreator, statusController=statusController
         )
         self._loadedObjects.append(tupleObservable)
 
@@ -174,8 +186,8 @@ class LogicEntryHook(PluginLogicEntryHookABC,
         # ----------------
         # Main Controller
         mainController = MainController(
-            dbSessionCreator=self.dbSessionCreator,
-            tupleObservable=tupleObservable)
+            dbSessionCreator=self.dbSessionCreator, tupleObservable=tupleObservable
+        )
 
         self._loadedObjects.append(mainController)
 
@@ -184,7 +196,7 @@ class LogicEntryHook(PluginLogicEntryHookABC,
         objectChunkCompilerQueueController = SearchObjectChunkCompilerQueueController(
             dbSessionCreator=self.dbSessionCreator,
             statusController=statusController,
-            clientSearchObjectUpdateHandler=clientSearchObjectChunkUpdateHandler
+            clientSearchObjectUpdateHandler=clientSearchObjectChunkUpdateHandler,
         )
         self._loadedObjects.append(objectChunkCompilerQueueController)
 
@@ -194,7 +206,7 @@ class LogicEntryHook(PluginLogicEntryHookABC,
             dbSessionCreator=self.dbSessionCreator,
             statusController=statusController,
             clientSearchIndexUpdateHandler=clientSearchIndexChunkUpdateHandler,
-            isProcessorEnabledCallable=objectChunkCompilerQueueController.isQueueEmpty
+            isProcessorEnabledCallable=objectChunkCompilerQueueController.isQueueEmpty,
         )
         self._loadedObjects.append(indexChunkCompilerQueueController)
 
@@ -237,21 +249,25 @@ class LogicEntryHook(PluginLogicEntryHookABC,
             fullKeywords={},
             partialKeywords={
                 "name": "134 Ocean Parade, Circuit breaker 1",
-                "alias": "SO1ALIAS"
-            }
+                "alias": "SO1ALIAS",
+            },
         )
 
-        so1.routes.append(ImportSearchObjectRouteTuple(
-            importGroupHash="importHash1",
-            routeTitle="SO1 Route1",
-            routePath="/route/for/so1"
-        ))
+        so1.routes.append(
+            ImportSearchObjectRouteTuple(
+                importGroupHash="importHash1",
+                routeTitle="SO1 Route1",
+                routePath="/route/for/so1",
+            )
+        )
 
-        so1.routes.append(ImportSearchObjectRouteTuple(
-            importGroupHash="importHash2",
-            routeTitle="SO1 Route2",
-            routePath="/route/for/so2"
-        ))
+        so1.routes.append(
+            ImportSearchObjectRouteTuple(
+                importGroupHash="importHash2",
+                routeTitle="SO1 Route2",
+                routePath="/route/for/so2",
+            )
+        )
 
         searchObjects.append(so1)
         so2 = ImportSearchObjectTuple(
@@ -259,21 +275,25 @@ class LogicEntryHook(PluginLogicEntryHookABC,
             fullKeywords={},
             partialKeywords={
                 "name": "69 Sheep Farmers Rd Sub TX breaker",
-                "alias": "SO2ALIAS"
-            }
+                "alias": "SO2ALIAS",
+            },
         )
 
-        so2.routes.append(ImportSearchObjectRouteTuple(
-            importGroupHash="importHash1",
-            routeTitle="SO2 Route1",
-            routePath="/route/for/so2/r2"
-        ))
+        so2.routes.append(
+            ImportSearchObjectRouteTuple(
+                importGroupHash="importHash1",
+                routeTitle="SO2 Route1",
+                routePath="/route/for/so2/r2",
+            )
+        )
 
-        so2.routes.append(ImportSearchObjectRouteTuple(
-            importGroupHash="importHash2",
-            routeTitle="SO2 Route2",
-            routePath="/route/for/so2/r2"
-        ))
+        so2.routes.append(
+            ImportSearchObjectRouteTuple(
+                importGroupHash="importHash2",
+                routeTitle="SO2 Route2",
+                routePath="/route/for/so2/r2",
+            )
+        )
 
         searchObjects.append(so2)
 
@@ -283,9 +303,9 @@ class LogicEntryHook(PluginLogicEntryHookABC,
 
         searchObjects = []
         # Try an update of the object, it should add to the props
-        so1v2 = ImportSearchObjectTuple(key="so1key",
-                                        fullKeywords={},
-                                        partialKeywords={"additional": "ADMS"})
+        so1v2 = ImportSearchObjectTuple(
+            key="so1key", fullKeywords={}, partialKeywords={"additional": "ADMS"}
+        )
         searchObjects.append(so1v2)
 
         # This should do nothing
@@ -293,17 +313,14 @@ class LogicEntryHook(PluginLogicEntryHookABC,
             key="so2key",
             fullKeywords=None,
             partialKeywords=None,
-            objectType='Equipment'
+            objectType="Equipment",
         )
         searchObjects.append(so2v2)
         searchObjects.append(so1v2)
 
         # This should do nothing
         so3v2 = ImportSearchObjectTuple(
-            key="so3key",
-            fullKeywords=None,
-            partialKeywords=None,
-            objectType='Job'
+            key="so3key", fullKeywords=None, partialKeywords=None, objectType="Job"
         )
         searchObjects.append(so3v2)
 
@@ -312,7 +329,7 @@ class LogicEntryHook(PluginLogicEntryHookABC,
         d.addErrback(vortexLogFailure, logger, consumeError=True)
 
     def stop(self):
-        """ Stop
+        """Stop
 
         This method is called by the platform to tell the peek app to shutdown and stop
         everything it's doing
@@ -336,7 +353,7 @@ class LogicEntryHook(PluginLogicEntryHookABC,
 
     @property
     def publishedServerApi(self) -> object:
-        """ Published Server API
+        """Published Server API
 
         :return  class that implements the API that can be used by other Plugins on this
         platform service.
@@ -349,8 +366,10 @@ class LogicEntryHook(PluginLogicEntryHookABC,
     def _loadSettings(self):
         dbSession = self.dbSessionCreator()
         try:
-            return {globalProperties[p.key]: p.value
-                    for p in globalSetting(dbSession).propertyObjects}
+            return {
+                globalProperties[p.key]: p.value
+                for p in globalSetting(dbSession).propertyObjects
+            }
 
         finally:
             dbSession.close()

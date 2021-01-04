@@ -1,5 +1,15 @@
-import { Component, EventEmitter, Input, Output, ChangeDetectionStrategy } from "@angular/core"
-import { DocDbPopupClosedReasonE, DocDbPopupService, DocDbPopupTypeE } from "@peek/peek_core_docdb"
+import {
+    Component,
+    EventEmitter,
+    Input,
+    Output,
+    ChangeDetectionStrategy
+} from "@angular/core"
+import {
+    DocDbPopupClosedReasonE,
+    DocDbPopupService,
+    DocDbPopupTypeE
+} from "@peek/peek_core_docdb"
 
 // This is a root/global component
 @Component({
@@ -11,20 +21,6 @@ import { DocDbPopupClosedReasonE, DocDbPopupService, DocDbPopupTypeE } from "@pe
 export class SearchComponent {
     @Output("showSearchChange") showSearchChange = new EventEmitter()
     
-    @Input("showSearch")
-    get showSearch() {
-        return this._showSearch
-    }
-    
-    private _showSearch = false
-    
-    set showSearch(val) {
-        // Hide the tooltip when the search panel is closed
-        this.objectPopupService.hidePopup(DocDbPopupTypeE.tooltipPopup)
-        this._showSearch = val
-        this.showSearchChange.emit(val)
-    }
-    
     constructor(private objectPopupService: DocDbPopupService) {
         this.objectPopupService
             .popupClosedObservable(DocDbPopupTypeE.summaryPopup)
@@ -35,6 +31,20 @@ export class SearchComponent {
             .popupClosedObservable(DocDbPopupTypeE.detailPopup)
             .filter(reason => reason == DocDbPopupClosedReasonE.userClickedAction)
             .subscribe(() => this.showSearch = false)
+    }
+    
+    private _showSearch = false
+    
+    @Input("showSearch")
+    get showSearch() {
+        return this._showSearch
+    }
+    
+    set showSearch(val) {
+        // Hide the tooltip when the search panel is closed
+        this.objectPopupService.hidePopup(DocDbPopupTypeE.tooltipPopup)
+        this._showSearch = val
+        this.showSearchChange.emit(val)
     }
     
     closeModal(): void {

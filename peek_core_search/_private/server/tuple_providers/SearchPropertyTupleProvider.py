@@ -17,16 +17,16 @@ class SearchPropertyTupleProvider(TuplesProviderABC):
         self._ormSessionCreator = ormSessionCreator
 
     @deferToThreadWrapWithLogger(logger)
-    def makeVortexMsg(self, filt: dict,
-                      tupleSelector: TupleSelector) -> Union[Deferred, bytes]:
+    def makeVortexMsg(
+        self, filt: dict, tupleSelector: TupleSelector
+    ) -> Union[Deferred, bytes]:
 
         session = self._ormSessionCreator()
         try:
             tuples = (
-                session
-                    .query(SearchPropertyTuple)
-                    .order_by(SearchPropertyTuple.title)
-                    .all()
+                session.query(SearchPropertyTuple)
+                .order_by(SearchPropertyTuple.title)
+                .all()
             )
 
             # Create the vortex message

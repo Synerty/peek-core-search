@@ -11,7 +11,6 @@ class AdminStatusTuple(Tuple):
     searchIndexCompilerQueueProcessedTotal: int = TupleField(0)
     searchIndexCompilerQueueLastError: str = TupleField()
 
-
     searchObjectCompilerQueueStatus: bool = TupleField(False)
     searchObjectCompilerQueueSize: int = TupleField(0)
     searchObjectCompilerQueueProcessedTotal: int = TupleField(0)

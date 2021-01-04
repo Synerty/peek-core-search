@@ -7,10 +7,9 @@ from peek_core_search.tuples.ImportSearchObjectTuple import ImportSearchObjectTu
 
 
 class SearchApiABC(metaclass=ABCMeta):
-
     @abstractmethod
     def importSearchObjects(self, searchObjectsEncodedPayload: bytes) -> Deferred:
-        """ Import Search Objects
+        """Import Search Objects
 
         This method imports a group of objects into the search.
 
@@ -24,7 +23,7 @@ class SearchApiABC(metaclass=ABCMeta):
 
     @abstractmethod
     def removeSearchObjects(self, importGroupHashes: List[str]) -> Deferred:
-        """ Remove Search Objects
+        """Remove Search Objects
 
         This method removes a group of objects from the search that have "importGroupHashes"
 

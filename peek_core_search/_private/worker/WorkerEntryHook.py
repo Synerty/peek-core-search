@@ -3,8 +3,11 @@ import logging
 from peek_plugin_base.worker.PluginWorkerEntryHookABC import PluginWorkerEntryHookABC
 from peek_core_search._private.storage.DeclarativeBase import loadStorageTuples
 from peek_core_search._private.tuples import loadPrivateTuples
-from peek_core_search._private.worker.tasks import SearchIndexChunkCompilerTask, \
-    ImportSearchObjectTask, SearchObjectChunkCompilerTask
+from peek_core_search._private.worker.tasks import (
+    SearchIndexChunkCompilerTask,
+    ImportSearchObjectTask,
+    SearchObjectChunkCompilerTask,
+)
 from peek_core_search.tuples import loadPublicTuples
 
 logger = logging.getLogger(__name__)
@@ -28,6 +31,8 @@ class WorkerEntryHook(PluginWorkerEntryHookABC):
 
     @property
     def celeryAppIncludes(self):
-        return [SearchIndexChunkCompilerTask.__name__,
-                SearchObjectChunkCompilerTask.__name__,
-                ImportSearchObjectTask.__name__]
+        return [
+            SearchIndexChunkCompilerTask.__name__,
+            SearchObjectChunkCompilerTask.__name__,
+            ImportSearchObjectTask.__name__,
+        ]

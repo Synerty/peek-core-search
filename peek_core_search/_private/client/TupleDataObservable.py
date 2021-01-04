@@ -1,24 +1,33 @@
-from vortex.handler.TupleDataObservableProxyHandler import TupleDataObservableProxyHandler
+from vortex.handler.TupleDataObservableProxyHandler import (
+    TupleDataObservableProxyHandler,
+)
 
-from peek_core_search._private.client.controller.SearchIndexCacheController import \
-    SearchIndexCacheController
-from peek_core_search._private.client.controller.SearchObjectCacheController import \
-    SearchObjectCacheController
-from peek_core_search._private.client.tuple_providers.ClientSearchIndexUpdateDateTupleProvider import \
-    ClientSearchIndexUpdateDateTupleProvider
-from peek_core_search._private.client.tuple_providers.ClientSearchObjectUpdateDateTupleProvider import \
-    ClientSearchObjectUpdateDateTupleProvider
-from peek_core_search._private.tuples.search_index.SearchIndexUpdateDateTuple import \
-    SearchIndexUpdateDateTuple
-from peek_core_search._private.tuples.search_object.SearchObjectUpdateDateTuple import \
-    SearchObjectUpdateDateTuple
+from peek_core_search._private.client.controller.SearchIndexCacheController import (
+    SearchIndexCacheController,
+)
+from peek_core_search._private.client.controller.SearchObjectCacheController import (
+    SearchObjectCacheController,
+)
+from peek_core_search._private.client.tuple_providers.ClientSearchIndexUpdateDateTupleProvider import (
+    ClientSearchIndexUpdateDateTupleProvider,
+)
+from peek_core_search._private.client.tuple_providers.ClientSearchObjectUpdateDateTupleProvider import (
+    ClientSearchObjectUpdateDateTupleProvider,
+)
+from peek_core_search._private.tuples.search_index.SearchIndexUpdateDateTuple import (
+    SearchIndexUpdateDateTuple,
+)
+from peek_core_search._private.tuples.search_object.SearchObjectUpdateDateTuple import (
+    SearchObjectUpdateDateTuple,
+)
 
 
 def makeClientTupleDataObservableHandler(
-        tupleObservable: TupleDataObservableProxyHandler,
-        searchIndexCacheHandler: SearchIndexCacheController,
-        searchObjectCacheHandler: SearchObjectCacheController):
-    """" Make CLIENT Tuple Data Observable Handler
+    tupleObservable: TupleDataObservableProxyHandler,
+    searchIndexCacheHandler: SearchIndexCacheController,
+    searchObjectCacheHandler: SearchObjectCacheController,
+):
+    """ " Make CLIENT Tuple Data Observable Handler
 
     This method creates the observable object, registers the tuple providers and then
     returns it.
@@ -32,8 +41,10 @@ def makeClientTupleDataObservableHandler(
 
     tupleObservable.addTupleProvider(
         SearchIndexUpdateDateTuple.tupleName(),
-        ClientSearchIndexUpdateDateTupleProvider(searchIndexCacheHandler))
+        ClientSearchIndexUpdateDateTupleProvider(searchIndexCacheHandler),
+    )
 
     tupleObservable.addTupleProvider(
         SearchObjectUpdateDateTuple.tupleName(),
-        ClientSearchObjectUpdateDateTupleProvider(searchObjectCacheHandler))
+        ClientSearchObjectUpdateDateTupleProvider(searchObjectCacheHandler),
+    )

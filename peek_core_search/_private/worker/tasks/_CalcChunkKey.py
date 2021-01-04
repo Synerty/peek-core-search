@@ -7,7 +7,7 @@ OBJECT_BUCKET_COUNT = 8192
 
 
 def makeSearchIndexChunkKey(key: str) -> int:
-    """ Make Chunk Key
+    """Make Chunk Key
 
     This is simple, and provides a reasonable distribution
 
@@ -31,7 +31,7 @@ def makeSearchIndexChunkKey(key: str) -> int:
 
 
 def makeSearchObjectChunkKey(key: int) -> int:
-    """ Make Chunk Key
+    """Make Chunk Key
 
     This is simple, and provides a reasonable distribution
 

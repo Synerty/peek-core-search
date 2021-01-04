@@ -8,11 +8,12 @@ from .SearchResultDetailTuple import SearchResultDetailTuple
 
 @addTupleType
 class SearchResultTuple(Tuple):
-    """ Search Result Tuple
+    """Search Result Tuple
 
     This tuple represents a search result
     """
-    __tupleType__ = searchTuplePrefix + 'SearchResultTuple'
+
+    __tupleType__ = searchTuplePrefix + "SearchResultTuple"
 
     #:  The id of the object this search result is for
     objectId: str = TupleField()

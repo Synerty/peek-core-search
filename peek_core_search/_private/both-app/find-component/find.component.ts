@@ -4,8 +4,14 @@ import {
     SearchResultObjectTuple,
     SearchService
 } from "@peek/peek_core_search"
-import { SearchPropertyTuple, SearchTupleService } from "@peek/peek_core_search/_private"
-import { BalloonMsgService, NgLifeCycleEvents } from "@synerty/peek-plugin-base-js"
+import {
+    SearchPropertyTuple,
+    SearchTupleService
+} from "@peek/peek_core_search/_private"
+import {
+    BalloonMsgService,
+    NgLifeCycleEvents
+} from "@synerty/peek-plugin-base-js"
 import { TupleSelector, VortexStatusService } from "@synerty/vortexjs"
 import { Subject, BehaviorSubject } from "rxjs"
 import { debounceTime, distinctUntilChanged } from "rxjs/operators"
@@ -30,6 +36,17 @@ export class FindComponent extends NgLifeCycleEvents implements OnInit {
     firstSearchHasRun$ = new BehaviorSubject<boolean>(false)
     private readonly ALL = "All"
     private performAutoCompleteSubject: Subject<string> = new Subject<string>()
+    
+    constructor(
+        private vortexStatusService: VortexStatusService,
+        private searchService: SearchService,
+        private balloonMsg: BalloonMsgService,
+        private tupleService: SearchTupleService
+    ) {
+        super()
+        this.searchProperty.title = this.ALL
+        this.searchObjectType.title = this.ALL
+    }
     
     get resultObjects() {
         return this.resultObjects$.getValue()
@@ -61,17 +78,6 @@ export class FindComponent extends NgLifeCycleEvents implements OnInit {
     
     set firstSearchHasRun(value) {
         this.firstSearchHasRun$.next(value)
-    }
-    
-    constructor(
-        private vortexStatusService: VortexStatusService,
-        private searchService: SearchService,
-        private balloonMsg: BalloonMsgService,
-        private tupleService: SearchTupleService
-    ) {
-        super()
-        this.searchProperty.title = this.ALL
-        this.searchObjectType.title = this.ALL
     }
     
     get getSearchPropertyName(): string | null {

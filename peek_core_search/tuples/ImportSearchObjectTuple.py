@@ -1,19 +1,21 @@
 from typing import List, Dict
 
 from peek_core_search._private.PluginNames import searchTuplePrefix
-from peek_core_search.tuples.ImportSearchObjectRouteTuple import \
-    ImportSearchObjectRouteTuple
+from peek_core_search.tuples.ImportSearchObjectRouteTuple import (
+    ImportSearchObjectRouteTuple,
+)
 from vortex.Tuple import Tuple, addTupleType, TupleField
 
 
 @addTupleType
 class ImportSearchObjectTuple(Tuple):
-    """ Import Search Object
+    """Import Search Object
 
     This tuple is used by other plugins to load objects into the search index.
 
     """
-    __tupleType__ = searchTuplePrefix + 'ImportSearchObjectTuple'
+
+    __tupleType__ = searchTuplePrefix + "ImportSearchObjectTuple"
 
     #:  The unique key for this object
     # This key will be indexed as a full keyword, do not include the key in the keywords

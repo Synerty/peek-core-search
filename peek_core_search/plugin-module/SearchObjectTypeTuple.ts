@@ -1,23 +1,22 @@
-import {addTupleType, Tuple} from "@synerty/vortexjs";
-import {searchTuplePrefix} from "./_private/PluginNames";
-
+import { addTupleType, Tuple } from "@synerty/vortexjs"
+import { searchTuplePrefix } from "./_private/PluginNames"
 
 @addTupleType
 export class SearchObjectTypeTuple extends Tuple {
-    public static readonly tupleName = searchTuplePrefix + "SearchObjectTypeTuple";
-
+    public static readonly tupleName = searchTuplePrefix + "SearchObjectTypeTuple"
+    
     //  The id
-    id: number;
-
+    id: number
+    
     //  The name of the search object
-    name: string;
-
+    name: string
+    
     //  The title of the search object
-    title: string;
-
+    title: string
+    
     //  The order of the search object
-    order: number;
-
+    order: number
+    
     constructor() {
         super(SearchObjectTypeTuple.tupleName)
     }

@@ -2,7 +2,7 @@
     "plugin": {
         "title": "Search",
         "packageName": "peek_core_search",
-    "version":"0.0.0",
+        "version": "0.0.0",
         "buildNumber": "#PLUGIN_BUILD#",
         "buildDate": "#BUILD_DATE#",
         "creator": "Synerty Pty Ltd",
@@ -34,7 +34,6 @@
         "appModule": "search.module#SearchModule",
         "moduleDir": "plugin-module"
     },
-
     "field": {
         "showHomeLink": false,
         "cfgDir": "_private/both-cfg",

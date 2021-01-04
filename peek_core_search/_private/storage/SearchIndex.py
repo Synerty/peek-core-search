@@ -11,11 +11,10 @@ from .DeclarativeBase import DeclarativeBase
 logger = logging.getLogger(__name__)
 
 
-
 @addTupleType
 class SearchIndex(Tuple, DeclarativeBase):
-    __tablename__ = 'SearchIndex'
-    __tupleType__ = searchTuplePrefix + 'SearchIndexTable'
+    __tablename__ = "SearchIndex"
+    __tupleType__ = searchTuplePrefix + "SearchIndexTable"
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
 
@@ -24,13 +23,18 @@ class SearchIndex(Tuple, DeclarativeBase):
     propertyName = Column(String, nullable=False)
 
     #:  The object that this routs is for
-    objectId = Column(BigInteger,
-                      ForeignKey('SearchObject.id', ondelete='CASCADE'),
-                      nullable=False)
+    objectId = Column(
+        BigInteger, ForeignKey("SearchObject.id", ondelete="CASCADE"), nullable=False
+    )
 
     __table_args__ = (
-        Index("idx_SearchIndex_quick_query",
-              chunkKey, keyword, propertyName, objectId,
-              unique=True),
-        Index("idx_SearchIndex_objectId", objectId), # For foreign key
+        Index(
+            "idx_SearchIndex_quick_query",
+            chunkKey,
+            keyword,
+            propertyName,
+            objectId,
+            unique=True,
+        ),
+        Index("idx_SearchIndex_objectId", objectId),  # For foreign key
     )

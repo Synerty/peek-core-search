@@ -8,8 +8,7 @@ DeclarativeBase = declarative_base(metadata=metadata)
 
 
 def loadStorageTuples():
-
-    """ Load Storage Tables
+    """Load Storage Tables
 
     This method should be called from the "load()" method of the agent, server, worker
     and client entry hook classes.

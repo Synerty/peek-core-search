@@ -1,4 +1,9 @@
-import { ChangeDetectorRef, Component, Input, ChangeDetectionStrategy } from "@angular/core"
+import {
+    ChangeDetectorRef,
+    Component,
+    Input,
+    ChangeDetectionStrategy
+} from "@angular/core"
 import { Router } from "@angular/router"
 import { NgLifeCycleEvents } from "@synerty/peek-plugin-base-js"
 import {
@@ -33,6 +38,16 @@ interface IObjectTypeResults {
 export class ResultComponent extends NgLifeCycleEvents {
     @Input("firstSearchHasRun")
     firstSearchHasRun: boolean
+    resultObjectTypes$ = new BehaviorSubject<IObjectTypeResults[]>([])
+    
+    constructor(
+        private objectPopupService: DocDbPopupService,
+        private cdr: ChangeDetectorRef,
+        private router: Router,
+        private searchService: SearchService,
+    ) {
+        super()
+    }
     
     @Input("resultObjects")
     set resultObjects(resultObjects: SearchResultObjectTuple[]) {
@@ -76,17 +91,6 @@ export class ResultComponent extends NgLifeCycleEvents {
             if (a.type.title > b.type.title) return 1
             return 0
         }))
-    }
-    
-    resultObjectTypes$ = new BehaviorSubject<IObjectTypeResults[]>([])
-    
-    constructor(
-        private objectPopupService: DocDbPopupService,
-        private cdr: ChangeDetectorRef,
-        private router: Router,
-        private searchService: SearchService,
-    ) {
-        super()
     }
     
     headerProps(props: SearchPropT[]): string {

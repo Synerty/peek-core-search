@@ -6,16 +6,21 @@ from typing import List, Dict, Tuple, Set
 
 import pytz
 from peek_core_search._private.storage.SearchObject import SearchObject
-from peek_core_search._private.storage.SearchObjectCompilerQueue import \
-    SearchObjectCompilerQueue
+from peek_core_search._private.storage.SearchObjectCompilerQueue import (
+    SearchObjectCompilerQueue,
+)
 from peek_core_search._private.storage.SearchObjectRoute import SearchObjectRoute
-from peek_core_search._private.storage.SearchObjectTypeTuple import \
-    SearchObjectTypeTuple
+from peek_core_search._private.storage.SearchObjectTypeTuple import (
+    SearchObjectTypeTuple,
+)
 from peek_core_search._private.storage.SearchPropertyTuple import SearchPropertyTuple
-from peek_core_search._private.worker.tasks.ImportSearchIndexTask import \
-    ObjectToIndexTuple, reindexSearchObject
-from peek_core_search._private.worker.tasks._CalcChunkKey import \
-    makeSearchObjectChunkKey
+from peek_core_search._private.worker.tasks.ImportSearchIndexTask import (
+    ObjectToIndexTuple,
+    reindexSearchObject,
+)
+from peek_core_search._private.worker.tasks._CalcChunkKey import (
+    makeSearchObjectChunkKey,
+)
 from peek_core_search.tuples.ImportSearchObjectTuple import ImportSearchObjectTuple
 from peek_plugin_base.worker import CeleryDbConn
 from peek_plugin_base.worker.CeleryApp import celeryApp
@@ -52,7 +57,7 @@ def importSearchObjectTask(self, searchObjectsEncodedPayload: bytes) -> None:
     # Cleanup some of the input data
     for o in newSearchObjects:
         if not o.objectType:
-            o.objectType = 'none'
+            o.objectType = "none"
 
         o.objectType = o.objectType.lower()
 
@@ -73,9 +78,11 @@ def importSearchObjectTask(self, searchObjectsEncodedPayload: bytes) -> None:
 
         _packObjectJson(list(objectIdByKey.values()), chunkKeysForQueue)
 
-        logger.info("Imported %s SearchObjects in %s",
-                    len(newSearchObjects),
-                    datetime.now(pytz.utc) - startTime)
+        logger.info(
+            "Imported %s SearchObjects in %s",
+            len(newSearchObjects),
+            datetime.now(pytz.utc) - startTime,
+        )
 
     except Exception as e:
         logger.debug("Retrying import search objects, %s", e)
@@ -83,7 +90,7 @@ def importSearchObjectTask(self, searchObjectsEncodedPayload: bytes) -> None:
 
 
 def _prepareLookups(newSearchObjects: List[ImportSearchObjectTuple]) -> Dict[str, int]:
-    """ Check Or Insert Search Properties
+    """Check Or Insert Search Properties
 
     Make sure the search properties exist.
 
@@ -95,8 +102,8 @@ def _prepareLookups(newSearchObjects: List[ImportSearchObjectTuple]) -> Dict[str
 
     try:
 
-        objectTypeNames = {'none'}
-        propertyNames = {'key'}
+        objectTypeNames = {"none"}
+        propertyNames = {"key"}
 
         for o in newSearchObjects:
             objectTypeNames.add(o.objectType)
@@ -129,7 +136,9 @@ def _prepareLookups(newSearchObjects: List[ImportSearchObjectTuple]) -> Dict[str
 
         else:
             for newPropName in objectTypeNames:
-                dbSession.add(SearchObjectTypeTuple(name=newPropName, title=newPropName))
+                dbSession.add(
+                    SearchObjectTypeTuple(name=newPropName, title=newPropName)
+                )
 
             dbSession.commit()
 
@@ -148,10 +157,10 @@ def _prepareLookups(newSearchObjects: List[ImportSearchObjectTuple]) -> Dict[str
         dbSession.close()
 
 
-def _insertOrUpdateObjects(newSearchObjects: List[ImportSearchObjectTuple],
-                           objectTypeIdsByName: Dict[str, int]) -> Tuple[
-    Dict[str, int], Set[int]]:
-    """ Insert or Update Objects
+def _insertOrUpdateObjects(
+    newSearchObjects: List[ImportSearchObjectTuple], objectTypeIdsByName: Dict[str, int]
+) -> Tuple[Dict[str, int], Set[int]]:
+    """Insert or Update Objects
 
     1) Find objects and update them
     2) Insert object if the are missing
@@ -162,8 +171,9 @@ def _insertOrUpdateObjects(newSearchObjects: List[ImportSearchObjectTuple],
 
     startTime = datetime.now(pytz.utc)
 
-    createdObjectByKey, engine, newIdGen = _loadExistingObjects(newSearchObjects,
-                                                                searchObjectTable)
+    createdObjectByKey, engine, newIdGen = _loadExistingObjects(
+        newSearchObjects, searchObjectTable
+    )
 
     conn = engine.connect()
     transaction = conn.begin()
@@ -192,46 +202,58 @@ def _insertOrUpdateObjects(newSearchObjects: List[ImportSearchObjectTuple],
 
             if importObject.fullKeywords:
                 if existingObject and existingObject.fullKwPropertiesJson:
-                    fullKwPropsWithKey \
-                        .update(json.loads(existingObject.fullKwPropertiesJson))
+                    fullKwPropsWithKey.update(
+                        json.loads(existingObject.fullKwPropertiesJson)
+                    )
 
                 # Add the data we're importing second
                 # Remove null values
-                fullKwPropsWithKey \
-                    .update({k: v for k, v in importObject.fullKeywords.items() if v})
+                fullKwPropsWithKey.update(
+                    {k: v for k, v in importObject.fullKeywords.items() if v}
+                )
 
             if importObject.partialKeywords:
                 if existingObject and existingObject.partialKwPropertiesJson:
-                    partialKwProps \
-                        .update(json.loads(existingObject.partialKwPropertiesJson))
+                    partialKwProps.update(
+                        json.loads(existingObject.partialKwPropertiesJson)
+                    )
 
                 # Add the data we're importing second
                 # Remove null values
-                partialKwProps \
-                    .update({k: v for k, v in importObject.partialKeywords.items() if v})
+                partialKwProps.update(
+                    {k: v for k, v in importObject.partialKeywords.items() if v}
+                )
 
             fullKwPropsStr = json.dumps(fullKwPropsWithKey, sort_keys=True)
             partialKwPropsStr = json.dumps(partialKwProps, sort_keys=True)
 
             # Work out if we need to update the object type
-            if importObject.objectType != 'None' and existingObject:
+            if importObject.objectType != "None" and existingObject:
                 objectTypeUpdates.append(
                     dict(b_id=existingObject.id, b_typeId=importObjectTypeId)
                 )
 
             # Work out if we need to update the existing object or create one
             if existingObject:
-                searchIndexUpdateNeeded = \
-                    fullKwPropsStr and existingObject.fullKwPropertiesJson != fullKwPropsStr
+                searchIndexUpdateNeeded = (
+                    fullKwPropsStr
+                    and existingObject.fullKwPropertiesJson != fullKwPropsStr
+                )
 
-                searchIndexUpdateNeeded = \
-                    searchIndexUpdateNeeded or \
-                    partialKwPropsStr and existingObject.partialKwPropertiesJson != partialKwPropsStr
+                searchIndexUpdateNeeded = (
+                    searchIndexUpdateNeeded
+                    or partialKwPropsStr
+                    and existingObject.partialKwPropertiesJson != partialKwPropsStr
+                )
 
                 if searchIndexUpdateNeeded:
-                    propUpdates.append(dict(b_id=existingObject.id,
-                                            b_fullPropsKwStr=fullKwPropsStr,
-                                            b_partialKwPropsStr=partialKwPropsStr))
+                    propUpdates.append(
+                        dict(
+                            b_id=existingObject.id,
+                            b_fullPropsKwStr=fullKwPropsStr,
+                            b_partialKwPropsStr=partialKwPropsStr,
+                        )
+                    )
 
             else:
                 searchIndexUpdateNeeded = True
@@ -242,7 +264,7 @@ def _insertOrUpdateObjects(newSearchObjects: List[ImportSearchObjectTuple],
                     objectTypeId=importObjectTypeId,
                     fullKwPropertiesJson=fullKwPropsStr,
                     partialKwPropertiesJson=partialKwPropsStr,
-                    chunkKey=makeSearchObjectChunkKey(id_)
+                    chunkKey=makeSearchObjectChunkKey(id_),
                 )
                 inserts.append(existingObject.tupleToSqlaBulkInsertDict())
 
@@ -254,7 +276,7 @@ def _insertOrUpdateObjects(newSearchObjects: List[ImportSearchObjectTuple],
                 objectsToIndex[existingObject.id] = ObjectToIndexTuple(
                     id=existingObject.id,
                     fullKwProps=fullKwPropsWithKey,
-                    partialKwProps=partialKwProps
+                    partialKwProps=partialKwProps,
                 )
 
             objectIdByKey[loweredObjectKey] = existingObject.id
@@ -267,17 +289,19 @@ def _insertOrUpdateObjects(newSearchObjects: List[ImportSearchObjectTuple],
         if propUpdates:
             stmt = (
                 searchObjectTable.update()
-                    .where(searchObjectTable.c.id == bindparam('b_id'))
-                    .values(fullKwPropertiesJson=bindparam('b_fullPropsKwStr'),
-                            partialKwPropertiesJson=bindparam('b_partialKwPropsStr'))
+                .where(searchObjectTable.c.id == bindparam("b_id"))
+                .values(
+                    fullKwPropertiesJson=bindparam("b_fullPropsKwStr"),
+                    partialKwPropertiesJson=bindparam("b_partialKwPropsStr"),
+                )
             )
             conn.execute(stmt, propUpdates)
 
         if objectTypeUpdates:
             stmt = (
                 searchObjectTable.update()
-                    .where(searchObjectTable.c.id == bindparam('b_id'))
-                    .values(objectTypeId=bindparam('b_typeId'))
+                .where(searchObjectTable.c.id == bindparam("b_id"))
+                .values(objectTypeId=bindparam("b_typeId"))
             )
             conn.execute(stmt, objectTypeUpdates)
 
@@ -289,9 +313,12 @@ def _insertOrUpdateObjects(newSearchObjects: List[ImportSearchObjectTuple],
         else:
             transaction.rollback()
 
-        logger.debug("Inserted %s updated %s ObjectToIndexTuple in %s",
-                     len(inserts), len(propUpdates),
-                     (datetime.now(pytz.utc) - startTime))
+        logger.debug(
+            "Inserted %s updated %s ObjectToIndexTuple in %s",
+            len(inserts),
+            len(propUpdates),
+            (datetime.now(pytz.utc) - startTime),
+        )
 
         logger.debug("Passing to index %s SearchIndex", len(objectsToIndex))
 
@@ -300,7 +327,6 @@ def _insertOrUpdateObjects(newSearchObjects: List[ImportSearchObjectTuple],
     except Exception as e:
         transaction.rollback()
         raise
-
 
     finally:
         conn.close()
@@ -316,13 +342,20 @@ def _loadExistingObjects(newSearchObjects, searchObjectTable):
         )
 
         # Query existing objects
-        results = list(conn.execute(select(
-            columns=[searchObjectTable.c.id, searchObjectTable.c.key,
-                     searchObjectTable.c.chunkKey,
-                     searchObjectTable.c.fullKwPropertiesJson,
-                     searchObjectTable.c.partialKwPropertiesJson],
-            whereclause=searchObjectTable.c.key.in_(objectKeys)
-        )))
+        results = list(
+            conn.execute(
+                select(
+                    columns=[
+                        searchObjectTable.c.id,
+                        searchObjectTable.c.key,
+                        searchObjectTable.c.chunkKey,
+                        searchObjectTable.c.fullKwPropertiesJson,
+                        searchObjectTable.c.partialKwPropertiesJson,
+                    ],
+                    whereclause=searchObjectTable.c.key.in_(objectKeys),
+                )
+            )
+        )
 
         createdObjectByKey = {o.key.lower(): o for o in results}
         del results
@@ -339,9 +372,10 @@ def _loadExistingObjects(newSearchObjects, searchObjectTable):
     return createdObjectByKey, engine, newIdGen
 
 
-def _insertObjectRoutes(newSearchObjects: List[ImportSearchObjectTuple],
-                        objectIdByKey: Dict[str, int]):
-    """ Insert Object Routes
+def _insertObjectRoutes(
+    newSearchObjects: List[ImportSearchObjectTuple], objectIdByKey: Dict[str, int]
+):
+    """Insert Object Routes
 
     1) Drop all routes with matching importGroupHash
 
@@ -372,15 +406,25 @@ def _insertObjectRoutes(newSearchObjects: List[ImportSearchObjectTuple],
                 objectIdSet.add(objectIdByKey[importObject.key])
 
         # Query for existing routes
-        results = list(conn.execute(select(
-            columns=[searchObjectRoute.c.objectId,
-                     searchObjectRoute.c.routeTitle,
-                     searchObjectRoute.c.importGroupHash],
-            whereclause=and_(searchObjectRoute.c.objectId.in_(objectIdSet),
-                             ~searchObjectRoute.c.importGroupHash.in_(importHashSet))
-        )))
+        results = list(
+            conn.execute(
+                select(
+                    columns=[
+                        searchObjectRoute.c.objectId,
+                        searchObjectRoute.c.routeTitle,
+                        searchObjectRoute.c.importGroupHash,
+                    ],
+                    whereclause=and_(
+                        searchObjectRoute.c.objectId.in_(objectIdSet),
+                        ~searchObjectRoute.c.importGroupHash.in_(importHashSet),
+                    ),
+                )
+            )
+        )
 
-        existingRoutes = {'%s.%s' % (o.objectId, o.routeTitle): dict(o) for o in results}
+        existingRoutes = {
+            "%s.%s" % (o.objectId, o.routeTitle): dict(o) for o in results
+        }
         newRoutes = {}
         del results
 
@@ -392,20 +436,25 @@ def _insertObjectRoutes(newSearchObjects: List[ImportSearchObjectTuple],
                     objectId=objectId,
                     importGroupHash=impRoute.importGroupHash,
                     routeTitle=impRoute.routeTitle,
-                    routePath=impRoute.routePath
+                    routePath=impRoute.routePath,
                 )
 
-                uniqueRouteStr = '%s.%s' % (objectId, impRoute.routeTitle)
+                uniqueRouteStr = "%s.%s" % (objectId, impRoute.routeTitle)
 
                 if uniqueRouteStr in existingRoutes:
-                    logger.debug("A duplicate route exists in another"
-                                 " import group\n%s\n%s",
-                                 existingRoutes[uniqueRouteStr], routeInsert)
+                    logger.debug(
+                        "A duplicate route exists in another" " import group\n%s\n%s",
+                        existingRoutes[uniqueRouteStr],
+                        routeInsert,
+                    )
 
                 elif uniqueRouteStr in newRoutes:
-                    logger.debug("Duplicate route titles defined in this"
-                                 " import group\n%s\n%s",
-                                 newRoutes[uniqueRouteStr], routeInsert)
+                    logger.debug(
+                        "Duplicate route titles defined in this"
+                        " import group\n%s\n%s",
+                        newRoutes[uniqueRouteStr],
+                        routeInsert,
+                    )
 
                 else:
                     inserts.append(routeInsert)
@@ -413,8 +462,9 @@ def _insertObjectRoutes(newSearchObjects: List[ImportSearchObjectTuple],
 
         if importHashSet:
             conn.execute(
-                searchObjectRoute
-                    .delete(searchObjectRoute.c.importGroupHash.in_(importHashSet))
+                searchObjectRoute.delete(
+                    searchObjectRoute.c.importGroupHash.in_(importHashSet)
+                )
             )
 
         # Insert the Search Object routes
@@ -426,22 +476,22 @@ def _insertObjectRoutes(newSearchObjects: List[ImportSearchObjectTuple],
         else:
             transaction.rollback()
 
-        logger.debug("Inserted %s SearchObjectRoute in %s",
-                     len(inserts),
-                     (datetime.now(pytz.utc) - startTime))
+        logger.debug(
+            "Inserted %s SearchObjectRoute in %s",
+            len(inserts),
+            (datetime.now(pytz.utc) - startTime),
+        )
 
     except Exception as e:
         transaction.rollback()
         raise
 
-
     finally:
         conn.close()
 
 
-def _packObjectJson(updatedIds: List[int],
-                    chunkKeysForQueue: Set[int]):
-    """ Pack Object Json
+def _packObjectJson(updatedIds: List[int], chunkKeysForQueue: Set[int]):
+    """Pack Object Json
 
     1) Create JSON and update object.
 
@@ -461,19 +511,25 @@ def _packObjectJson(updatedIds: List[int],
     try:
 
         indexQry = (
-            dbSession.query(SearchObject.id,
-                            SearchObject.fullKwPropertiesJson,
-                            SearchObject.partialKwPropertiesJson,
-                            SearchObject.objectTypeId,
-                            SearchObjectRoute.routeTitle, SearchObjectRoute.routePath)
-                .outerjoin(SearchObjectRoute,
-                           SearchObject.id == SearchObjectRoute.objectId)
-                .filter(SearchObject.id.in_(updatedIds))
-                .filter(or_(SearchObject.fullKwPropertiesJson != None,
-                            SearchObject.partialKwPropertiesJson != None))
-                .order_by(SearchObject.id, SearchObjectRoute.routeTitle)
-                .yield_per(1000)
-                .all()
+            dbSession.query(
+                SearchObject.id,
+                SearchObject.fullKwPropertiesJson,
+                SearchObject.partialKwPropertiesJson,
+                SearchObject.objectTypeId,
+                SearchObjectRoute.routeTitle,
+                SearchObjectRoute.routePath,
+            )
+            .outerjoin(SearchObjectRoute, SearchObject.id == SearchObjectRoute.objectId)
+            .filter(SearchObject.id.in_(updatedIds))
+            .filter(
+                or_(
+                    SearchObject.fullKwPropertiesJson != None,
+                    SearchObject.partialKwPropertiesJson != None,
+                )
+            )
+            .order_by(SearchObject.id, SearchObjectRoute.routeTitle)
+            .yield_per(1000)
+            .all()
         )
 
         # I chose a simple name for this one.
@@ -481,35 +537,43 @@ def _packObjectJson(updatedIds: List[int],
 
         for item in indexQry:
             (
-                qryDict[(item.id,
-                         item.fullKwPropertiesJson, item.partialKwPropertiesJson,
-                         item.objectTypeId)]
-                    .append([item.routeTitle, item.routePath])
+                qryDict[
+                    (
+                        item.id,
+                        item.fullKwPropertiesJson,
+                        item.partialKwPropertiesJson,
+                        item.objectTypeId,
+                    )
+                ].append([item.routeTitle, item.routePath])
             )
 
         packedJsonUpdates = []
 
         # Sort each bucket by the key
-        for (id_, fullKwPropJson, partialKwPropJson, objectTypeId), routes in qryDict.items():
+        for (
+            id_,
+            fullKwPropJson,
+            partialKwPropJson,
+            objectTypeId,
+        ), routes in qryDict.items():
             props = json.loads(fullKwPropJson)
             props.update(json.loads(partialKwPropJson))
-            props['_r_'] = routes
-            props['_otid_'] = objectTypeId
+            props["_r_"] = routes
+            props["_otid_"] = objectTypeId
             packedJson = json.dumps(props, sort_keys=True)
             packedJsonUpdates.append(dict(b_id=id_, b_packedJson=packedJson))
 
         if packedJsonUpdates:
             stmt = (
                 searchObjectTable.update()
-                    .where(searchObjectTable.c.id == bindparam('b_id'))
-                    .values(packedJson=bindparam('b_packedJson'))
+                .where(searchObjectTable.c.id == bindparam("b_id"))
+                .values(packedJson=bindparam("b_packedJson"))
             )
             dbSession.execute(stmt, packedJsonUpdates)
 
         if chunkKeysForQueue:
             dbSession.execute(
-                objectQueueTable.insert(),
-                [dict(chunkKey=v) for v in chunkKeysForQueue]
+                objectQueueTable.insert(), [dict(chunkKey=v) for v in chunkKeysForQueue]
             )
 
         if packedJsonUpdates or chunkKeysForQueue:
@@ -517,14 +581,15 @@ def _packObjectJson(updatedIds: List[int],
         else:
             dbSession.rollback()
 
-        logger.debug("Packed JSON for %s SearchObjects in %s",
-                     len(updatedIds),
-                     (datetime.now(pytz.utc) - startTime))
+        logger.debug(
+            "Packed JSON for %s SearchObjects in %s",
+            len(updatedIds),
+            (datetime.now(pytz.utc) - startTime),
+        )
 
     except Exception as e:
         dbSession.rollback()
         raise
-
 
     finally:
         dbSession.close()

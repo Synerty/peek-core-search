@@ -1,82 +1,89 @@
 <nz-alert
-  nzType="warning"
-  [nzMessage]="offlineAlertContent"
-  *ngIf="offlineSearchEnabled()"
+    *ngIf="offlineSearchEnabled()"
+    [nzMessage]="offlineAlertContent"
+    nzType="warning"
 >
-  <ng-template #offlineAlertContent>
-    You are searching offline, you must use full words to search.
-  </ng-template>
+    <ng-template #offlineAlertContent>
+        You are searching offline, you must use full words to search.
+    </ng-template>
 </nz-alert>
 
 <div class="search-input">
-  <nz-input-group [nzSuffix]="suffixTemplate">
-    <input
-      type="text"
-      nz-input
-      (ngModelChange)="searchKeywordOnChange($event)"
-      placeholder="Search..."
-      [(ngModel)]="searchString"
-      autofocus
-    />
-    <ng-template #suffixTemplate>
-      <i nz-icon nzType="close" nzTheme="outline" (click)="resetSearch()" *ngIf="searchString"></i>
-    </ng-template>
-  </nz-input-group>
-  <button nz-button (click)="optionsShown = !optionsShown">
-    <i nz-icon nzType="filter" nzTheme="outline"></i>
-  </button>
+    <nz-input-group [nzSuffix]="suffixTemplate">
+        <input
+            (ngModelChange)="searchKeywordOnChange($event)"
+            [(ngModel)]="searchString"
+            autofocus
+            nz-input
+            placeholder="Search..."
+            type="text"
+        />
+        <ng-template #suffixTemplate>
+            <i
+                (click)="resetSearch()" *ngIf="searchString" nz-icon
+                nzTheme="outline"
+                nzType="close"
+            ></i>
+        </ng-template>
+    </nz-input-group>
+    <button (click)="optionsShown = !optionsShown" nz-button>
+        <i nz-icon nzTheme="outline" nzType="filter"></i>
+    </button>
 </div>
 
-<div class="search-filter" *ngIf="optionsShown$ | async">
-  <nz-form-item>
-    <nz-form-label nzFor="searchPropertyId">Property</nz-form-label>
-    <nz-form-control>
-      <nz-select
-        id="searchPropertyId"
-        name="searchPropertyId"
-        (ngModelChange)="searchPropertyOnChange($event)"
-        [(ngModel)]="searchProperty"
-      >
-        <nz-option
-          *ngFor="let option of searchProperties"
-          [nzLabel]="option.title"
-          [nzValue]="option"
-        ></nz-option>
-      </nz-select>
-    </nz-form-control>
-  </nz-form-item>
-  
-  <nz-form-item>
-    <nz-form-label nzFor="searchObjectTypesId">Object Type</nz-form-label>
-    <nz-form-control>
-      <nz-select
-        id="searchObjectTypesId"
-        name="searchObjectTypesId"
-        (ngModelChange)="searchObjectTypesOnChange($event)"
-        [(ngModel)]="searchObjectType"
-      >
-        <nz-option
-          *ngFor="let option of searchObjectTypes"
-          [nzLabel]="option.title"
-          [nzValue]="option"
-        ></nz-option>
-      </nz-select>
-    </nz-form-control>
-  </nz-form-item>
+<div *ngIf="optionsShown$ | async" class="search-filter">
+    <nz-form-item>
+        <nz-form-label nzFor="searchPropertyId">Property</nz-form-label>
+        <nz-form-control>
+            <nz-select
+                (ngModelChange)="searchPropertyOnChange($event)"
+                [(ngModel)]="searchProperty"
+                id="searchPropertyId"
+                name="searchPropertyId"
+            >
+                <nz-option
+                    *ngFor="let option of searchProperties"
+                    [nzLabel]="option.title"
+                    [nzValue]="option"
+                ></nz-option>
+            </nz-select>
+        </nz-form-control>
+    </nz-form-item>
+    
+    <nz-form-item>
+        <nz-form-label nzFor="searchObjectTypesId">Object Type</nz-form-label>
+        <nz-form-control>
+            <nz-select
+                (ngModelChange)="searchObjectTypesOnChange($event)"
+                [(ngModel)]="searchObjectType"
+                id="searchObjectTypesId"
+                name="searchObjectTypesId"
+            >
+                <nz-option
+                    *ngFor="let option of searchObjectTypes"
+                    [nzLabel]="option.title"
+                    [nzValue]="option"
+                ></nz-option>
+            </nz-select>
+        </nz-form-control>
+    </nz-form-item>
 </div>
 
-<div class="result-alert" *ngIf="!(resultObjects$ | async)?.length && (firstSearchHasRun$ | async)">
-  <nz-alert
-    nzType="info"
-    nzMessage="No Results"
-    nzDescription="Peek could not find any results, please refine your search"
-  >
-  </nz-alert>
+<div
+    *ngIf="!(resultObjects$ | async)?.length && (firstSearchHasRun$ | async)"
+    class="result-alert"
+>
+    <nz-alert
+        nzDescription="Peek could not find any results, please refine your search"
+        nzMessage="No Results"
+        nzType="info"
+    >
+    </nz-alert>
 </div>
 
 <nz-spin *ngIf="searchInProgress$ | async"></nz-spin>
 
 <plugin-search-result
-  [firstSearchHasRun]="firstSearchHasRun$ | async"
-  [resultObjects]="resultObjects$ | async"
+    [firstSearchHasRun]="firstSearchHasRun$ | async"
+    [resultObjects]="resultObjects$ | async"
 ></plugin-search-result>
