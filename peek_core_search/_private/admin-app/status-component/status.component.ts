@@ -1,10 +1,11 @@
 import { Component } from "@angular/core"
-import { TupleDataObserverService, TupleSelector } from "@synerty/vortexjs"
-import { AdminStatusTuple } from "@peek/peek_core_search/_private"
 import {
-    BalloonMsgService,
-    NgLifeCycleEvents
-} from "@synerty/peek-plugin-base-js"
+    NgLifeCycleEvents,
+    TupleDataObserverService,
+    TupleSelector
+} from "@synerty/vortexjs"
+import { AdminStatusTuple } from "@peek/peek_core_search/_private"
+import { BalloonMsgService } from "@synerty/peek-plugin-base-js"
 
 @Component({
     selector: "pl-search-status",

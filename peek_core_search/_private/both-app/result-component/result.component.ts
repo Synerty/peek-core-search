@@ -1,11 +1,11 @@
 import {
+    ChangeDetectionStrategy,
     ChangeDetectorRef,
     Component,
-    Input,
-    ChangeDetectionStrategy
+    Input
 } from "@angular/core"
 import { Router } from "@angular/router"
-import { NgLifeCycleEvents } from "@synerty/peek-plugin-base-js"
+import { NgLifeCycleEvents } from "@synerty/vortexjs"
 import {
     SearchObjectTypeTuple,
     SearchPropT,

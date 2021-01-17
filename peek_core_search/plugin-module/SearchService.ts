@@ -1,6 +1,9 @@
 import { Injectable } from "@angular/core"
-import { NgLifeCycleEvents } from "@synerty/peek-plugin-base-js"
-import { TupleSelector, VortexStatusService } from "@synerty/vortexjs"
+import {
+    NgLifeCycleEvents,
+    TupleSelector,
+    VortexStatusService
+} from "@synerty/vortexjs"
 import { PrivateSearchIndexLoaderService } from "./_private/search-index-loader"
 import { PrivateSearchObjectLoaderService } from "./_private/search-object-loader"
 import { SearchResultObjectTuple } from "./SearchResultObjectTuple"

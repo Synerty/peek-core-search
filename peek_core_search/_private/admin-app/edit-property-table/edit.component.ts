@@ -1,9 +1,11 @@
 import { Component } from "@angular/core"
+import { BalloonMsgService } from "@synerty/peek-plugin-base-js"
 import {
-    BalloonMsgService,
-    NgLifeCycleEvents
-} from "@synerty/peek-plugin-base-js"
-import { extend, TupleLoader, VortexService } from "@synerty/vortexjs"
+    extend,
+    NgLifeCycleEvents,
+    TupleLoader,
+    VortexService
+} from "@synerty/vortexjs"
 import {
     searchFilt,
     SearchPropertyTuple

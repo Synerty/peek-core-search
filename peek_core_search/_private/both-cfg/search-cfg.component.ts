@@ -1,5 +1,5 @@
 import { Component } from "@angular/core"
-import { TupleSelector } from "@synerty/vortexjs"
+import { NgLifeCycleEvents, TupleSelector } from "@synerty/vortexjs"
 import {
     PrivateSearchIndexLoaderService,
     PrivateSearchIndexLoaderStatusTuple
@@ -12,7 +12,6 @@ import {
     OfflineConfigTuple,
     SearchTupleService
 } from "@peek/peek_core_search/_private"
-import { NgLifeCycleEvents } from "@synerty/peek-plugin-base-js"
 
 @Component({
     selector: "peek-plugin-diagram-cfg",

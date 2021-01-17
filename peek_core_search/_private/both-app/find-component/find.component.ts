@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectionStrategy } from "@angular/core"
+import { ChangeDetectionStrategy, Component, OnInit } from "@angular/core"
 import {
     SearchObjectTypeTuple,
     SearchResultObjectTuple,
@@ -8,12 +8,13 @@ import {
     SearchPropertyTuple,
     SearchTupleService
 } from "@peek/peek_core_search/_private"
+import { BalloonMsgService } from "@synerty/peek-plugin-base-js"
 import {
-    BalloonMsgService,
-    NgLifeCycleEvents
-} from "@synerty/peek-plugin-base-js"
-import { TupleSelector, VortexStatusService } from "@synerty/vortexjs"
-import { Subject, BehaviorSubject } from "rxjs"
+    NgLifeCycleEvents,
+    TupleSelector,
+    VortexStatusService
+} from "@synerty/vortexjs"
+import { BehaviorSubject, Subject } from "rxjs"
 import { debounceTime, distinctUntilChanged } from "rxjs/operators"
 
 @Component({
