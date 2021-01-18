@@ -18,7 +18,7 @@ import { BehaviorSubject, Subject } from "rxjs"
 import { debounceTime, distinctUntilChanged } from "rxjs/operators"
 
 @Component({
-    selector: "plugin-search-find",
+    selector: "find-component",
     templateUrl: "find.component.html",
     styleUrls: ["find.component.scss"],
     changeDetection: ChangeDetectionStrategy.OnPush
