@@ -20,8 +20,7 @@
         />
         <ng-template #suffixTemplate>
             <i
-                (click)="resetSearch()" *ngIf="searchString" nz-icon
-                nzTheme="outline"
+                (click)="resetSearch()" *ngIf="searchString" nz-icon nzTheme="outline"
                 nzType="close"
             ></i>
         </ng-template>
@@ -83,7 +82,7 @@
 
 <nz-spin *ngIf="searchInProgress$ | async"></nz-spin>
 
-<plugin-search-result
+<result-component
     [firstSearchHasRun]="firstSearchHasRun$ | async"
     [resultObjects]="resultObjects$ | async"
-></plugin-search-result>
+></result-component>

@@ -1,36 +1,35 @@
 import {
+    ChangeDetectionStrategy,
     Component,
     EventEmitter,
     Input,
-    Output,
-    ChangeDetectionStrategy
+    Output
 } from "@angular/core"
-import {
-    DocDbPopupClosedReasonE,
-    DocDbPopupService,
-    DocDbPopupTypeE
-} from "@peek/peek_core_docdb"
+import { NavigationEnd, Router } from "@angular/router"
+import { filter } from "rxjs/operators"
 
 // This is a root/global component
 @Component({
-    selector: "plugin-search",
+    selector: "core-search-component",
     templateUrl: "search.component.html",
     styleUrls: ["search.component.scss"],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class SearchComponent {
-    @Output("showSearchChange") showSearchChange = new EventEmitter()
+    @Output("showSearchChange")
+    showSearchChange = new EventEmitter()
     
-    constructor(private objectPopupService: DocDbPopupService) {
-        this.objectPopupService
-            .popupClosedObservable(DocDbPopupTypeE.summaryPopup)
-            .filter(reason => reason == DocDbPopupClosedReasonE.userClickedAction)
-            .subscribe(() => this.showSearch = false)
-        
-        this.objectPopupService
-            .popupClosedObservable(DocDbPopupTypeE.detailPopup)
-            .filter(reason => reason == DocDbPopupClosedReasonE.userClickedAction)
-            .subscribe(() => this.showSearch = false)
+    constructor(
+        public router: Router,
+    ) {
+        this.router.events
+            .pipe(
+                filter((e) =>
+                    e instanceof NavigationEnd
+                    && this.showSearch
+                )
+            )
+            .subscribe(() => this.closeModal())
     }
     
     private _showSearch = false
@@ -41,8 +40,6 @@ export class SearchComponent {
     }
     
     set showSearch(val) {
-        // Hide the tooltip when the search panel is closed
-        this.objectPopupService.hidePopup(DocDbPopupTypeE.tooltipPopup)
         this._showSearch = val
         this.showSearchChange.emit(val)
     }

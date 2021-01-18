@@ -30,7 +30,7 @@ interface IObjectTypeResults {
 }
 
 @Component({
-    selector: "plugin-search-result",
+    selector: "result-component",
     templateUrl: "result.component.html",
     styleUrls: ["result.component.scss"],
     changeDetection: ChangeDetectionStrategy.OnPush

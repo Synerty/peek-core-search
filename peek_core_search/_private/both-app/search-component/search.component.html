@@ -1,9 +1,14 @@
-<nz-modal
-    (nzOnCancel)="closeModal()"
-    [(nzVisible)]="showSearch"
-    [nzFooter]="null"
-    [nzTitle]="'Search Peek'"
-    nzWidth="600px"
->
-    <plugin-search-find></plugin-search-find>
-</nz-modal>
+<div *ngIf="showSearch" class="page-modal">
+    <div (click)="closeModal()" class="page-modal-background"></div>
+    <div class="page-modal-card">
+        <div class="page-modal-header">
+            <div class="header-title">Search Peek</div>
+            <button (click)="closeModal()" class="close-button">
+                <i nz-icon nzTheme="outline" nzType="close"></i>
+            </button>
+        </div>
+        <div class="page-modal-body">
+            <find-component></find-component>
+        </div>
+    </div>
+</div>
