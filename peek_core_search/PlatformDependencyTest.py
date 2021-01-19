@@ -5,6 +5,9 @@ from peek_plugin_base.PlatformDependencyTest import PlatformDependencyTestCaseBa
 
 class PlatformDependencyTestCase(PlatformDependencyTestCaseBase):
     def setUp(self):
+        self._excludeLinesContaining += (
+            "peek-plugin-index-blueprint",
+        )
         self._pkgPath = path.dirname(__file__)
 
     def test_for_plugin_references_1(self):
