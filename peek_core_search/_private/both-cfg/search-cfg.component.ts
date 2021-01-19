@@ -14,7 +14,7 @@ import {
 } from "@peek/peek_core_search/_private"
 
 @Component({
-    selector: "peek-plugin-diagram-cfg",
+    selector: "peek-core-search-cfg",
     templateUrl: "search-cfg.component.html"
 })
 export class SearchCfgComponent extends NgLifeCycleEvents {
