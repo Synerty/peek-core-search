@@ -208,9 +208,8 @@ def _insertOrUpdateObjects(
 
                 # Add the data we're importing second
                 # Remove null values
-                fullKwPropsWithKey.update(
-                    {k: v for k, v in importObject.fullKeywords.items() if v}
-                )
+                fullKwPropsWithKey.update(importObject.fullKeywords)
+                fullKwPropsWithKey = {k: v for k, v in fullKwPropsWithKey.items() if v}
 
             if importObject.partialKeywords:
                 if existingObject and existingObject.partialKwPropertiesJson:
@@ -220,9 +219,10 @@ def _insertOrUpdateObjects(
 
                 # Add the data we're importing second
                 # Remove null values
-                partialKwProps.update(
-                    {k: v for k, v in importObject.partialKeywords.items() if v}
-                )
+                partialKwProps.update(importObject.partialKeywords)
+                partialKwProps = {
+                    k: v for k, v in importObject.partialKeywords.items() if v
+                }
 
             fullKwPropsStr = json.dumps(fullKwPropsWithKey, sort_keys=True)
             partialKwPropsStr = json.dumps(partialKwProps, sort_keys=True)

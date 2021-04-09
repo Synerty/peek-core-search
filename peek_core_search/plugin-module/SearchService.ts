@@ -97,7 +97,7 @@ export class SearchService extends NgLifeCycleEvents {
                     .toPromise()
             
             return isOnlinePromise
-                .then(() => this.tupleService.offlineObserver.pollForTuples(ts, false))
+                .then(() => this.tupleService.observer.pollForTuples(ts, false))
                 .then(v => this._loadObjectTypes(v))
         }
         
