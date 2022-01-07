@@ -11,7 +11,9 @@ Search Criteria
 
 Searches can be performed with the following criteria :
 
-*   Whole keywords (partial is on the roadmap)
+*   Whole keywords
+
+*   Partial keywords
 
 *   An object type, or all object types
 
