@@ -20,7 +20,10 @@
         />
         <ng-template #suffixTemplate>
             <i
-                (click)="resetSearch()" *ngIf="searchString" nz-icon nzTheme="outline"
+                (click)="resetSearch()"
+                *ngIf="searchString"
+                nz-icon
+                nzTheme="outline"
                 nzType="close"
             ></i>
         </ng-template>
@@ -48,7 +51,7 @@
             </nz-select>
         </nz-form-control>
     </nz-form-item>
-    
+
     <nz-form-item>
         <nz-form-label nzFor="searchObjectTypesId">Object Type</nz-form-label>
         <nz-form-control>

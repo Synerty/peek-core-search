@@ -7,18 +7,18 @@
                     <th>Value</th>
                 </tr>
                 <tr *ngFor="let item of items">
-                    <td>{{item.key}}</td>
-                    <td *ngIf="item.type == 'boolean' ">
+                    <td>{{ item.key }}</td>
+                    <td *ngIf="item.type == 'boolean'">
                         <Button
-                            (click)="item.boolean_value = ! item.boolean_value"
+                            (click)="item.boolean_value = !item.boolean_value"
                             [class.btn-danger]="!item.boolean_value"
                             [class.btn-success]="item.boolean_value"
                             class="btn"
                         >
-                            {{item.boolean_value ? "True" : "False"}}
+                            {{ item.boolean_value ? "True" : "False" }}
                         </Button>
                     </td>
-                    <td *ngIf="item.type == 'integer' ">
+                    <td *ngIf="item.type == 'integer'">
                         <input
                             [(ngModel)]="item.int_value"
                             [name]="item.key"
@@ -27,7 +27,11 @@
                             type="number"
                         />
                     </td>
-                    <td *ngIf="item.key.endsWith('pass') && item.type == 'string' ">
+                    <td
+                        *ngIf="
+                            item.key.endsWith('pass') && item.type == 'string'
+                        "
+                    >
                         <input
                             [(ngModel)]="item.char_value"
                             [name]="item.key"
@@ -35,7 +39,11 @@
                             type="password"
                         />
                     </td>
-                    <td *ngIf="!item.key.endsWith('pass') && item.type == 'string' ">
+                    <td
+                        *ngIf="
+                            !item.key.endsWith('pass') && item.type == 'string'
+                        "
+                    >
                         <input
                             [(ngModel)]="item.char_value"
                             [name]="item.key"
@@ -44,7 +52,7 @@
                     </td>
                 </tr>
             </table>
-            
+
             <div class="btn-toolbar">
                 <div class="btn-group">
                     <div (click)="saveClicked()" class="btn btn-default">

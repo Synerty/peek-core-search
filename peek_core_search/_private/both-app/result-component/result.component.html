@@ -5,27 +5,25 @@
             [nzTitle]="typeResult.type.title"
         >
             <div class="result-table">
-                <nz-table
-                    ngSize="small"
-                    nzTemplateMode
-                >
+                <nz-table ngSize="small" nzTemplateMode>
                     <tbody>
-                    <tr
-                        (click)="showSummaryPopup($event, result)"
-                        *ngFor="let result of typeResult.results"
-                        class="result-row"
-                    >
-                        <td>
-                            <span
-                                nz-text
-                            ><strong>{{result.header}}</strong></span>
-                            <span
-                                *ngFor="let prop of result.bodyProps"
-                                nz-text
-                                nzDisabled
-                            >, {{prop.value}}</span>
-                        </td>
-                    </tr>
+                        <tr
+                            (click)="showSummaryPopup($event, result)"
+                            *ngFor="let result of typeResult.results"
+                            class="result-row"
+                        >
+                            <td>
+                                <span nz-text
+                                    ><strong>{{ result.header }}</strong></span
+                                >
+                                <span
+                                    *ngFor="let prop of result.bodyProps"
+                                    nz-text
+                                    nzDisabled
+                                    >, {{ prop.value }}</span
+                                >
+                            </td>
+                        </tr>
                     </tbody>
                 </nz-table>
             </div>

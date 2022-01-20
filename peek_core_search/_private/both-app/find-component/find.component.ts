@@ -1,129 +1,132 @@
-import { ChangeDetectionStrategy, Component, OnInit } from "@angular/core"
+import { ChangeDetectionStrategy, Component, OnInit } from "@angular/core";
 import {
     SearchObjectTypeTuple,
     SearchResultObjectTuple,
-    SearchService
-} from "@peek/peek_core_search"
+    SearchService,
+} from "@peek/peek_core_search";
 import {
     SearchPropertyTuple,
-    SearchTupleService
-} from "@peek/peek_core_search/_private"
-import { BalloonMsgService } from "@synerty/peek-plugin-base-js"
+    SearchTupleService,
+} from "@peek/peek_core_search/_private";
+import { BalloonMsgService } from "@synerty/peek-plugin-base-js";
 import {
     NgLifeCycleEvents,
     TupleSelector,
-    VortexStatusService
-} from "@synerty/vortexjs"
-import { BehaviorSubject, Subject } from "rxjs"
-import { debounceTime, distinctUntilChanged, takeUntil } from "rxjs/operators"
+    VortexStatusService,
+} from "@synerty/vortexjs";
+import { BehaviorSubject, Subject } from "rxjs";
+import { debounceTime, distinctUntilChanged, takeUntil } from "rxjs/operators";
 
 @Component({
     selector: "find-component",
     templateUrl: "find.component.html",
     styleUrls: ["find.component.scss"],
-    changeDetection: ChangeDetectionStrategy.OnPush
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FindComponent extends NgLifeCycleEvents implements OnInit {
-    searchString: string = ""
-    resultObjects$ = new BehaviorSubject<SearchResultObjectTuple[]>([])
-    searchInProgress$ = new BehaviorSubject<boolean>(false)
-    searchProperties: SearchPropertyTuple[] = []
-    searchPropertyStrings: string[] = []
-    searchProperty: SearchPropertyTuple = new SearchPropertyTuple()
-    searchObjectTypes: SearchObjectTypeTuple[] = []
-    searchObjectTypeStrings: string[] = []
-    searchObjectType: SearchObjectTypeTuple = new SearchObjectTypeTuple()
-    optionsShown$ = new BehaviorSubject<boolean>(false)
-    firstSearchHasRun$ = new BehaviorSubject<boolean>(false)
-    
-    private readonly ALL = "All"
-    private performAutoCompleteSubject: Subject<string> = new Subject<string>()
-    
+    searchString: string = "";
+    resultObjects$ = new BehaviorSubject<SearchResultObjectTuple[]>([]);
+    searchInProgress$ = new BehaviorSubject<boolean>(false);
+    searchProperties: SearchPropertyTuple[] = [];
+    searchPropertyStrings: string[] = [];
+    searchProperty: SearchPropertyTuple = new SearchPropertyTuple();
+    searchObjectTypes: SearchObjectTypeTuple[] = [];
+    searchObjectTypeStrings: string[] = [];
+    searchObjectType: SearchObjectTypeTuple = new SearchObjectTypeTuple();
+    optionsShown$ = new BehaviorSubject<boolean>(false);
+    firstSearchHasRun$ = new BehaviorSubject<boolean>(false);
+
+    private readonly ALL = "All";
+    private performAutoCompleteSubject: Subject<string> = new Subject<string>();
+
     constructor(
         private vortexStatusService: VortexStatusService,
         private searchService: SearchService,
         private balloonMsg: BalloonMsgService,
         private tupleService: SearchTupleService
     ) {
-        super()
-        this.searchProperty.title = this.ALL
-        this.searchObjectType.title = this.ALL
+        super();
+        this.searchProperty.title = this.ALL;
+        this.searchObjectType.title = this.ALL;
     }
-    
+
     get resultObjects() {
-        return this.resultObjects$.getValue()
+        return this.resultObjects$.getValue();
     }
-    
+
     set resultObjects(value) {
-        this.resultObjects$.next(value)
+        this.resultObjects$.next(value);
     }
-    
+
     get searchInProgress() {
-        return this.searchInProgress$.getValue()
+        return this.searchInProgress$.getValue();
     }
-    
+
     set searchInProgress(value) {
-        this.searchInProgress$.next(value)
+        this.searchInProgress$.next(value);
     }
-    
+
     get optionsShown() {
-        return this.optionsShown$.getValue()
+        return this.optionsShown$.getValue();
     }
-    
+
     set optionsShown(value) {
-        this.optionsShown$.next(value)
+        this.optionsShown$.next(value);
     }
-    
+
     get firstSearchHasRun() {
-        return this.firstSearchHasRun$.getValue()
+        return this.firstSearchHasRun$.getValue();
     }
-    
+
     set firstSearchHasRun(value) {
-        this.firstSearchHasRun$.next(value)
+        this.firstSearchHasRun$.next(value);
     }
-    
+
     get getSearchPropertyName(): string | null {
-        const prop = this.searchProperty
+        const prop = this.searchProperty;
         if (prop.title != this.ALL && prop.name != null && prop.name.length) {
-            return prop.name
+            return prop.name;
         }
-        return null
+        return null;
     }
-    
+
     get getSearchObjectTypeId(): number | null {
-        const objProp = this.searchObjectType
+        const objProp = this.searchObjectType;
         if (
-            objProp.title != this.ALL
-            && objProp.name != null
-            && objProp.name.length
+            objProp.title != this.ALL &&
+            objProp.name != null &&
+            objProp.name.length
         ) {
-            return objProp.id
+            return objProp.id;
         }
-        return null
+        return null;
     }
-    
+
     ngOnInit() {
-        const propTs = new TupleSelector(SearchPropertyTuple.tupleName, {})
+        const propTs = new TupleSelector(SearchPropertyTuple.tupleName, {});
         this.tupleService.offlineObserver
             .subscribeToTupleSelector(propTs)
             .pipe(takeUntil(this.onDestroyEvent))
             .subscribe((v: SearchPropertyTuple[]) => {
-                this.updateSearchProperties(v)
-            })
-        
-        const objectTypeTs = new TupleSelector(SearchObjectTypeTuple.tupleName, {})
+                this.updateSearchProperties(v);
+            });
+
+        const objectTypeTs = new TupleSelector(
+            SearchObjectTypeTuple.tupleName,
+            {}
+        );
         this.tupleService.offlineObserver
             .subscribeToTupleSelector(objectTypeTs)
             .pipe(takeUntil(this.onDestroyEvent))
             .subscribe((v: SearchObjectTypeTuple[]) => {
-                this.updateSearchObjectTypes(v)
-                
+                this.updateSearchObjectTypes(v);
+
                 // Update result objects
                 if (this.resultObjects.length) {
-                    this.performAutoComplete()
+                    this.performAutoComplete();
                 }
-            })
-        
+            });
+
         // Wait 500ms after the last event before emitting last event
         // Only emit if value is different from previous value
         this.performAutoCompleteSubject
@@ -132,113 +135,109 @@ export class FindComponent extends NgLifeCycleEvents implements OnInit {
                 distinctUntilChanged(),
                 takeUntil(this.onDestroyEvent)
             )
-            .subscribe(() => this.performAutoComplete())
-        
-        this.vortexStatusService
-            .isOnline
+            .subscribe(() => this.performAutoComplete());
+
+        this.vortexStatusService.isOnline
             .pipe(takeUntil(this.onDestroyEvent))
-            .subscribe(() => this.performAutoComplete())
+            .subscribe(() => this.performAutoComplete());
     }
-    
+
     resetSearch(): void {
-        this.searchString = ""
-        this.resultObjects = []
-        this.firstSearchHasRun = false
-        this.searchInProgress = false
+        this.searchString = "";
+        this.resultObjects = [];
+        this.firstSearchHasRun = false;
+        this.searchInProgress = false;
     }
-    
+
     searchKeywordOnChange($event): void {
         if (!this.vortexStatusService.snapshot.isOnline) {
-            return
+            return;
         }
-        
-        this.searchString = $event
-        this.performAutoCompleteSubject.next($event)
+
+        this.searchString = $event;
+        this.performAutoCompleteSubject.next($event);
     }
-    
+
     searchPropertyOnChange($event): void {
-        this.searchProperty = $event
-        this.performAutoComplete()
+        this.searchProperty = $event;
+        this.performAutoComplete();
     }
-    
+
     searchObjectTypesOnChange($event): void {
-        this.searchObjectType = $event
-        this.performAutoComplete()
+        this.searchObjectType = $event;
+        this.performAutoComplete();
     }
-    
+
     offlineSearchEnabled(): boolean {
-        return this.vortexStatusService.snapshot.isOnline === false
+        return this.vortexStatusService.snapshot.isOnline === false;
     }
-    
+
     private updateSearchProperties(v: SearchPropertyTuple[]): void {
         // Create the empty item
-        const all = new SearchPropertyTuple()
-        all.title = "All"
-        
+        const all = new SearchPropertyTuple();
+        all.title = "All";
+
         if (this.searchProperty.title === all.title) {
-            this.searchProperty = all
+            this.searchProperty = all;
         }
-        
+
         // Update the search objects
-        this.searchProperties = [...v]
-        this.searchProperties.splice(0, 0, all)
-        
+        this.searchProperties = [...v];
+        this.searchProperties.splice(0, 0, all);
+
         // Set the string array and lookup by id
-        this.searchPropertyStrings = []
-        
+        this.searchPropertyStrings = [];
+
         for (const item of this.searchProperties) {
-            this.searchPropertyStrings.push(item.title)
+            this.searchPropertyStrings.push(item.title);
         }
     }
-    
+
     private updateSearchObjectTypes(v: SearchObjectTypeTuple[]): void {
         // Create the empty item
-        const all = new SearchObjectTypeTuple()
-        all.title = "All"
-        
+        const all = new SearchObjectTypeTuple();
+        all.title = "All";
+
         if (this.searchObjectType.title === all.title) {
-            this.searchObjectType = all
+            this.searchObjectType = all;
         }
-        
+
         // Update the search objects
-        this.searchObjectTypes = [...v]
-        this.searchObjectTypes.splice(0, 0, all)
-        
+        this.searchObjectTypes = [...v];
+        this.searchObjectTypes.splice(0, 0, all);
+
         // Set the string array, and object type lookup
-        this.searchObjectTypeStrings = []
-        
+        this.searchObjectTypeStrings = [];
+
         for (const item of this.searchObjectTypes) {
-            this.searchObjectTypeStrings.push(item.title)
+            this.searchObjectTypeStrings.push(item.title);
         }
     }
-    
+
     private performAutoComplete(): void {
         if (!this.vortexStatusService.snapshot.isOnline) {
-            return
+            return;
         }
-        
+
         const check = () => {
-            if (
-                this.searchString == null
-                || this.searchString.length === 0
-            ) {
-                return false
+            if (this.searchString == null || this.searchString.length === 0) {
+                return false;
             }
-            
+
             if (this.searchString.length < 3) {
-                return false
+                return false;
             }
-            
-            return true
-        }
-        
+
+            return true;
+        };
+
         if (!check()) {
-            this.resultObjects = []
-            return
+            this.resultObjects = [];
+            return;
         }
-        
-        this.searchInProgress = true
-        
+
+        this.searchInProgress = true;
+
         this.searchService
             .getObjectsOnlinePartial(
                 this.getSearchPropertyName,
@@ -246,14 +245,14 @@ export class FindComponent extends NgLifeCycleEvents implements OnInit {
                 this.searchString
             )
             .then((results: SearchResultObjectTuple[]) => {
-                this.resultObjects = results
+                this.resultObjects = results;
             })
             .catch((e: string) => {
-                this.balloonMsg.showError(`Find Failed:${e}`)
+                this.balloonMsg.showError(`Find Failed:${e}`);
             })
             .then(() => {
-                this.searchInProgress = false
-                this.firstSearchHasRun = true
-            })
+                this.searchInProgress = false;
+                this.firstSearchHasRun = true;
+            });
     }
 }

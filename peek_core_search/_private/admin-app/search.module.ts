@@ -1,12 +1,12 @@
-import { CommonModule } from "@angular/common"
-import { FormsModule } from "@angular/forms"
-import { NgModule } from "@angular/core"
-import { RouterModule, Routes } from "@angular/router"
-import { EditPropertyComponent } from "./edit-property-table/edit.component"
-import { EditObjectTypeComponent } from "./edit-object-type-table/edit.component"
-import { EditSettingComponent } from "./edit-setting-table/edit.component"
-import { SearchComponent } from "./search-component/search.component"
-import { StatusComponent } from "./status-component/status.component"
+import { CommonModule } from "@angular/common";
+import { FormsModule } from "@angular/forms";
+import { NgModule } from "@angular/core";
+import { RouterModule, Routes } from "@angular/router";
+import { EditPropertyComponent } from "./edit-property-table/edit.component";
+import { EditObjectTypeComponent } from "./edit-object-type-table/edit.component";
+import { EditSettingComponent } from "./edit-setting-table/edit.component";
+import { SearchComponent } from "./search-component/search.component";
+import { StatusComponent } from "./status-component/status.component";
 import {
     TupleActionPushNameService,
     TupleActionPushService,
@@ -14,38 +14,38 @@ import {
     TupleDataObserverService,
     TupleDataOfflineObserverService,
     TupleOfflineStorageNameService,
-    TupleOfflineStorageService
-} from "@synerty/vortexjs"
+    TupleOfflineStorageService,
+} from "@synerty/vortexjs";
 import {
     searchActionProcessorName,
     searchFilt,
     searchObservableName,
-    searchTupleOfflineServiceName
-} from "@peek/peek_core_search/_private"
-import { NzSwitchModule } from "ng-zorro-antd/switch"
+    searchTupleOfflineServiceName,
+} from "@peek/peek_core_search/_private";
+import { NzSwitchModule } from "ng-zorro-antd/switch";
 
 export function tupleActionPushNameServiceFactory() {
     return new TupleActionPushNameService(
-        searchActionProcessorName, searchFilt)
+        searchActionProcessorName,
+        searchFilt
+    );
 }
 
 export function tupleDataObservableNameServiceFactory() {
-    return new TupleDataObservableNameService(
-        searchObservableName, searchFilt)
+    return new TupleDataObservableNameService(searchObservableName, searchFilt);
 }
 
 export function tupleOfflineStorageNameServiceFactory() {
-    return new TupleOfflineStorageNameService(searchTupleOfflineServiceName)
+    return new TupleOfflineStorageNameService(searchTupleOfflineServiceName);
 }
 
 // Define the routes for this Angular module
 export const pluginRoutes: Routes = [
     {
         path: "",
-        component: SearchComponent
-    }
-
-]
+        component: SearchComponent,
+    },
+];
 
 // Define the module
 @NgModule({
@@ -53,25 +53,33 @@ export const pluginRoutes: Routes = [
         CommonModule,
         RouterModule.forChild(pluginRoutes),
         FormsModule,
-        NzSwitchModule
+        NzSwitchModule,
     ],
     exports: [],
     providers: [
-        TupleActionPushService, {
+        TupleActionPushService,
+        {
             provide: TupleActionPushNameService,
-            useFactory: tupleActionPushNameServiceFactory
+            useFactory: tupleActionPushNameServiceFactory,
         },
-        TupleOfflineStorageService, {
+        TupleOfflineStorageService,
+        {
             provide: TupleOfflineStorageNameService,
-            useFactory: tupleOfflineStorageNameServiceFactory
+            useFactory: tupleOfflineStorageNameServiceFactory,
         },
-        TupleDataObserverService, TupleDataOfflineObserverService, {
+        TupleDataObserverService,
+        TupleDataOfflineObserverService,
+        {
             provide: TupleDataObservableNameService,
-            useFactory: tupleDataObservableNameServiceFactory
+            useFactory: tupleDataObservableNameServiceFactory,
         },
     ],
-    declarations: [SearchComponent, EditPropertyComponent, EditSettingComponent, EditObjectTypeComponent, StatusComponent]
+    declarations: [
+        SearchComponent,
+        EditPropertyComponent,
+        EditSettingComponent,
+        EditObjectTypeComponent,
+        StatusComponent,
+    ],
 })
-export class SearchModule {
-
-}
+export class SearchModule {}
