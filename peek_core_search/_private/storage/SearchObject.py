@@ -20,12 +20,14 @@ class SearchObject(Tuple, DeclarativeBase):
 
     #:  The object that this routs is for
     objectTypeId = Column(
-        Integer, ForeignKey("SearchObjectType.id", ondelete="CASCADE"), nullable=False
+        Integer,
+        ForeignKey("SearchObjectType.id", ondelete="CASCADE"),
+        nullable=False,
     )
 
     key = Column(String, nullable=False)
 
-    chunkKey = Column(Integer, nullable=False)
+    chunkKey = Column(String, nullable=False)
 
     fullKwPropertiesJson = Column(String, nullable=True)
 

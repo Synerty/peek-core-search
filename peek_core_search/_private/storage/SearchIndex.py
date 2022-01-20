@@ -18,13 +18,15 @@ class SearchIndex(Tuple, DeclarativeBase):
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
 
-    chunkKey = Column(Integer, nullable=False)
+    chunkKey = Column(String, nullable=False)
     keyword = Column(String, nullable=False)
     propertyName = Column(String, nullable=False)
 
     #:  The object that this routs is for
     objectId = Column(
-        BigInteger, ForeignKey("SearchObject.id", ondelete="CASCADE"), nullable=False
+        BigInteger,
+        ForeignKey("SearchObject.id", ondelete="CASCADE"),
+        nullable=False,
     )
 
     __table_args__ = (

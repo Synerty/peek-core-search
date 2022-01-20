@@ -1,5 +1,7 @@
 import logging
 
+from sqlalchemy import String
+
 from peek_abstract_chunked_index.private.tuples.ACIProcessorQueueTupleABC import (
     ACIProcessorQueueTupleABC,
 )
@@ -14,12 +16,14 @@ logger = logging.getLogger(__name__)
 
 
 @addTupleType
-class SearchObjectCompilerQueue(Tuple, DeclarativeBase, ACIProcessorQueueTupleABC):
+class SearchObjectCompilerQueue(
+    Tuple, DeclarativeBase, ACIProcessorQueueTupleABC
+):
     __tablename__ = "SearchObjectCompilerQueue"
     __tupleType__ = searchTuplePrefix + "SearchObjectCompilerQueueTable"
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
-    chunkKey = Column(Integer, primary_key=True)
+    chunkKey = Column(String, primary_key=True)
 
     @classmethod
     def sqlCoreLoad(cls, row):

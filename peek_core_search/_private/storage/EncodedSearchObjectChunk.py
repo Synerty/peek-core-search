@@ -17,12 +17,14 @@ class EncodedSearchObjectChunk(Tuple, DeclarativeBase, ACIEncodedChunkTupleABC):
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
 
-    chunkKey = Column(Integer, primary_key=True)
+    chunkKey = Column(String, primary_key=True)
     encodedData = Column(LargeBinary, nullable=False)
     encodedHash = Column(String, nullable=False)
     lastUpdate = Column(String, nullable=False)
 
-    __table_args__ = (Index("idx_EncodedSearchObject_chunkKey", chunkKey, unique=True),)
+    __table_args__ = (
+        Index("idx_EncodedSearchObject_chunkKey", chunkKey, unique=True),
+    )
 
     @property
     def ckiChunkKey(self):
