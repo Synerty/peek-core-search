@@ -1,3 +1,4 @@
+import { takeUntil } from "rxjs/operators";
 import { Component } from "@angular/core";
 import { NgLifeCycleEvents } from "@synerty/vortexjs";
 import {
@@ -30,13 +31,13 @@ export class SearchCfgComponent extends NgLifeCycleEvents {
         this.indexStatus = this.searchIndexLoader.status();
         this.searchIndexLoader
             .statusObservable()
-            .takeUntil(this.onDestroyEvent)
+            .pipe(takeUntil(this.onDestroyEvent))
             .subscribe((value) => (this.indexStatus = value));
 
         this.objectStatus = this.searchObjectLoader.status();
         this.searchObjectLoader
             .statusObservable()
-            .takeUntil(this.onDestroyEvent)
+            .pipe(takeUntil(this.onDestroyEvent))
             .subscribe((value) => (this.objectStatus = value));
     }
 }

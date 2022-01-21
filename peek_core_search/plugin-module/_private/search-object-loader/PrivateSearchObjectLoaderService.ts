@@ -1,3 +1,5 @@
+import { Observable, Subject } from "rxjs";
+import { filter, first, takeUntil } from "rxjs/operators";
 import { Injectable } from "@angular/core";
 import {
     extend,
@@ -17,8 +19,6 @@ import {
     searchObjectCacheStorageName,
     searchTuplePrefix,
 } from "../PluginNames";
-
-import { Observable, Subject } from "rxjs";
 import { EncodedSearchObjectChunkTuple } from "./EncodedSearchObjectChunkTuple";
 import { SearchObjectUpdateDateTuple } from "./SearchObjectUpdateDateTuple";
 import { SearchResultObjectTuple } from "../../SearchResultObjectTuple";
@@ -135,8 +135,8 @@ export class PrivateSearchObjectLoaderService extends NgLifeCycleEvents {
         this._notifyStatus();
 
         this.deviceCacheControllerService.triggerCachingObservable
-            .takeUntil(this.onDestroyEvent)
-            .filter((v) => v)
+            .pipe(takeUntil(this.onDestroyEvent))
+            .pipe(filter((v) => v))
             .subscribe(() => {
                 this.initialLoad();
                 this._notifyStatus();
@@ -176,7 +176,7 @@ export class PrivateSearchObjectLoaderService extends NgLifeCycleEvents {
             return this.getObjectsWhenReady(objectTypeId, objectIds);
 
         return this.isReadyObservable()
-            .first()
+            .pipe(first())
             .toPromise()
             .then(() => this.getObjectsWhenReady(objectTypeId, objectIds));
     }
@@ -238,15 +238,15 @@ export class PrivateSearchObjectLoaderService extends NgLifeCycleEvents {
                 this,
                 clientSearchObjectWatchUpdateFromDeviceFilt
             )
-            .takeUntil(this.onDestroyEvent)
+            .pipe(takeUntil(this.onDestroyEvent))
             .subscribe((payloadEnvelope: PayloadEnvelope) => {
                 this.processSearchObjectsFromServer(payloadEnvelope);
             });
 
         // If the vortex service comes back online, update the watch grids.
         this.vortexStatusService.isOnline
-            .filter((isOnline) => isOnline == true)
-            .takeUntil(this.onDestroyEvent)
+            .pipe(filter((isOnline) => isOnline == true))
+            .pipe(takeUntil(this.onDestroyEvent))
             .subscribe(() => this.askServerForUpdates());
     }
 

@@ -1,3 +1,4 @@
+import { BehaviorSubject } from "rxjs";
 import {
     ChangeDetectionStrategy,
     ChangeDetectorRef,
@@ -15,7 +16,6 @@ import {
 } from "@peek/peek_core_search";
 import { searchPluginName } from "@peek/peek_core_search/_private";
 import { DocDbPopupService, DocDbPopupTypeE } from "@peek/peek_core_docdb";
-import { BehaviorSubject } from "rxjs";
 
 interface IItemResult {
     key: string;

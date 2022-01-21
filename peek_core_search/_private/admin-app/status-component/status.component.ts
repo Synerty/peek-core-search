@@ -1,3 +1,4 @@
+import { takeUntil } from "rxjs/operators";
 import { Component } from "@angular/core";
 import {
     NgLifeCycleEvents,
@@ -23,7 +24,7 @@ export class StatusComponent extends NgLifeCycleEvents {
         let ts = new TupleSelector(AdminStatusTuple.tupleName, {});
         this.tupleObserver
             .subscribeToTupleSelector(ts)
-            .takeUntil(this.onDestroyEvent)
+            .pipe(takeUntil(this.onDestroyEvent))
             .subscribe((tuples: AdminStatusTuple[]) => {
                 this.item = tuples[0];
             });

@@ -1,3 +1,4 @@
+import { BehaviorSubject, Subject } from "rxjs";
 import { ChangeDetectionStrategy, Component, OnInit } from "@angular/core";
 import {
     SearchObjectTypeTuple,
@@ -14,7 +15,6 @@ import {
     TupleSelector,
     VortexStatusService,
 } from "@synerty/vortexjs";
-import { BehaviorSubject, Subject } from "rxjs";
 import { debounceTime, distinctUntilChanged, takeUntil } from "rxjs/operators";
 
 @Component({

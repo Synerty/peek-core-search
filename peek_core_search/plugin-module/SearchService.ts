@@ -1,3 +1,4 @@
+import { filter, first, takeUntil } from "rxjs/operators";
 import { Injectable } from "@angular/core";
 import {
     NgLifeCycleEvents,
@@ -54,8 +55,8 @@ export class SearchService extends NgLifeCycleEvents {
         super();
 
         this.deviceCacheControllerService.triggerCachingObservable
-            .takeUntil(this.onDestroyEvent)
-            .filter((v) => v)
+            .pipe(takeUntil(this.onDestroyEvent))
+            .pipe(filter((v) => v))
             .subscribe(() => {
                 // ???
             });
@@ -88,8 +89,8 @@ export class SearchService extends NgLifeCycleEvents {
                 .isOnline
                 ? Promise.resolve()
                 : this.vortexStatusService.isOnline
-                      .filter((online) => online)
-                      .first()
+                      .pipe(filter((online) => online))
+                      .pipe(first())
                       .toPromise();
 
             return isOnlinePromise
@@ -160,7 +161,7 @@ export class SearchService extends NgLifeCycleEvents {
         let propTs = new TupleSelector(SearchPropertyTuple.tupleName, {});
         this.tupleService.offlineObserver
             .subscribeToTupleSelector(propTs)
-            .takeUntil(this.onDestroyEvent)
+            .pipe(takeUntil(this.onDestroyEvent))
             .subscribe((tuples: SearchPropertyTuple[]) => {
                 this.propertiesByName = {};
 
@@ -175,7 +176,7 @@ export class SearchService extends NgLifeCycleEvents {
         );
         this.tupleService.offlineObserver
             .subscribeToTupleSelector(objectTypeTs)
-            .takeUntil(this.onDestroyEvent)
+            .pipe(takeUntil(this.onDestroyEvent))
             .subscribe((tuples: SearchObjectTypeTuple[]) => {
                 this.objectTypesById = {};
 
