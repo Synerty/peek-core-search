@@ -1,15 +1,3 @@
 {
-    "extends": "../peek-field-app/peek_field_app/tsconfig.json",
-    "compilerOptions": {
-        "outDir": "../out-tsc/app",
-        "baseUrl": ".",
-        "types": ["jquery"],
-        "paths": {
-            "@peek/*": ["../peek-field-app/peek_field_app/src/@peek/*"],
-            "*": ["../peek-field-app/peek_field_app/node_modules/*"]
-        },
-        "module": "es2020",
-        "moduleResolution": "node"
-    },
-    "exclude": ["test.ts", "**/*.spec.ts"]
+    "extends": "../dev-peek-workspace/tsconfig.json"
 }
