@@ -69,54 +69,56 @@ export class SearchService extends NgLifeCycleEvents {
      * Get the objects with matching keywords from the index..
      *
      */
-    getObjects(
+    async getObjects(
         propertyName: string | null,
         objectTypeId: number | null,
         keywordsString: string
     ): Promise<SearchResultObjectTuple[]> {
-        // If there is no offline support, or we're online
-        if (
-            !this.deviceCacheControllerService.cachingEnabled ||
-            this.vortexStatusService.snapshot.isOnline
-        ) {
-            let ts = new TupleSelector(SearchResultObjectTuple.tupleName, {
-                propertyName: propertyName,
-                objectTypeId: objectTypeId,
-                keywordsString: keywordsString,
-            });
+        // If we're online
+        if (this.vortexStatusService.snapshot.isOnline) {
+            return this.getObjectsOnline(
+                propertyName,
+                objectTypeId,
+                keywordsString
+            );
+        }
 
-            let isOnlinePromise: any = this.vortexStatusService.snapshot
-                .isOnline
-                ? Promise.resolve()
-                : this.vortexStatusService.isOnline
-                      .pipe(filter((online) => online))
-                      .pipe(first())
-                      .toPromise();
-
-            return isOnlinePromise
-                .then(() => this.tupleService.observer.pollForTuples(ts, false))
-                .then((v) => this._loadObjectTypes(v));
+        // If there is no offline support
+        if (!this.deviceCacheControllerService.cachingEnabled) {
+            throw new Error("Peek is offline and offline cache is disabled");
         }
 
         // If we do have offline support
-        return this.searchIndexLoader
-            .getObjectIds(propertyName, keywordsString)
-            .then((objectIds: number[]) => {
-                if (objectIds.length == 0) {
-                    console.log(
-                        "There were no keyword search results for : " +
-                            keywordsString
-                    );
-                    return [];
-                }
+        const objectIds: number[] = await this.searchIndexLoader.getObjectIds(
+            propertyName,
+            keywordsString
+        );
 
-                return this.searchObjectLoader
-                    .getObjects(objectTypeId, objectIds)
-                    .then((v) => this._loadObjectTypes(v));
-            });
+        if (objectIds.length == 0) {
+            console.log(
+                "There were no keyword search results for : " + keywordsString
+            );
+            return [];
+        }
+
+        let results: SearchResultObjectTuple[] =
+            await this.searchObjectLoader.getObjects(objectTypeId, objectIds);
+
+        results = this.filterAndRankObjectsForSearchString(
+            results,
+            keywordsString,
+            propertyName
+        );
+
+        console.debug(
+            `Completed search for |${keywordsString}|` +
+                `, returning ${results.length} objects`
+        );
+
+        return this._loadObjectTypes(results);
     }
 
-    async getObjectsOnlinePartial(
+    private async getObjectsOnline(
         propertyName: string | null,
         objectTypeId: number | null,
         keywordsString: string
@@ -126,10 +128,62 @@ export class SearchService extends NgLifeCycleEvents {
         autoCompleteAction.propertyName = propertyName;
         autoCompleteAction.objectTypeId = objectTypeId;
 
-        let results = await (<any>(
-            this.tupleService.action.pushAction(autoCompleteAction)
-        ));
+        const results: any = await this.tupleService.action //
+            .pushAction(autoCompleteAction);
         return this._loadObjectTypes(results);
+    }
+
+    /** Rank and Filter Objects For Search String
+
+        STAGE 2 of the search.
+
+        This method filters the loaded objects to ensure we have full matches.
+
+        :param results:
+        :param searchString:
+        :param propertyName:
+        :return:
+        */
+    private filterAndRankObjectsForSearchString(
+        results: SearchResultObjectTuple[],
+        searchString: string,
+        propertyName: string | null
+    ): SearchResultObjectTuple[] {
+        // Get the partial tokens, and match them
+        const splitWords = searchString.toLowerCase().split(" ");
+
+        const rankResult = (result: SearchResultObjectTuple): boolean => {
+            let props = result.properties;
+            if (propertyName != null && propertyName.length !== 0) {
+                props = {};
+                if (props.hasOwnProperty(propertyName))
+                    props[propertyName] = props[propertyName];
+            }
+
+            const allPropVals =
+                " " + Object.values(props).join(" ").toLowerCase();
+
+            const matchedTokens = splitWords //
+                .filter((w) => allPropVals.indexOf(" " + w) !== -1);
+
+            if (matchedTokens.length < splitWords.length) {
+                return false;
+            }
+
+            result.rank = 0;
+            for (const p of allPropVals.split(" ")) {
+                for (const w of splitWords) {
+                    if (p.indexOf(w) === 0) result.rank += p.length - w.length;
+                }
+            }
+
+            return true;
+        };
+
+        // Filter and set the rank
+        return results //
+            .filter(rankResult)
+            .sort((a, b) => a.rank - b.rank);
     }
 
     /** Get Nice Ordered Properties

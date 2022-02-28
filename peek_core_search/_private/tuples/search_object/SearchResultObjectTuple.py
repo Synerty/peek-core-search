@@ -36,3 +36,6 @@ class SearchResultObjectTuple(Tuple):
 
     #:  The color
     routes: List[ImportSearchObjectRouteTuple] = TupleField([])
+
+    #:  The rank of the search result
+    rank: int = TupleField()
