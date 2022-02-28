@@ -23,6 +23,9 @@ export class SearchResultObjectTuple extends Tuple {
     // The details of the search result
     routes: SearchResultObjectRouteTuple[] = [];
 
+    // The rank of the search result
+    rank: number = 0;
+
     constructor() {
         super(SearchResultObjectTuple.tupleName);
     }

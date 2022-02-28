@@ -36,7 +36,9 @@ from peek_core_search._private.worker.tasks.KeywordSplitter import (
     splitFullKeywords,
     _splitFullTokens,
 )
-from peek_core_search._private.worker.tasks._CalcChunkKey import makeSearchIndexChunkKey
+from peek_core_search._private.worker.tasks._CalcChunkKey import (
+    makeSearchIndexChunkKey,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +76,7 @@ class FastKeywordController(TupleActionProcessorDelegateABC):
             tupleAction.objectTypeId, objectIds
         )
 
-        results = yield self._filterObjectsForSearchString(
+        results = yield self._filterAndRankObjectsForSearchString(
             results, tupleAction.searchString, tupleAction.propertyName
         )
 
@@ -88,13 +90,13 @@ class FastKeywordController(TupleActionProcessorDelegateABC):
         return results
 
     @deferToThreadWrapWithLogger(logger)
-    def _filterObjectsForSearchString(
+    def _filterAndRankObjectsForSearchString(
         self,
         results: List[SearchResultObjectTuple],
         searchString: str,
         propertyName: Optional[str],
     ) -> Deferred:
-        """Filter Objects For Search String
+        """Rank and Filter Objects For Search String
 
         STAGE 2 of the search.
 
@@ -106,23 +108,35 @@ class FastKeywordController(TupleActionProcessorDelegateABC):
         :return:
         """
 
-        noFulls = lambda t: not t.endswith("$")
-
         # Get the partial tokens, and match them
-        tokens = set(filter(noFulls, splitPartialKeywords(searchString)))
+        splitWords = searchString.lower().split()
 
-        def filterResult(result: SearchResultObjectTuple) -> bool:
+        def rankResult(result: SearchResultObjectTuple) -> bool:
             props = result.properties
             if propertyName:
                 props = (
-                    {propertyName: props[propertyName]} if propertyName in props else {}
+                    {propertyName: props[propertyName]}
+                    if propertyName in props
+                    else {}
                 )
 
-            allPropVals = " ".join(props.values())
-            theseTokens = set(filter(noFulls, splitPartialKeywords(allPropVals)))
-            return bool(tokens & theseTokens)
+            allPropVals = " ".join(props.values()).lower()
 
-        return list(filter(filterResult, results))
+            matchedTokens = [w for w in splitWords if (" " + w) in allPropVals]
+
+            if len(matchedTokens) < len(splitWords):
+                return False
+
+            result.rank = 0
+            for p in allPropVals.split():
+                for w in splitWords:
+                    if p.startswith(w):
+                        result.rank += len(p) - len(w)
+
+            return True
+
+        # Filter and set the rank
+        return list(sorted(filter(rankResult, results), key=lambda r: r.rank))
 
     @deferToThreadWrapWithLogger(logger)
     def _getObjectIdsForSearchString(
@@ -152,7 +166,9 @@ class FastKeywordController(TupleActionProcessorDelegateABC):
         logger.debug("Searching for full tokens |%s|", fullTokens)
 
         # Now lookup any remaining keywords, if any
-        resultsByFullKw = self._getObjectIdsForTokensBlocking(fullTokens, propertyName)
+        resultsByFullKw = self._getObjectIdsForTokensBlocking(
+            fullTokens, propertyName
+        )
         resultsByFullKw = {k: v for k, v in resultsByFullKw.items() if v}
 
         logger.debug("Found results for full tokens |%s|", set(resultsByFullKw))
@@ -168,7 +184,9 @@ class FastKeywordController(TupleActionProcessorDelegateABC):
         )
         resultsByPartialKw = {k: v for k, v in resultsByPartialKw.items() if v}
 
-        logger.debug("Found results for partial tokens |%s|", set(resultsByPartialKw))
+        logger.debug(
+            "Found results for partial tokens |%s|", set(resultsByPartialKw)
+        )
 
         # ---------------
         # Process the results
@@ -192,7 +210,7 @@ class FastKeywordController(TupleActionProcessorDelegateABC):
         resultsByFullKw: Dict[str, List[int]],
         resultsByPartialKw: Dict[str, List[int]],
     ) -> Dict[str, List[int]]:
-        """ Merge Partial """
+        """Merge Partial"""
 
         # Copy this, because we want to modify it and don't want to affect other logic
         resultsByPartialKw = resultsByPartialKw.copy()
@@ -280,14 +298,18 @@ class FastKeywordController(TupleActionProcessorDelegateABC):
             )
 
             if not objectIdsByKeywordByPropertyKey:
-                logger.debug("No SearchIndex chunk exists with chunkKey |%s|", chunkKey)
+                logger.debug(
+                    "No SearchIndex chunk exists with chunkKey |%s|", chunkKey
+                )
                 continue
 
             # Get the keywords for the property we're searching for
             objectIdsByKeywordListOfDicts = []
             if propertyName is None:
                 # All property keys
-                objectIdsByKeywordListOfDicts = objectIdsByKeywordByPropertyKey.values()
+                objectIdsByKeywordListOfDicts = (
+                    objectIdsByKeywordByPropertyKey.values()
+                )
 
             elif propertyName in objectIdsByKeywordByPropertyKey:
                 # A specific property key
@@ -312,7 +334,9 @@ class FastKeywordController(TupleActionProcessorDelegateABC):
 
         """
         for chunkKey in chunkKeys:
-            encodedChunkTuple = self._indexCacheController.encodedChunk(chunkKey)
+            encodedChunkTuple = self._indexCacheController.encodedChunk(
+                chunkKey
+            )
             yield self._unpackKeywordsFromChunk(encodedChunkTuple)
 
     @deferToThreadWrapWithLogger(logger)
@@ -324,10 +348,14 @@ class FastKeywordController(TupleActionProcessorDelegateABC):
 
         for data in chunkDataTuples:
             keyword = data[EncodedSearchIndexChunk.ENCODED_DATA_KEYWORD_NUM]
-            propertyName = data[EncodedSearchIndexChunk.ENCODED_DATA_PROPERTY_MAME_NUM]
+            propertyName = data[
+                EncodedSearchIndexChunk.ENCODED_DATA_PROPERTY_MAME_NUM
+            ]
             objectIdsJson = data[
                 EncodedSearchIndexChunk.ENCODED_DATA_OBJECT_IDS_JSON_INDEX
             ]
             chunkData[propertyName][keyword] = json.loads(objectIdsJson)
 
-        self._objectIdsByKeywordByPropertyKeyByChunkKey[chunk.chunkKey] = chunkData
+        self._objectIdsByKeywordByPropertyKeyByChunkKey[
+            chunk.chunkKey
+        ] = chunkData

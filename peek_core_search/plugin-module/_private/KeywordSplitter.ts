@@ -1,17 +1,8 @@
 const punctuation = "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~";
 
 function __splitFullTokens(keywordStr): string[] {
-    // Lowercase the string
-    keywordStr = keywordStr.toLowerCase();
-
-    // Remove punctuation
-    let nonPunct = "";
-    for (let char of keywordStr) {
-        if (punctuation.indexOf(char) == -1) nonPunct += char;
-    }
-
     // Split the string into words
-    let tokens = nonPunct.split(" ");
+    let tokens = keywordStr.toLowerCase().split(" ");
 
     // Strip the words
     tokens = tokens.map((w) => w.replace(/^\s+|\s+$/g, ""));
