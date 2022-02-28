@@ -76,27 +76,27 @@ class FastKeywordControllerTest(unittest.TestCase):
         inst = FastKeywordController(None, None)
 
         # No property name
-        result = yield inst._filterObjectsForSearchString(
+        result = yield inst._filterAndRankObjectsForSearchString(
             data, "TRANS HV FUSE TATURA WEST 28", None
         )
 
         self.assertEqual(len(result), 1)
 
         # Now try it with the property name
-        result = yield inst._filterObjectsForSearchString(
+        result = yield inst._filterAndRankObjectsForSearchString(
             data, "TRANS HV FUSE TATURA WEST 28", "any"
         )
 
         self.assertEqual(len(result), 1)
 
         # Now try it with a WRONG the property name
-        result = yield inst._filterObjectsForSearchString(
+        result = yield inst._filterAndRankObjectsForSearchString(
             data, "TRANS HV FUSE TATURA WEST 28", "dfgdfg"
         )
 
         self.assertEqual(len(result), 0)
 
         # partial keywords search string
-        result = yield inst._filterObjectsForSearchString(data, "tatu west fus", None)
+        result = yield inst._filterAndRankObjectsForSearchString(data, "tatu west fus", None)
 
         self.assertEqual(len(result), 1)

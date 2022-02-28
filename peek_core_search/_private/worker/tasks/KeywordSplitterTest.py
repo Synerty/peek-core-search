@@ -21,7 +21,7 @@ class KeywordSplitterTest(unittest.TestCase):
 
     def testFullKeywordSplit(self):
         self.assertEqual({"^smith$"}, splitFullKeywords("smith"))
-        self.assertEqual({"^zorroreyner$"}, splitFullKeywords("ZORRO-REYNER"))
+        self.assertEqual({"^zorro-reyner$"}, splitFullKeywords("ZORRO-REYNER"))
         self.assertEqual({"^34534535$"}, splitFullKeywords("34534535"))
 
         self.assertEqual({"^and$"}, splitFullKeywords("and"))
@@ -45,11 +45,23 @@ class KeywordSplitterTest(unittest.TestCase):
         self.assertEqual({"^smi", "mit", "ith"}, splitPartialKeywords("smith"))
 
         self.assertEqual(
-            {"^zor", "orr", "rro", "ror", "ore", "rey", "eyn", "yne", "ner"},
+            {
+                "^zor",
+                "orr",
+                "rro",
+                "ro-",
+                "o-r",
+                "-re",
+                "rey",
+                "eyn",
+                "yne",
+                "ner",
+            },
             splitPartialKeywords("ZORRO-REYNER"),
         )
         self.assertEqual(
-            {"^345", "535", "453", "534", "345"}, splitPartialKeywords("34534535")
+            {"^345", "535", "453", "534", "345"},
+            splitPartialKeywords("34534535"),
         )
 
         self.assertEqual({"^and"}, splitPartialKeywords("and"))
@@ -64,10 +76,13 @@ class KeywordSplitterTest(unittest.TestCase):
         )
 
         self.assertEqual(
-            {"^mil", "ill", "lls", "^un", "^no"}, splitPartialKeywords("mills un no")
+            {"^mil", "ill", "lls", "^un", "^no"},
+            splitPartialKeywords("mills un no"),
         )
 
-        self.assertEqual({"^uni", "nit", "^22"}, splitPartialKeywords("Unit 22"))
+        self.assertEqual(
+            {"^uni", "nit", "^22"}, splitPartialKeywords("Unit 22")
+        )
 
         self.assertEqual({"^uni", "nit"}, splitPartialKeywords("Unit 1"))
 
@@ -80,7 +95,9 @@ class KeywordSplitterTest(unittest.TestCase):
             splitPartialKeywords("ATS B3 TRANS 66KV CB"),
         )
 
-        self.assertEqual({"^col", "^lin", "ins"}, splitPartialKeywords("COL LINS"))
+        self.assertEqual(
+            {"^col", "^lin", "ins"}, splitPartialKeywords("COL LINS")
+        )
 
         self.assertNotEqual(
             splitPartialKeywords("COLLINS"), splitPartialKeywords("COL LINS")

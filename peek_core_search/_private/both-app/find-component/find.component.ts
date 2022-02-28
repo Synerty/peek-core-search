@@ -215,10 +215,6 @@ export class FindComponent extends NgLifeCycleEvents implements OnInit {
     }
 
     private performAutoComplete(): void {
-        if (!this.vortexStatusService.snapshot.isOnline) {
-            return;
-        }
-
         const check = () => {
             if (this.searchString == null || this.searchString.length === 0) {
                 return false;
@@ -237,9 +233,8 @@ export class FindComponent extends NgLifeCycleEvents implements OnInit {
         }
 
         this.searchInProgress = true;
-
         this.searchService
-            .getObjectsOnlinePartial(
+            .getObjects(
                 this.getSearchPropertyName,
                 this.getSearchObjectTypeId,
                 this.searchString

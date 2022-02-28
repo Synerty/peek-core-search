@@ -22,6 +22,7 @@ interface IItemResult {
     modelSetKey: string;
     header: string;
     bodyProps: SearchPropT[];
+    rank: number;
 }
 
 interface IObjectTypeResults {
@@ -55,6 +56,8 @@ export class ResultComponent extends NgLifeCycleEvents {
             return;
         }
 
+        resultObjects.sort((a, b) => a.rank - b.rank);
+
         const resultsGroupByType: { [id: number]: IObjectTypeResults } = {};
         let resultObjectTypes = [];
 
@@ -75,21 +78,14 @@ export class ResultComponent extends NgLifeCycleEvents {
 
             typeResult.results.push({
                 key: object.key,
+                rank: object.rank,
                 modelSetKey: "pofDiagram",
                 header: this.headerProps(props),
                 bodyProps: this.bodyProps(props),
             });
         }
 
-        this.resultObjectTypes$.next(
-            resultObjectTypes.sort((a, b) => {
-                if (a.type.order < b.type.order) return -1;
-                if (a.type.order > b.type.order) return 1;
-                if (a.type.title < b.type.title) return -1;
-                if (a.type.title > b.type.title) return 1;
-                return 0;
-            })
-        );
+        this.resultObjectTypes$.next(resultObjectTypes);
     }
 
     headerProps(props: SearchPropT[]): string {

@@ -4,16 +4,13 @@ from typing import Set
 
 def _splitFullTokens(keywordStr: str) -> Set[str]:
     if not keywordStr:
-        return []
-
-    # Lowercase the string
-    keywordStr = keywordStr.lower()
+        return set()
 
     # Remove punctuation
-    tokens = "".join([c for c in keywordStr if c not in string.punctuation])
+    tokens = keywordStr.lower().split(" ")
 
     # Strip and Split words, filter out words less than three letters
-    return set([w.strip() for w in tokens.split(" ") if 2 <= len(w)])
+    return set([w.strip() for w in tokens if 2 <= len(w)])
 
 
 def splitFullKeywords(keywordStr: str) -> Set[str]:

@@ -441,8 +441,13 @@ export class PrivateSearchIndexLoaderService extends NgLifeCycleEvents {
         searchString: string,
         propertyName: string | null
     ): Promise<number[]> {
-        // Split the keywords into full keywords
+        console.log(`Started search with string |${searchString}|`);
+
+        // ---------------
+        // Search for fulls
         const fullKwTokens = splitFullKeywords(searchString);
+
+        console.log(`Searching for full tokens |${fullKwTokens}|`);
 
         // If there are no tokens then return nothing
         if (fullKwTokens == null || fullKwTokens.length == 0) {
@@ -467,6 +472,11 @@ export class PrivateSearchIndexLoaderService extends NgLifeCycleEvents {
         const partialKwTokens = splitPartialKeywords(remainingSearchString);
         const resultsByPartialKw: { [token: string]: number[] } =
             await this.loadObjectIdsFromIndex(partialKwTokens, propertyName);
+
+        console.log("Found results for partial tokens |${resultsByPartialKw}|");
+
+        // ---------------
+        // Process the results
 
         // Merge the results
         const results = {};
