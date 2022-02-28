@@ -160,7 +160,8 @@ export class SearchService extends NgLifeCycleEvents {
                     props[propertyName] = props[propertyName];
             }
 
-            const allPropVals = Object.values(props).join(" ").toLowerCase();
+            const allPropVals =
+                " " + Object.values(props).join(" ").toLowerCase();
 
             const matchedTokens = splitWords //
                 .filter((w) => allPropVals.indexOf(" " + w) !== -1);

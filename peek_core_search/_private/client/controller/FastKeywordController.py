@@ -120,7 +120,7 @@ class FastKeywordController(TupleActionProcessorDelegateABC):
                     else {}
                 )
 
-            allPropVals = " ".join(props.values()).lower()
+            allPropVals = " " + " ".join(props.values()).lower()
 
             matchedTokens = [w for w in splitWords if (" " + w) in allPropVals]
 
