@@ -87,7 +87,8 @@ class FastKeywordController(TupleActionProcessorDelegateABC):
             (datetime.now(pytz.utc) - startTime),
         )
 
-        return results
+        # Limit to 50 and return
+        return results[:50]
 
     @deferToThreadWrapWithLogger(logger)
     def _filterAndRankObjectsForSearchString(
@@ -201,8 +202,8 @@ class FastKeywordController(TupleActionProcessorDelegateABC):
         # Now, return the ObjectIDs that exist in all keyword lookups
         objectIdsUnion = self._setIntersectFilterIndexResults(resultsByKw)
 
-        # Limit to 50 and return
-        return list(objectIdsUnion)[:50]
+        # Convert to list and return
+        return list(objectIdsUnion)
 
     def _mergePartialAndFullMatches(
         self,
