@@ -15,7 +15,12 @@ import {
     TupleSelector,
     VortexStatusService,
 } from "@synerty/vortexjs";
-import { debounceTime, distinctUntilChanged, takeUntil } from "rxjs/operators";
+import {
+    debounceTime,
+    distinctUntilChanged,
+    filter,
+    takeUntil,
+} from "rxjs/operators";
 
 @Component({
     selector: "find-component",
@@ -138,7 +143,10 @@ export class FindComponent extends NgLifeCycleEvents implements OnInit {
             .subscribe(() => this.performAutoComplete());
 
         this.vortexStatusService.isOnline
-            .pipe(takeUntil(this.onDestroyEvent))
+            .pipe(
+                takeUntil(this.onDestroyEvent),
+                filter((online) => online)
+            )
             .subscribe(() => this.performAutoComplete());
     }
 
