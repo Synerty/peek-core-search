@@ -23,7 +23,7 @@ import { EncodedSearchIndexChunkTuple } from "./EncodedSearchIndexChunkTuple";
 import { SearchIndexUpdateDateTuple } from "./SearchIndexUpdateDateTuple";
 import { SearchTupleService } from "../SearchTupleService";
 import { PrivateSearchIndexLoaderStatusTuple } from "./PrivateSearchIndexLoaderStatusTuple";
-import { splitFullKeywords, splitPartialKeywords } from "../KeywordSplitter";
+
 import {
     DeviceOfflineCacheControllerService,
     OfflineCacheStatusTuple,
@@ -172,18 +172,16 @@ export class PrivateSearchIndexLoaderService extends NgLifeCycleEvents {
      *
      */
     getObjectIds(
-        propertyName: string | null,
-        searchString: string
-    ): Promise<number[]> {
+        tokens: string[],
+        propertyName: string | null
+    ): Promise<{ [token: string]: number[] }> {
         if (this.isReady())
-            return this.getObjectIdsForSearchString(searchString, propertyName);
+            return this._getObjectIdsForTokens(tokens, propertyName);
 
         return this.isReadyObservable()
             .pipe(first())
             .toPromise()
-            .then(() =>
-                this.getObjectIdsForSearchString(searchString, propertyName)
-            );
+            .then(() => this._getObjectIdsForTokens(tokens, propertyName));
     }
 
     private _notifyStatus(): void {
@@ -257,7 +255,7 @@ export class PrivateSearchIndexLoaderService extends NgLifeCycleEvents {
 
     private areWeTalkingToTheServer(): boolean {
         return (
-            this.deviceCacheControllerService.cachingEnabled &&
+            this.deviceCacheControllerService.offlineModeEnabled &&
             this.vortexStatusService.snapshot.isOnline
         );
     }
@@ -431,77 +429,7 @@ export class PrivateSearchIndexLoaderService extends NgLifeCycleEvents {
         return retPromise;
     }
 
-    /** Get Object IDs When Ready
-     *
-     * Get the objects with matching keywords from the index..
-     *
-     * This should match FastKeywordController.py
-     */
-    private async getObjectIdsForSearchString(
-        searchString: string,
-        propertyName: string | null
-    ): Promise<number[]> {
-        console.log(`Started search with string |${searchString}|`);
-
-        // ---------------
-        // Search for fulls
-        const fullKwTokens = splitFullKeywords(searchString);
-
-        console.log(`Searching for full tokens |${fullKwTokens}|`);
-
-        // If there are no tokens then return nothing
-        if (fullKwTokens == null || fullKwTokens.length == 0) {
-            return [];
-        }
-
-        // First find all the results from the full kw tokens
-        const resultsByFullKw: { [token: string]: number[] } =
-            await this.loadObjectIdsFromIndex(fullKwTokens, propertyName);
-
-        // Filter out the no matches
-        for (let token of Object.keys(resultsByFullKw)) {
-            if (resultsByFullKw[token] == null) delete resultsByFullKw[token];
-        }
-
-        // Get the remaining tokens to try the partial keyword search in
-        const remainingSearchString = fullKwTokens
-            .filter((kw) => resultsByFullKw[kw] == null)
-            .join(" ");
-
-        // Now lookup any remaining keywords, if any
-        const partialKwTokens = splitPartialKeywords(remainingSearchString);
-        const resultsByPartialKw: { [token: string]: number[] } =
-            await this.loadObjectIdsFromIndex(partialKwTokens, propertyName);
-
-        console.log("Found results for partial tokens |${resultsByPartialKw}|");
-
-        // ---------------
-        // Process the results
-
-        // Merge the results
-        const results = {};
-        Object.assign(results, resultsByFullKw);
-        Object.assign(results, resultsByPartialKw);
-
-        // If there are no results, then return
-        if (Object.keys(results).length !== 0) return [];
-
-        // Now, return the ObjectIDs that exist in all keyword lookups
-        const keys = Object.keys(results);
-
-        let objectIdsUnion: any = new Set<number>(results[keys.pop()]);
-        for (let key of keys) {
-            const thisSet = new Set<number>(results[key]);
-            objectIdsUnion = new Set<number>(
-                [...objectIdsUnion].filter((x) => thisSet.has(x))
-            );
-        }
-
-        // Limit to 50 and return
-        return [...objectIdsUnion].slice(0, 50);
-    }
-
-    private async loadObjectIdsFromIndex(
+    private async _getObjectIdsForTokens(
         tokens: string[],
         propertyName: string | null
     ): Promise<{ [token: string]: number[] }> {
@@ -518,10 +446,10 @@ export class PrivateSearchIndexLoaderService extends NgLifeCycleEvents {
         for (let chunkKey of Object.keys(tokensByChunkKey)) {
             const tokensInChunk = tokensByChunkKey[chunkKey];
             promises.push(
-                this.getObjectIdsForKeyword(
+                this._getObjectIdsForTokensForChunk(
+                    tokensInChunk,
                     propertyName,
-                    chunkKey,
-                    tokensInChunk
+                    chunkKey
                 )
             );
         }
@@ -540,10 +468,10 @@ export class PrivateSearchIndexLoaderService extends NgLifeCycleEvents {
      * Get the objects with matching keywords from the index..
      *
      */
-    private async getObjectIdsForKeyword(
+    private async _getObjectIdsForTokensForChunk(
+        tokens: string[],
         propertyName: string | null,
-        chunkKey: string,
-        tokens: string[]
+        chunkKey: string
     ): Promise<{ [token: string]: number[] }> {
         if (tokens == null || tokens.length == 0) {
             throw new Error("We've been passed a null/empty keyword");

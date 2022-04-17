@@ -12,6 +12,7 @@ import { SearchObjectTypeTuple } from "./SearchObjectTypeTuple";
 import { SearchPropertyTuple, SearchTupleService } from "./_private";
 import { KeywordAutoCompleteTupleAction } from "./_private/tuples/KeywordAutoCompleteTupleAction";
 import { DeviceOfflineCacheControllerService } from "@peek/peek_core_device";
+import { FastKeywordController } from "./_private/fast-keyword-controller";
 
 export interface SearchPropT {
     title: string;
@@ -45,6 +46,8 @@ export class SearchService extends NgLifeCycleEvents {
     // Passed to each of the results
     private objectTypesById: { [key: number]: SearchObjectTypeTuple } = {};
 
+    private fastIndexController: FastKeywordController;
+
     constructor(
         private vortexStatusService: VortexStatusService,
         private tupleService: SearchTupleService,
@@ -53,14 +56,10 @@ export class SearchService extends NgLifeCycleEvents {
         private deviceCacheControllerService: DeviceOfflineCacheControllerService
     ) {
         super();
-
-        this.deviceCacheControllerService.triggerCachingObservable
-            .pipe(takeUntil(this.onDestroyEvent))
-            .pipe(filter((v) => v))
-            .subscribe(() => {
-                // ???
-            });
-
+        this.fastIndexController = new FastKeywordController(
+            searchIndexLoader,
+            searchObjectLoader
+        );
         this._loadPropsAndObjs();
     }
 
@@ -84,38 +83,15 @@ export class SearchService extends NgLifeCycleEvents {
         }
 
         // If there is no offline support
-        if (!this.deviceCacheControllerService.cachingEnabled) {
+        if (!this.deviceCacheControllerService.offlineModeEnabled) {
             throw new Error("Peek is offline and offline cache is disabled");
         }
 
-        // If we do have offline support
-        const objectIds: number[] = await this.searchIndexLoader.getObjectIds(
+        return this.getObjectsOffline(
             propertyName,
+            objectTypeId,
             keywordsString
         );
-
-        if (objectIds.length == 0) {
-            console.log(
-                "There were no keyword search results for : " + keywordsString
-            );
-            return [];
-        }
-
-        let results: SearchResultObjectTuple[] =
-            await this.searchObjectLoader.getObjects(objectTypeId, objectIds);
-
-        results = this.filterAndRankObjectsForSearchString(
-            results,
-            keywordsString,
-            propertyName
-        );
-
-        console.debug(
-            `Completed search for |${keywordsString}|` +
-                `, returning ${results.length} objects`
-        );
-
-        return this._loadObjectTypes(results);
     }
 
     private async getObjectsOnline(
@@ -133,57 +109,14 @@ export class SearchService extends NgLifeCycleEvents {
         return this._loadObjectTypes(results);
     }
 
-    /** Rank and Filter Objects For Search String
-
-        STAGE 2 of the search.
-
-        This method filters the loaded objects to ensure we have full matches.
-
-        :param results:
-        :param searchString:
-        :param propertyName:
-        :return:
-        */
-    private filterAndRankObjectsForSearchString(
-        results: SearchResultObjectTuple[],
-        searchString: string,
-        propertyName: string | null
-    ): SearchResultObjectTuple[] {
-        // Get the partial tokens, and match them
-        const splitWords = searchString.toLowerCase().split(" ");
-
-        const rankResult = (result: SearchResultObjectTuple): boolean => {
-            let props = result.properties;
-            if (propertyName != null && propertyName.length !== 0) {
-                props = {};
-                if (props.hasOwnProperty(propertyName))
-                    props[propertyName] = props[propertyName];
-            }
-
-            const allPropVals =
-                " " + Object.values(props).join(" ").toLowerCase();
-
-            const matchedTokens = splitWords //
-                .filter((w) => allPropVals.indexOf(" " + w) !== -1);
-
-            if (matchedTokens.length < splitWords.length) {
-                return false;
-            }
-
-            result.rank = 0;
-            for (const p of allPropVals.split(" ")) {
-                for (const w of splitWords) {
-                    if (p.indexOf(w) === 0) result.rank += p.length - w.length;
-                }
-            }
-
-            return true;
-        };
-
-        // Filter and set the rank
-        return results //
-            .filter(rankResult)
-            .sort((a, b) => a.rank - b.rank);
+    private async getObjectsOffline(
+        propertyName: string | null,
+        objectTypeId: number | null,
+        keywordsString: string
+    ): Promise<SearchResultObjectTuple[]> {
+        const results: any = await this.fastIndexController //
+            .getObjects(propertyName, objectTypeId, keywordsString);
+        return this._loadObjectTypes(results);
     }
 
     /** Get Nice Ordered Properties

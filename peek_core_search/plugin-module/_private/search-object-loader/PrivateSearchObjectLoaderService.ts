@@ -252,7 +252,7 @@ export class PrivateSearchObjectLoaderService extends NgLifeCycleEvents {
 
     private areWeTalkingToTheServer(): boolean {
         return (
-            this.deviceCacheControllerService.cachingEnabled &&
+            this.deviceCacheControllerService.offlineModeEnabled &&
             this.vortexStatusService.snapshot.isOnline
         );
     }

@@ -1,10 +1,11 @@
 <nz-alert
-    *ngIf="offlineSearchEnabled()"
+    *ngIf="searchNotAvailable$ | async"
     [nzMessage]="offlineAlertContent"
     nzType="warning"
 >
     <ng-template #offlineAlertContent>
-        You are searching offline, you must use full words to search.
+        You are offline and offline mode is not enabled.
+        Search is unavailable at this time.
     </ng-template>
 </nz-alert>
 
