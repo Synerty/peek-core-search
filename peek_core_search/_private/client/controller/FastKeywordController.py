@@ -80,6 +80,8 @@ class FastKeywordController(TupleActionProcessorDelegateABC):
             results, tupleAction.searchString, tupleAction.propertyName
         )
 
+        results = results[:50]
+
         logger.debug(
             "Completed search for |%s|, returning %s objects, in %s",
             tupleAction.searchString,
@@ -88,7 +90,7 @@ class FastKeywordController(TupleActionProcessorDelegateABC):
         )
 
         # Limit to 50 and return
-        return results[:50]
+        return results
 
     @deferToThreadWrapWithLogger(logger)
     def _filterAndRankObjectsForSearchString(
@@ -200,10 +202,10 @@ class FastKeywordController(TupleActionProcessorDelegateABC):
         logger.debug("Merged tokens |%s|", set(resultsByKw))
 
         # Now, return the ObjectIDs that exist in all keyword lookups
-        objectIdsUnion = self._setIntersectFilterIndexResults(resultsByKw)
+        objectIdsList = self._setIntersectFilterIndexResults(resultsByKw)
 
         # Convert to list and return
-        return list(objectIdsUnion)
+        return objectIdsList
 
     def _mergePartialAndFullMatches(
         self,
@@ -214,7 +216,6 @@ class FastKeywordController(TupleActionProcessorDelegateABC):
         """Merge Partial"""
 
         # Copy this, because we want to modify it and don't want to affect other logic
-        resultsByPartialKw = resultsByPartialKw.copy()
         resultsByPartialKwSet = set(resultsByPartialKw)
 
         mergedResultsByKw = {}
@@ -222,7 +223,7 @@ class FastKeywordController(TupleActionProcessorDelegateABC):
         for fullKw, fullObjectIds in resultsByFullKw.items():
             # Merge in full
             fullKw = fullKw.strip("^$")
-            existing = mergedResultsByKw.get(fullKw.strip("^$"), list())
+            existing = mergedResultsByKw.get(fullKw, list())
 
             # Include the fulls
             existing.extend(fullObjectIds)
@@ -232,10 +233,10 @@ class FastKeywordController(TupleActionProcessorDelegateABC):
         tokens = _splitFullTokens(searchString)
         for token in tokens:
             token = token.strip("^$")
-            existing = mergedResultsByKw.get(token.strip("^$"), list())
+            existing = mergedResultsByKw.get(token, list())
             partialKws = splitPartialKeywords(token)
 
-            if not partialKws <= resultsByPartialKwSet:
+            if not len(partialKws) <= len(resultsByPartialKwSet):
                 continue
 
             # Union all
@@ -251,10 +252,10 @@ class FastKeywordController(TupleActionProcessorDelegateABC):
 
     def _setIntersectFilterIndexResults(
         self, objectIdsByKw: Dict[str, List[int]]
-    ) -> Set[int]:
+    ) -> List[int]:
 
         if not objectIdsByKw:
-            return set()
+            return []
 
         keys = set(objectIdsByKw)
         twoCharTokens_ = set([t for t in keys if len(t) == 2])
@@ -278,7 +279,7 @@ class FastKeywordController(TupleActionProcessorDelegateABC):
             if objectIdsUnionNoTwoChars:
                 objectIdsUnion = objectIdsUnionNoTwoChars
 
-        return objectIdsUnion
+        return list(objectIdsUnion)
 
     def _getObjectIdsForTokensBlocking(
         self, tokens: Iterable[str], propertyName: Optional[str]

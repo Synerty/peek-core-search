@@ -24,7 +24,7 @@ def splitFullKeywords(keywordStr: str) -> Set[str]:
 
     """
     tokens = _splitFullTokens(keywordStr)
-    tokens = ["^%s$" % t for t in tokens if 2 <= len(t)]
+    tokens = ["^%s$" % t for t in tokens]
 
     return set(tokens)
 

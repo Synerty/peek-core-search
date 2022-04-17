@@ -21,6 +21,10 @@ import {
     filter,
     takeUntil,
 } from "rxjs/operators";
+import { DeviceOfflineCacheControllerService } from "@peek/peek_core_device";
+
+import { zip } from "rxjs";
+import { map } from "rxjs/operators";
 
 @Component({
     selector: "find-component",
@@ -41,6 +45,8 @@ export class FindComponent extends NgLifeCycleEvents implements OnInit {
     optionsShown$ = new BehaviorSubject<boolean>(false);
     firstSearchHasRun$ = new BehaviorSubject<boolean>(false);
 
+    searchNotAvailable$ = new BehaviorSubject<boolean>(false);
+
     private readonly ALL = "All";
     private performAutoCompleteSubject: Subject<string> = new Subject<string>();
 
@@ -48,11 +54,19 @@ export class FindComponent extends NgLifeCycleEvents implements OnInit {
         private vortexStatusService: VortexStatusService,
         private searchService: SearchService,
         private balloonMsg: BalloonMsgService,
-        private tupleService: SearchTupleService
+        private tupleService: SearchTupleService,
+        private deviceCacheControllerService: DeviceOfflineCacheControllerService
     ) {
         super();
         this.searchProperty.title = this.ALL;
         this.searchObjectType.title = this.ALL;
+
+        zip(
+            this.vortexStatusService.isOnline,
+            this.deviceCacheControllerService.offlineModeEnabled$
+        )
+            .pipe(map((values) => !values[0] && !values[1]))
+            .subscribe((state) => this.searchNotAvailable$.next(state));
     }
 
     get resultObjects() {
@@ -158,10 +172,6 @@ export class FindComponent extends NgLifeCycleEvents implements OnInit {
     }
 
     searchKeywordOnChange($event): void {
-        if (!this.vortexStatusService.snapshot.isOnline) {
-            return;
-        }
-
         this.searchString = $event;
         this.performAutoCompleteSubject.next($event);
     }
@@ -174,10 +184,6 @@ export class FindComponent extends NgLifeCycleEvents implements OnInit {
     searchObjectTypesOnChange($event): void {
         this.searchObjectType = $event;
         this.performAutoComplete();
-    }
-
-    offlineSearchEnabled(): boolean {
-        return this.vortexStatusService.snapshot.isOnline === false;
     }
 
     private updateSearchProperties(v: SearchPropertyTuple[]): void {

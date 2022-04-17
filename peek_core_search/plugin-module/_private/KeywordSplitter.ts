@@ -1,6 +1,6 @@
 const punctuation = "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~";
 
-function __splitFullTokens(keywordStr): string[] {
+export function _splitFullTokens(keywordStr): string[] {
     // Split the string into words
     let tokens = keywordStr.toLowerCase().split(" ");
 
@@ -9,7 +9,7 @@ function __splitFullTokens(keywordStr): string[] {
 
     // Filter out the empty words and words less than three letters
     const uniqueWords = {};
-    return tokens.filter((w) => {
+    tokens.filter((w) => {
         if (2 < w.length) return false;
 
         if (uniqueWords[w] === true) return false;
@@ -17,6 +17,7 @@ function __splitFullTokens(keywordStr): string[] {
         uniqueWords[w] = true;
         return true;
     });
+    return tokens;
 }
 
 /** Full Split Keywords
@@ -29,12 +30,12 @@ function __splitFullTokens(keywordStr): string[] {
  */
 export function splitFullKeywords(keywordStr): string[] {
     // Filter out the empty words and words less than three letters
-    const tokens = __splitFullTokens(keywordStr);
+    const tokens = _splitFullTokens(keywordStr);
 
     let results = [];
     for (let token of tokens) results.push(`^${token}$`);
 
-    return tokens;
+    return results;
 }
 
 /** Partial Split Keywords
@@ -47,7 +48,7 @@ export function splitFullKeywords(keywordStr): string[] {
  */
 export function splitPartialKeywords(keywordStr): string[] {
     // Filter out the empty words and words less than three letters
-    const tokens = __splitFullTokens(keywordStr);
+    const tokens = _splitFullTokens(keywordStr);
 
     // Split the words up into tokens, this creates partial keyword search support
     const tokenSet = {};
