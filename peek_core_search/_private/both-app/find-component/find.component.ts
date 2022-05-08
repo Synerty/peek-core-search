@@ -21,7 +21,7 @@ import {
     filter,
     takeUntil,
 } from "rxjs/operators";
-import { DeviceOfflineCacheControllerService } from "@peek/peek_core_device";
+import { DeviceOfflineCacheService } from "@peek/peek_core_device";
 
 import { zip } from "rxjs";
 import { map } from "rxjs/operators";
@@ -55,7 +55,7 @@ export class FindComponent extends NgLifeCycleEvents implements OnInit {
         private searchService: SearchService,
         private balloonMsg: BalloonMsgService,
         private tupleService: SearchTupleService,
-        private deviceCacheControllerService: DeviceOfflineCacheControllerService
+        private deviceCacheControllerService: DeviceOfflineCacheService
     ) {
         super();
         this.searchProperty.title = this.ALL;

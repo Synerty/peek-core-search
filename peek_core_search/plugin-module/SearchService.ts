@@ -11,7 +11,7 @@ import { SearchResultObjectTuple } from "./SearchResultObjectTuple";
 import { SearchObjectTypeTuple } from "./SearchObjectTypeTuple";
 import { SearchPropertyTuple, SearchTupleService } from "./_private";
 import { KeywordAutoCompleteTupleAction } from "./_private/tuples/KeywordAutoCompleteTupleAction";
-import { DeviceOfflineCacheControllerService } from "@peek/peek_core_device";
+import { DeviceOfflineCacheService } from "@peek/peek_core_device";
 import { FastKeywordController } from "./_private/fast-keyword-controller";
 
 export interface SearchPropT {
@@ -53,7 +53,7 @@ export class SearchService extends NgLifeCycleEvents {
         private tupleService: SearchTupleService,
         private searchIndexLoader: PrivateSearchIndexLoaderService,
         private searchObjectLoader: PrivateSearchObjectLoaderService,
-        private deviceCacheControllerService: DeviceOfflineCacheControllerService
+        private deviceCacheControllerService: DeviceOfflineCacheService
     ) {
         super();
         this.fastIndexController = new FastKeywordController(

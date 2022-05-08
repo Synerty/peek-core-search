@@ -25,7 +25,7 @@ import { SearchTupleService } from "../SearchTupleService";
 import { PrivateSearchIndexLoaderStatusTuple } from "./PrivateSearchIndexLoaderStatusTuple";
 
 import {
-    DeviceOfflineCacheControllerService,
+    DeviceOfflineCacheService,
     OfflineCacheStatusTuple,
 } from "@peek/peek_core_device";
 
@@ -111,7 +111,6 @@ function keywordChunk(keyword: string): string {
 @Injectable()
 export class PrivateSearchIndexLoaderService extends NgLifeCycleEvents {
     private UPDATE_CHUNK_FETCH_SIZE = 5;
-    private OFFLINE_CHECK_PERIOD_MS = 15 * 60 * 1000; // 15 minutes
 
     private index = new SearchIndexUpdateDateTuple();
     private askServerChunks: SearchIndexUpdateDateTuple[] = [];
@@ -129,7 +128,7 @@ export class PrivateSearchIndexLoaderService extends NgLifeCycleEvents {
         private vortexStatusService: VortexStatusService,
         storageFactory: TupleStorageFactoryService,
         private tupleService: SearchTupleService,
-        private deviceCacheControllerService: DeviceOfflineCacheControllerService
+        private deviceCacheControllerService: DeviceOfflineCacheService
     ) {
         super();
 
@@ -340,13 +339,22 @@ export class PrivateSearchIndexLoaderService extends NgLifeCycleEvents {
 
         if (this.askServerChunks.length == 0) return;
 
-        let indexChunk: SearchIndexUpdateDateTuple = this.askServerChunks.pop();
-        let filt = extend({}, clientSearchIndexWatchUpdateFromDeviceFilt);
-        filt[cacheAll] = true;
-        let pl = new Payload(filt, [indexChunk]);
-        this.vortexService.sendPayload(pl);
+        this.deviceCacheControllerService //
+            .waitForGarbageCollector()
+            .then(() => {
+                let indexChunk: SearchIndexUpdateDateTuple =
+                    this.askServerChunks.pop();
+                let filt = extend(
+                    {},
+                    clientSearchIndexWatchUpdateFromDeviceFilt
+                );
+                filt[cacheAll] = true;
+                let pl = new Payload(filt, [indexChunk]);
+                this.vortexService.sendPayload(pl);
 
-        this._status.lastCheck = new Date();
+                this._status.lastCheck = new Date();
+                this._notifyStatus();
+            });
     }
 
     /** Process SearchIndexes From Server
