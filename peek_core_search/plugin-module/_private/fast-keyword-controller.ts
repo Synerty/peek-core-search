@@ -203,7 +203,7 @@ export class FastKeywordController {
         const mergedResultsByKw = {};
 
         for (let fullKw of Object.keys(resultsByFullKw)) {
-            const fullObjectIds = resultsByFullKw[fullKw];
+            const fullObjectIds = resultsByFullKw[fullKw] || [];
 
             // Merge in full
             fullKw = fullKw.replace(/^\^|\$$/g, "");
@@ -223,7 +223,7 @@ export class FastKeywordController {
             if (!(partialKws.length <= resultsByPartialKwSet.length)) continue;
 
             // Union all
-            let objectIdsForToken = resultsByPartialKw[partialKws.pop()];
+            let objectIdsForToken = resultsByPartialKw[partialKws.pop()] || [];
             while (partialKws.length !== 0) {
                 const newSet = new Set(resultsByPartialKw[partialKws.pop()]);
                 objectIdsForToken = objectIdsForToken //

@@ -1,6 +1,7 @@
 import logging
 from typing import Optional
 
+from vortex.Tuple import Tuple
 from vortex.rpc.RPC import vortexRPC
 
 from peek_abstract_chunked_index.private.server.client_handlers.ACIChunkLoadRpcABC import (
@@ -40,7 +41,7 @@ class ClientChunkLoadRpc(ACIChunkLoadRpcABC):
         additionalFilt=searchFilt,
         deferToThread=True,
     )
-    def loadSearchIndexChunks(self, offset: int, count: int) -> Optional[bytes]:
+    def loadSearchIndexChunks(self, offset: int, count: int) -> str:
         """Update Page Loader Status
 
         Tell the server of the latest status of the loader
@@ -58,7 +59,7 @@ class ClientChunkLoadRpc(ACIChunkLoadRpcABC):
         additionalFilt=searchFilt,
         deferToThread=True,
     )
-    def loadSearchObjectChunks(self, offset: int, count: int) -> Optional[bytes]:
+    def loadSearchObjectChunks(self, offset: int, count: int) -> list[Tuple]:
         """Update Page Loader Status
 
         Tell the server of the latest status of the loader
