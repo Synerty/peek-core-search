@@ -60,7 +60,7 @@ class FastKeywordControllerTest(unittest.TestCase):
 
         result = inst._setIntersectFilterIndexResults(data)
 
-        self.assertEqual(result, {6778979, 7042955})
+        self.assertEqual(result, [6778979, 7042955])
         self.assertEqual(len(result), len(data["0"]))
 
     @inlineCallbacks

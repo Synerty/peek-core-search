@@ -1,8 +1,7 @@
 Admin Tasks
 -----------
 
-This section describes how to perform administration tasks for the Document DB plugin.
-
+This section describes how to perform administration tasks for the Search plugin.
 
 Updating Object Type Names
 ``````````````````````````
@@ -14,11 +13,11 @@ To update the names, follow this procedure:
 
 #.  Open the Peek Admin UI and navigate to the Search plugin.
 
-#.  Click on the **Edit Search Object Types** tab
+#.  Click on the **Edit Search Object Types** tab.
 
 #.  Update the **Description** column.
 
-#.  Click save.
+#.  Click **Save**.
 
 .. image:: admin_task_update_object_type_name.png
 
@@ -41,7 +40,7 @@ To update the names, follow this procedure:
 
 #.  Update the **Description** column.
 
-#.  Click save.
+#.  Click **Save**.
 
 .. image:: admin_task_update_object_properties.png
 
@@ -61,22 +60,22 @@ Recompiling the index will rebuild these hash buckets.
 
 ----
 
-#.  Stop all peek services
+#.  Stop all peek services.
 
 #.  Execute the following ::
 
 
         -- Delete the existing index data.
-        TRUNCATE TABLE pl_search."SearchIndexCompilerQueue";
-        TRUNCATE TABLE pl_search."EncodedSearchIndexChunk";
+        TRUNCATE TABLE core_search."SearchIndexCompilerQueue";
+        TRUNCATE TABLE core_search."EncodedSearchIndexChunk";
 
         -- Queue the chunks for compiling.
-        INSERT INTO pl_search."SearchIndexCompilerQueue" ("chunkKey")
+        INSERT INTO core_search."SearchIndexCompilerQueue" ("chunkKey")
         SELECT DISTINCT  "chunkKey"
-        FROM pl_search."SearchIndex";
+        FROM core_search."SearchIndex";
 
 
-#.  Start all Peek services
+#.  Start all Peek services.
 
 ----
 
@@ -94,22 +93,21 @@ Recompiling the index will rebuild these hash buckets.
 
 ----
 
-#.  Stop all peek services
-
+#.  Stop all peek services.
 #.  Execute the following ::
 
 
         -- Delete the existing data.
-        TRUNCATE TABLE pl_search."SearchObjectCompilerQueue";
-        TRUNCATE TABLE pl_search."EncodedSearchObjectChunk";
+        TRUNCATE TABLE core_search."SearchObjectCompilerQueue";
+        TRUNCATE TABLE core_search."EncodedSearchObjectChunk";
 
         -- Queue the chunks for compiling.
-        INSERT INTO pl_search."SearchObjectCompilerQueue" ("chunkKey")
+        INSERT INTO core_search."SearchObjectCompilerQueue" ("chunkKey")
         SELECT DISTINCT  "chunkKey"
-        FROM pl_search."SearchObject";
+        FROM core_search."SearchObject";
 
 
-#.  Start all Peek services
+#.  Start all Peek services.
 
 ----
 
