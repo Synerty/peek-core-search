@@ -85,6 +85,7 @@ export class ResultComponent extends NgLifeCycleEvents {
             });
         }
 
+        resultObjectTypes = resultObjectTypes.sort((a,b) => a.order-b.order);
         this.resultObjectTypes$.next(resultObjectTypes);
     }
 
