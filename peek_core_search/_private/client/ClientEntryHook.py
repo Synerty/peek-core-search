@@ -9,7 +9,9 @@ from peek_core_search._private.client.controller.FastKeywordController import (
     FastKeywordController,
 )
 from peek_plugin_base.PeekVortexUtil import peekServerName
-from peek_plugin_base.client.PluginClientEntryHookABC import PluginClientEntryHookABC
+from peek_plugin_base.client.PluginClientEntryHookABC import (
+    PluginClientEntryHookABC,
+)
 from peek_core_search._private.PluginNames import searchActionProcessorName
 from peek_core_search._private.PluginNames import searchFilt
 from peek_core_search._private.PluginNames import searchObservableName
@@ -42,7 +44,7 @@ logger = logging.getLogger(__name__)
 
 class ClientEntryHook(PluginClientEntryHookABC):
     def __init__(self, *args, **kwargs):
-        """" Constructor """
+        """ " Constructor"""
         # Call the base classes constructor
         PluginClientEntryHookABC.__init__(self, *args, **kwargs)
 
@@ -97,12 +99,15 @@ class ClientEntryHook(PluginClientEntryHookABC):
         # ----------------
         # Search Index Cache Controller
 
-        searchIndexCacheController = SearchIndexCacheController(self.platform.serviceId)
+        searchIndexCacheController = SearchIndexCacheController(
+            self.platform.serviceId, self.platform.fileStorageDirectory
+        )
         self._loadedObjects.append(searchIndexCacheController)
 
         # This is the custom handler for the client
         searchIndexCacheHandler = SearchIndexCacheHandler(
-            cacheController=searchIndexCacheController, clientId=self.platform.serviceId
+            cacheController=searchIndexCacheController,
+            clientId=self.platform.serviceId,
         )
         self._loadedObjects.append(searchIndexCacheHandler)
 
@@ -112,7 +117,7 @@ class ClientEntryHook(PluginClientEntryHookABC):
         # Search Object Cache Controller
 
         searchObjectCacheController = SearchObjectCacheController(
-            self.platform.serviceId
+            self.platform.serviceId, self.platform.fileStorageDirectory
         )
         self._loadedObjects.append(searchObjectCacheController)
 
@@ -133,11 +138,15 @@ class ClientEntryHook(PluginClientEntryHookABC):
         )
         self._loadedObjects.append(fastKeywordController)
 
-        searchIndexCacheController.setFastKeywordController(fastKeywordController)
+        searchIndexCacheController.setFastKeywordController(
+            fastKeywordController
+        )
 
         # ----------------
         # Proxy actions back to the server, we don't process them at all
-        tupleActionHandler = makeTupleActionProcessorProxy(fastKeywordController)
+        tupleActionHandler = makeTupleActionProcessorProxy(
+            fastKeywordController
+        )
         self._loadedObjects.append(tupleActionHandler)
 
         # ----------------

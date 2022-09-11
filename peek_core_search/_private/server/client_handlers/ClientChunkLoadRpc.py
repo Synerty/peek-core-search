@@ -30,7 +30,9 @@ class ClientChunkLoadRpc(ACIChunkLoadRpcABC):
         """
 
         yield self.loadSearchIndexChunks.start(funcSelf=self)
+        yield self.loadSearchIndexDelta.start(funcSelf=self)
         yield self.loadSearchObjectChunks.start(funcSelf=self)
+        yield self.loadSearchObjectDelta.start(funcSelf=self)
         logger.debug("RPCs started")
 
     # -------------
@@ -41,14 +43,9 @@ class ClientChunkLoadRpc(ACIChunkLoadRpcABC):
         additionalFilt=searchFilt,
         deferToThread=True,
     )
-    def loadSearchIndexChunks(self, offset: int, count: int) -> str:
-        """Update Page Loader Status
-
-        Tell the server of the latest status of the loader
-
-        """
-        return self.ckiInitialLoadChunksPayloadBlocking(
-            offset, count, EncodedSearchIndexChunk
+    def loadSearchIndexDelta(self, indexEncodedPayload: bytes) -> bytes:
+        return self.ckiChunkIndexDeltaBlocking(
+            indexEncodedPayload, EncodedSearchIndexChunk
         )
 
     # -------------
@@ -59,12 +56,33 @@ class ClientChunkLoadRpc(ACIChunkLoadRpcABC):
         additionalFilt=searchFilt,
         deferToThread=True,
     )
-    def loadSearchObjectChunks(self, offset: int, count: int) -> list[Tuple]:
-        """Update Page Loader Status
-
-        Tell the server of the latest status of the loader
-
-        """
+    def loadSearchIndexChunks(self, chunkKeys: list[str]) -> list[Tuple]:
         return self.ckiInitialLoadChunksPayloadBlocking(
-            offset, count, EncodedSearchObjectChunk
+            chunkKeys, EncodedSearchIndexChunk
+        )
+
+    # -------------
+    @vortexRPC(
+        peekServerName,
+        acceptOnlyFromVortex=peekBackendNames,
+        timeoutSeconds=60,
+        additionalFilt=searchFilt,
+        deferToThread=True,
+    )
+    def loadSearchObjectDelta(self, indexEncodedPayload: bytes) -> bytes:
+        return self.ckiChunkIndexDeltaBlocking(
+            indexEncodedPayload, EncodedSearchObjectChunk
+        )
+
+    # -------------
+    @vortexRPC(
+        peekServerName,
+        acceptOnlyFromVortex=peekBackendNames,
+        timeoutSeconds=60,
+        additionalFilt=searchFilt,
+        deferToThread=True,
+    )
+    def loadSearchObjectChunks(self, chunkKeys: list[str]) -> list[Tuple]:
+        return self.ckiInitialLoadChunksPayloadBlocking(
+            chunkKeys, EncodedSearchObjectChunk
         )

@@ -1,4 +1,5 @@
 import logging
+from pathlib import Path
 from typing import List, Any
 
 from peek_abstract_chunked_index.private.client.controller.ACICacheControllerABC import (
@@ -11,10 +12,15 @@ from peek_core_search._private.server.client_handlers.ClientChunkLoadRpc import 
 from peek_core_search._private.storage.EncodedSearchIndexChunk import (
     EncodedSearchIndexChunk,
 )
+from peek_core_search._private.tuples.search_index.SearchIndexUpdateDateTuple import (
+    SearchIndexUpdateDateTuple,
+)
 
 logger = logging.getLogger(__name__)
 
-clientSearchIndexUpdateFromServerFilt = dict(key="clientSearchIndexUpdateFromServer")
+clientSearchIndexUpdateFromServerFilt = dict(
+    key="clientSearchIndexUpdateFromServer"
+)
 clientSearchIndexUpdateFromServerFilt.update(searchFilt)
 
 
@@ -27,12 +33,14 @@ class SearchIndexCacheController(ACICacheControllerABC):
     """
 
     _ChunkedTuple = EncodedSearchIndexChunk
+    _UpdateDateTupleABC = SearchIndexUpdateDateTuple
     _chunkLoadRpcMethod = ClientChunkLoadRpc.loadSearchIndexChunks
+    _chunkIndexDeltaRpcMethod = ClientChunkLoadRpc.loadSearchIndexDelta
     _updateFromServerFilt = clientSearchIndexUpdateFromServerFilt
     _logger = logger
 
-    def __init__(self, clientId: str):
-        ACICacheControllerABC.__init__(self, clientId)
+    def __init__(self, clientId: str, pluginDataDir: Path):
+        ACICacheControllerABC.__init__(self, clientId, pluginDataDir)
         self._fastKeywordController = None
 
     def setFastKeywordController(self, fastKeywordController):

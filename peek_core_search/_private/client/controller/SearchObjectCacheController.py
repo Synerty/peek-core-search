@@ -19,6 +19,9 @@ from peek_core_search._private.storage.EncodedSearchObjectChunk import (
 from peek_core_search._private.storage.SearchObjectTypeTuple import (
     SearchObjectTypeTuple,
 )
+from peek_core_search._private.tuples.search_object.SearchObjectUpdateDateTuple import (
+    SearchObjectUpdateDateTuple,
+)
 from peek_core_search._private.tuples.search_object.SearchResultObjectRouteTuple import (
     SearchResultObjectRouteTuple,
 )
@@ -31,7 +34,9 @@ from peek_core_search._private.worker.tasks._CalcChunkKey import (
 
 logger = logging.getLogger(__name__)
 
-clientSearchObjectUpdateFromServerFilt = dict(key="clientSearchObjectUpdateFromServer")
+clientSearchObjectUpdateFromServerFilt = dict(
+    key="clientSearchObjectUpdateFromServer"
+)
 clientSearchObjectUpdateFromServerFilt.update(searchFilt)
 
 
@@ -44,7 +49,9 @@ class SearchObjectCacheController(ACICacheControllerABC):
     """
 
     _ChunkedTuple = EncodedSearchObjectChunk
+    _UpdateDateTupleABC = SearchObjectUpdateDateTuple
     _chunkLoadRpcMethod = ClientChunkLoadRpc.loadSearchObjectChunks
+    _chunkIndexDeltaRpcMethod = ClientChunkLoadRpc.loadSearchObjectDelta
     _updateFromServerFilt = clientSearchObjectUpdateFromServerFilt
     _logger = logger
 
@@ -60,7 +67,9 @@ class SearchObjectCacheController(ACICacheControllerABC):
 
         objectIdsByChunkKey = defaultdict(list)
         for objectId in objectIds:
-            objectIdsByChunkKey[makeSearchObjectChunkKey(objectId)].append(objectId)
+            objectIdsByChunkKey[makeSearchObjectChunkKey(objectId)].append(
+                objectId
+            )
 
         foundObjects: List[SearchResultObjectTuple] = []
         for chunkKey, subObjectIds in objectIdsByChunkKey.items():
@@ -78,7 +87,9 @@ class SearchObjectCacheController(ACICacheControllerABC):
         if not chunk:
             return []
 
-        objectPropsByIdStr = Payload().fromEncodedPayload(chunk.encodedData).tuples[0]
+        objectPropsByIdStr = (
+            Payload().fromEncodedPayload(chunk.encodedData).tuples[0]
+        )
         objectPropsById = json.loads(objectPropsByIdStr)
 
         foundObjects: List[SearchResultObjectTuple] = []

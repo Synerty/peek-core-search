@@ -37,6 +37,10 @@ class EncodedSearchIndexChunk(Tuple, DeclarativeBase, ACIEncodedChunkTupleABC):
         return self.chunkKey
 
     @property
+    def ckiEncodedData(self):
+        return self.encodedData
+
+    @property
     def ckiHasEncodedData(self) -> bool:
         return bool(self.encodedData)
 
@@ -51,6 +55,10 @@ class EncodedSearchIndexChunk(Tuple, DeclarativeBase, ACIEncodedChunkTupleABC):
     @classmethod
     def sqlCoreChunkKeyColumn(cls):
         return cls.__table__.c.chunkKey
+
+    @classmethod
+    def sqlCoreLastUpdateColumn(cls):
+        return cls.__table__.c.lastUpdate
 
     @classmethod
     def sqlCoreLoad(cls, row):
