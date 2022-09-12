@@ -15,6 +15,7 @@ from peek_core_search._private.storage.EncodedSearchIndexChunk import (
 from peek_core_search._private.tuples.search_index.SearchIndexUpdateDateTuple import (
     SearchIndexUpdateDateTuple,
 )
+from twisted.internet.defer import inlineCallbacks
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +51,7 @@ class SearchIndexCacheController(ACICacheControllerABC):
         ACICacheControllerABC.shutdown(self)
         self._fastKeywordController = None
 
+    @inlineCallbacks
     def _notifyOfChunkKeysUpdated(self, chunkKeys: List[Any]):
-        ACICacheControllerABC._notifyOfChunkKeysUpdated(self, chunkKeys)
-        self._fastKeywordController.notifyOfUpdate(chunkKeys)
+        yield ACICacheControllerABC._notifyOfChunkKeysUpdated(self, chunkKeys)
+        yield self._fastKeywordController.notifyOfUpdate(chunkKeys)
