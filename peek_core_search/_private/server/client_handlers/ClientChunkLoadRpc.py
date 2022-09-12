@@ -1,5 +1,4 @@
 import logging
-from typing import Optional
 
 from vortex.Tuple import Tuple
 from vortex.rpc.RPC import vortexRPC
@@ -14,7 +13,14 @@ from peek_core_search._private.storage.EncodedSearchIndexChunk import (
 from peek_core_search._private.storage.EncodedSearchObjectChunk import (
     EncodedSearchObjectChunk,
 )
-from peek_plugin_base.PeekVortexUtil import peekServerName, peekBackendNames
+from peek_core_search._private.tuples.search_index.SearchIndexUpdateDateTuple import (
+    SearchIndexUpdateDateTuple,
+)
+from peek_core_search._private.tuples.search_object.SearchObjectUpdateDateTuple import (
+    SearchObjectUpdateDateTuple,
+)
+from peek_plugin_base.PeekVortexUtil import peekBackendNames
+from peek_plugin_base.PeekVortexUtil import peekServerName
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +51,9 @@ class ClientChunkLoadRpc(ACIChunkLoadRpcABC):
     )
     def loadSearchIndexDelta(self, indexEncodedPayload: bytes) -> bytes:
         return self.ckiChunkIndexDeltaBlocking(
-            indexEncodedPayload, EncodedSearchIndexChunk
+            indexEncodedPayload,
+            EncodedSearchIndexChunk,
+            SearchIndexUpdateDateTuple,
         )
 
     # -------------
@@ -71,7 +79,9 @@ class ClientChunkLoadRpc(ACIChunkLoadRpcABC):
     )
     def loadSearchObjectDelta(self, indexEncodedPayload: bytes) -> bytes:
         return self.ckiChunkIndexDeltaBlocking(
-            indexEncodedPayload, EncodedSearchObjectChunk
+            indexEncodedPayload,
+            EncodedSearchObjectChunk,
+            SearchObjectUpdateDateTuple,
         )
 
     # -------------
