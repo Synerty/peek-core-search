@@ -1,6 +1,8 @@
 import logging
+from typing import Any
 
 from twisted.internet.defer import inlineCallbacks
+from txhttputil.site.FileUnderlayResource import FileUnderlayResource
 
 from peek_core_search._private.client.DeviceTupleProcessorActionProxy import (
     makeTupleActionProcessorProxy,
@@ -50,6 +52,30 @@ class ClientEntryHook(PluginClientEntryHookABC):
 
         #: Loaded Objects, This is a list of all objects created when we start
         self._loadedObjects = []
+
+    @classmethod
+    def setupStaticWebResources(cls, platformApi: Any):
+        from peek_plugin_base.client.PeekClientPlatformHookABC import (
+            PeekClientPlatformHookABC,
+        )
+
+        assert isinstance(
+            platformApi, PeekClientPlatformHookABC
+        ), "We received the wrong platform API"
+
+        from peek_abstract_chunked_index.private.client.controller.ACICacheControllerABC import (
+            ACICacheControllerABC,
+        )
+
+        relativeDir = ACICacheControllerABC.appDownloadPluginDirRelativeDir()
+        dirPath = platformApi.fileStorageDirectory / relativeDir
+        dirPath.mkdir(exist_ok=True, parents=True)
+
+        resource = FileUnderlayResource()
+        resource.addFileSystemRoot(dirPath)
+
+        platformApi.addFieldResource(relativeDir.encode(), resource)
+        platformApi.addOfficeResource(relativeDir.encode(), resource)
 
     def load(self) -> None:
         """Load
