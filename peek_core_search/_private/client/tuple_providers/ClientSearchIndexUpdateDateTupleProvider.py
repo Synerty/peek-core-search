@@ -1,17 +1,15 @@
 import logging
 from typing import Union
 
-from twisted.internet.defer import Deferred, inlineCallbacks
+from twisted.internet.defer import Deferred
+from twisted.internet.defer import inlineCallbacks
+from vortex.PayloadEnvelope import PayloadEnvelope
+from vortex.TupleSelector import TupleSelector
+from vortex.handler.TupleDataObservableHandler import TuplesProviderABC
 
 from peek_core_search._private.client.controller.SearchIndexCacheController import (
     SearchIndexCacheController,
 )
-from peek_core_search._private.tuples.search_index.SearchIndexUpdateDateTuple import (
-    SearchIndexUpdateDateTuple,
-)
-from vortex.Payload import Payload
-from vortex.TupleSelector import TupleSelector
-from vortex.handler.TupleDataObservableHandler import TuplesProviderABC
 
 logger = logging.getLogger(__name__)
 
@@ -24,12 +22,7 @@ class ClientSearchIndexUpdateDateTupleProvider(TuplesProviderABC):
     def makeVortexMsg(
         self, filt: dict, tupleSelector: TupleSelector
     ) -> Union[Deferred, bytes]:
-        tuple_ = SearchIndexUpdateDateTuple()
-        tuple_.updateDateByChunkKey = {
-            key: self._cacheHandler.encodedChunk(key).lastUpdate
-            for key in self._cacheHandler.encodedChunkKeys()
-        }
-        payload = Payload(filt, tuples=[tuple_])
-        payloadEnvelope = yield payload.makePayloadEnvelopeDefer()
-        vortexMsg = yield payloadEnvelope.toVortexMsg()
+        encodedPayload = self._cacheHandler.offlineUpdateDateTuplePayload()
+        payloadEnvelope = PayloadEnvelope(filt, encodedPayload=encodedPayload)
+        vortexMsg = yield payloadEnvelope.toVortexMsgDefer()
         return vortexMsg
