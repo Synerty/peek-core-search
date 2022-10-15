@@ -3,22 +3,21 @@ from typing import Any
 
 from twisted.internet.defer import inlineCallbacks
 from txhttputil.site.FileUnderlayResource import FileUnderlayResource
+from vortex.handler.TupleDataObservableProxyHandler import (
+    TupleDataObservableProxyHandler,
+)
+from vortex.handler.TupleDataObserverClient import TupleDataObserverClient
 
+from peek_core_search._private.PluginNames import searchFilt
+from peek_core_search._private.PluginNames import searchObservableName
 from peek_core_search._private.client.DeviceTupleProcessorActionProxy import (
     makeTupleActionProcessorProxy,
 )
-from peek_core_search._private.client.controller.FastKeywordController import (
-    FastKeywordController,
-)
-from peek_plugin_base.PeekVortexUtil import peekServerName
-from peek_plugin_base.client.PluginClientEntryHookABC import (
-    PluginClientEntryHookABC,
-)
-from peek_core_search._private.PluginNames import searchActionProcessorName
-from peek_core_search._private.PluginNames import searchFilt
-from peek_core_search._private.PluginNames import searchObservableName
 from peek_core_search._private.client.TupleDataObservable import (
     makeClientTupleDataObservableHandler,
+)
+from peek_core_search._private.client.controller.FastKeywordController import (
+    FastKeywordController,
 )
 from peek_core_search._private.client.controller.SearchIndexCacheController import (
     SearchIndexCacheController,
@@ -35,11 +34,10 @@ from peek_core_search._private.client.handlers.SearchObjectCacheHandler import (
 from peek_core_search._private.storage.DeclarativeBase import loadStorageTuples
 from peek_core_search._private.tuples import loadPrivateTuples
 from peek_core_search.tuples import loadPublicTuples
-from vortex.handler.TupleActionProcessorProxy import TupleActionProcessorProxy
-from vortex.handler.TupleDataObservableProxyHandler import (
-    TupleDataObservableProxyHandler,
+from peek_plugin_base.PeekVortexUtil import peekServerName
+from peek_plugin_base.client.PluginClientEntryHookABC import (
+    PluginClientEntryHookABC,
 )
-from vortex.handler.TupleDataObserverClient import TupleDataObserverClient
 
 logger = logging.getLogger(__name__)
 
@@ -184,8 +182,10 @@ class ClientEntryHook(PluginClientEntryHookABC):
         )
 
         # ----------------
-        # Start the compiler controllers
+        yield searchIndexCacheHandler.start()
         yield searchIndexCacheController.start()
+
+        yield searchObjectCacheHandler.start()
         yield searchObjectCacheController.start()
 
         logger.debug("Started")
