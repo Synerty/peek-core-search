@@ -8,6 +8,9 @@ from peek_abstract_chunked_index.private.tuples.ACIUpdateDateTupleABC import (
     ACIUpdateDateTupleABC,
 )
 from peek_core_search._private.PluginNames import searchFilt
+from peek_core_search._private.client.controller.SearchObjectCacheController import (
+    clientSearchObjectUpdateFromServerFilt,
+)
 from peek_core_search._private.tuples.search_object.SearchObjectUpdateDateTuple import (
     SearchObjectUpdateDateTuple,
 )
@@ -23,5 +26,6 @@ clientSearchObjectWatchUpdateFromDeviceFilt.update(searchFilt)
 # ModelSet HANDLER
 class SearchObjectCacheHandler(ACICacheHandlerABC):
     _UpdateDateTuple: ACIUpdateDateTupleABC = SearchObjectUpdateDateTuple
-    _updateFromServerFilt: Dict = clientSearchObjectWatchUpdateFromDeviceFilt
+    _updateFromDeviceFilt: Dict = clientSearchObjectWatchUpdateFromDeviceFilt
+    _updateFromLogicFilt: Dict = clientSearchObjectUpdateFromServerFilt
     _logger: logging.Logger = logger

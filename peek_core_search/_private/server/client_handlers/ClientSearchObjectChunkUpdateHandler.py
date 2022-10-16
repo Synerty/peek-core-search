@@ -19,5 +19,5 @@ logger = logging.getLogger(__name__)
 
 class ClientSearchObjectChunkUpdateHandler(ACIChunkUpdateHandlerABC):
     _ChunkedTuple: ACIEncodedChunkTupleABC = EncodedSearchObjectChunk
-    _updateFromServerFilt: Dict = clientSearchObjectUpdateFromServerFilt
+    _updateFromLogicFilt: Dict = clientSearchObjectUpdateFromServerFilt
     _logger: logging.Logger = logger
