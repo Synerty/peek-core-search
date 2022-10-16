@@ -82,9 +82,15 @@ export class SearchService extends NgLifeCycleEvents {
             );
         }
 
+        const offlineEnabled =
+            this.searchIndexLoader.offlineEnabled &&
+            this.searchObjectLoader.offlineEnabled;
+
         // If there is no offline support
-        if (!this.deviceCacheControllerService.offlineModeEnabled) {
-            throw new Error("Peek is offline and offline cache is disabled");
+        if (!offlineEnabled) {
+            throw new Error(
+                "Peek is offline and the offline cache has not finished loading"
+            );
         }
 
         return this.getObjectsOffline(

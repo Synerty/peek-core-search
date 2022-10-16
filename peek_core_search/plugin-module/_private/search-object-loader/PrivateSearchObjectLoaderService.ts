@@ -165,6 +165,10 @@ export class PrivateSearchObjectLoaderService extends NgLifeCycleEvents {
         return this._status;
     }
 
+    get offlineEnabled(): boolean {
+        return this.index.initialLoadComplete;
+    }
+
     /** Get Objects
      *
      * Get the objects with matching keywords from the index..
