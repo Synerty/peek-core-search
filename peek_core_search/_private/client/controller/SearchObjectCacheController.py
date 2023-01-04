@@ -52,7 +52,7 @@ class SearchObjectCacheController(ACICacheControllerABC):
     _UpdateDateTupleABC = SearchObjectUpdateDateTuple
     _chunkLoadRpcMethod = ClientChunkLoadRpc.loadSearchObjectChunks
     _chunkIndexDeltaRpcMethod = ClientChunkLoadRpc.loadSearchObjectDelta
-    _updateFromServerFilt = clientSearchObjectUpdateFromServerFilt
+    _updateFromLogicFilt = clientSearchObjectUpdateFromServerFilt
     _logger = logger
 
     @deferToThreadWrapWithLogger(logger)

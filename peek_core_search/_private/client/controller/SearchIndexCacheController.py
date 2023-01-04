@@ -37,7 +37,7 @@ class SearchIndexCacheController(ACICacheControllerABC):
     _UpdateDateTupleABC = SearchIndexUpdateDateTuple
     _chunkLoadRpcMethod = ClientChunkLoadRpc.loadSearchIndexChunks
     _chunkIndexDeltaRpcMethod = ClientChunkLoadRpc.loadSearchIndexDelta
-    _updateFromServerFilt = clientSearchIndexUpdateFromServerFilt
+    _updateFromLogicFilt = clientSearchIndexUpdateFromServerFilt
     _logger = logger
 
     def __init__(self, clientId: str, pluginDataDir: Path):
