@@ -220,8 +220,8 @@ def _buildIndex(conn, chunkKeys) -> Dict[str, bytes]:
 
         # Create the blob data for this index.
         # It will be searched by a binary sort
-        encKwPayloadByChunkKey[chunkKey] = Payload(
-            tuples=compileSearchIndexChunks
-        ).toEncodedPayload()
+        encKwPayloadByChunkKey[chunkKey] = (
+            Payload(tuples=compileSearchIndexChunks).toEncodedPayload().encode()
+        )
 
     return encKwPayloadByChunkKey
