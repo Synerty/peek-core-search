@@ -35,7 +35,7 @@ Compile the search indexes
 
 @DeferrableTask
 @celeryApp.task(bind=True)
-def compileSearchObjectChunk(self, payloadEncodedArgs: bytes) -> List[str]:
+def compileSearchObjectChunk(self, payloadEncodedArgs: bytes) -> dict[str, str]:
     """Compile Search Index Task
 
     :param self: A celery reference to this task
@@ -72,8 +72,13 @@ def compileSearchObjectChunk(self, payloadEncodedArgs: bytes) -> List[str]:
         encKwPayloadByChunkKey = _buildIndex(chunkKeys)
         chunksToDelete = []
 
+        lastUpdateByChunkKey = {}
+
         inserts = []
-        for chunkKey, searchIndexChunkEncodedPayload in encKwPayloadByChunkKey.items():
+        for (
+            chunkKey,
+            searchIndexChunkEncodedPayload,
+        ) in encKwPayloadByChunkKey.items():
             m = hashlib.sha256()
             m.update(searchIndexChunkEncodedPayload)
             encodedHash = b64encode(m.digest()).decode()
@@ -84,6 +89,8 @@ def compileSearchObjectChunk(self, payloadEncodedArgs: bytes) -> List[str]:
                 # but inserts are quicker
                 if encodedHash == existingHashes.pop(chunkKey):
                     continue
+
+            lastUpdateByChunkKey[str(chunkKey)] = lastUpdate
 
             chunksToDelete.append(chunkKey)
             inserts.append(
@@ -101,11 +108,15 @@ def compileSearchObjectChunk(self, payloadEncodedArgs: bytes) -> List[str]:
         if chunksToDelete:
             # Delete the old chunks
             conn.execute(
-                compiledTable.delete(compiledTable.c.chunkKey.in_(chunksToDelete))
+                compiledTable.delete(
+                    compiledTable.c.chunkKey.in_(chunksToDelete)
+                )
             )
 
         if inserts:
-            newIdGen = CeleryDbConn.prefetchDeclarativeIds(SearchObject, len(inserts))
+            newIdGen = CeleryDbConn.prefetchDeclarativeIds(
+                SearchObject, len(inserts)
+            )
             for insert in inserts:
                 insert["id"] = next(newIdGen)
 
@@ -133,7 +144,7 @@ def compileSearchObjectChunk(self, payloadEncodedArgs: bytes) -> List[str]:
             (datetime.now(pytz.utc) - startTime),
         )
 
-        return chunkKeys
+        return lastUpdateByChunkKey
 
     except Exception as e:
         transaction.rollback()
@@ -177,7 +188,9 @@ def _buildIndex(chunkKeys) -> Dict[str, bytes]:
         packagedJsonByObjIdByChunkKey = defaultdict(dict)
 
         for item in indexQry:
-            packagedJsonByObjIdByChunkKey[item.chunkKey][item.id] = item.packedJson
+            packagedJsonByObjIdByChunkKey[item.chunkKey][
+                item.id
+            ] = item.packedJson
 
         encPayloadByChunkKey = {}
 
