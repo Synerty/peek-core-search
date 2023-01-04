@@ -36,3 +36,23 @@ class ImportSearchObjectTuple(Tuple):
 
     #:  The color
     routes: List[ImportSearchObjectRouteTuple] = TupleField([])
+
+    def __repr__(self):
+        s = ""
+        s += f"key={self.key}\n"
+        s += f"objectType={self.objectType}\n"
+
+        for key, value in sorted(self.fullKeywords.items(), key=lambda i: i[0]):
+            s += f"fullKw.{key}={value}\n"
+
+        for key, value in sorted(
+            self.partialKeywords.items(), key=lambda i: i[0]
+        ):
+            s += f"partialKw.{key}={value}\n"
+
+        for route in sorted(
+            self.routes, key=lambda i: i.routeTitle + i.routePath
+        ):
+            s += f"route.{route.routeTitle}={route.routePath}\n"
+
+        return s
