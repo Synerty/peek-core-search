@@ -339,7 +339,12 @@ class FastKeywordController(TupleActionProcessorDelegateABC):
             encodedChunkTuple = self._indexCacheController.encodedChunk(
                 chunkKey
             )
-            yield self._unpackKeywordsFromChunk(encodedChunkTuple)
+            if encodedChunkTuple:
+                yield self._unpackKeywordsFromChunk(encodedChunkTuple)
+            else:
+                self._objectIdsByKeywordByPropertyKeyByChunkKey.pop(
+                    chunkKey, None
+                )
 
     @deferToThreadWrapWithLogger(logger)
     def _unpackKeywordsFromChunk(self, chunk: EncodedSearchIndexChunk) -> None:
