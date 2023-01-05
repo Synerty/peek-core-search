@@ -52,6 +52,5 @@ class SearchIndexCacheController(ACICacheControllerABC):
         self._fastKeywordController = None
 
     @inlineCallbacks
-    def _notifyOfChunkKeysUpdated(self, chunkKeys: List[Any]):
-        yield ACICacheControllerABC._notifyOfChunkKeysUpdated(self, chunkKeys)
+    def notifyFastIndexOfChunkKeysUpdated(self, chunkKeys: List[Any]):
         yield self._fastKeywordController.notifyOfUpdate(chunkKeys)
