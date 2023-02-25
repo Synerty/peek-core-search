@@ -41,8 +41,6 @@
     "field": {
         "subprocessGroup": "search",
         "showHomeLink": false,
-        "cfgDir": "_private/both-cfg",
-        "cfgModule": "search-cfg.module#SearchCfgModule",
         "appDir": "_private/both-app",
         "appModule": "search.module#SearchModule",
         "assetDir": "_private/both-assets",

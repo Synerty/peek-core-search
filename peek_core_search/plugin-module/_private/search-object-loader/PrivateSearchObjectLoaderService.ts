@@ -25,12 +25,12 @@ import { SearchObjectUpdateDateTuple } from "./SearchObjectUpdateDateTuple";
 import { SearchResultObjectTuple } from "../../SearchResultObjectTuple";
 import { SearchResultObjectRouteTuple } from "../../SearchResultObjectRouteTuple";
 import { SearchTupleService } from "../SearchTupleService";
-import { PrivateSearchObjectLoaderStatusTuple } from "./PrivateSearchObjectLoaderStatusTuple";
 import { SearchObjectTypeTuple } from "../../SearchObjectTypeTuple";
 import {
     DeviceOfflineCacheService,
-    OfflineCacheStatusTuple,
+    OfflineCacheLoaderStatusTuple,
 } from "@peek/peek_core_device";
+import { SearchIndexUpdateDateTuple } from "@peek/peek_core_search/_private";
 
 // ----------------------------------------------------------------------------
 
@@ -111,7 +111,7 @@ export class PrivateSearchObjectLoaderService extends NgLifeCycleEvents {
     // Saving the cache after each chunk is so expensive, we only do it every 20 or so
     private chunksSavedSinceLastIndexSave = 0;
 
-    private index = new SearchObjectUpdateDateTuple();
+    private index: SearchObjectUpdateDateTuple | null = null;
     private askServerChunks: SearchObjectUpdateDateTuple[] = [];
 
     private _hasLoaded = false;
@@ -119,9 +119,8 @@ export class PrivateSearchObjectLoaderService extends NgLifeCycleEvents {
     private _hasLoadedSubject = new Subject<void>();
     private storage: TupleOfflineStorageService;
 
-    private _statusSubject =
-        new Subject<PrivateSearchObjectLoaderStatusTuple>();
-    private _status = new PrivateSearchObjectLoaderStatusTuple();
+    private _statusSubject = new Subject<OfflineCacheLoaderStatusTuple>();
+    private _status = new OfflineCacheLoaderStatusTuple();
 
     constructor(
         private vortexService: VortexService,
@@ -132,20 +131,38 @@ export class PrivateSearchObjectLoaderService extends NgLifeCycleEvents {
     ) {
         super();
 
+        this._status.pluginName = "peek_core_search";
+        this._status.indexName = "Object Index";
+
         this.storage = new TupleOfflineStorageService(
             storageFactory,
             new TupleOfflineStorageNameService(searchObjectCacheStorageName)
         );
 
         this.setupVortexSubscriptions();
-        this._notifyStatus();
 
-        this.deviceCacheControllerService.triggerCachingObservable
+        this.deviceCacheControllerService.offlineModeEnabled$
+            .pipe(takeUntil(this.onDestroyEvent))
+            .pipe(filter((v) => v))
+            .pipe(first())
+            .subscribe(() => {
+                this.initialLoad();
+            });
+
+        this.deviceCacheControllerService.triggerCachingStartObservable
             .pipe(takeUntil(this.onDestroyEvent))
             .pipe(filter((v) => v))
             .subscribe(() => {
-                this.initialLoad();
+                this.askServerForUpdates();
                 this._notifyStatus();
+            });
+
+        this.deviceCacheControllerService.triggerCachingResumeObservable
+            .pipe(takeUntil(this.onDestroyEvent))
+
+            .subscribe(() => {
+                this._notifyStatus();
+                this.askServerForNextUpdateChunk();
             });
     }
 
@@ -157,11 +174,11 @@ export class PrivateSearchObjectLoaderService extends NgLifeCycleEvents {
         return this._hasLoadedSubject;
     }
 
-    statusObservable(): Observable<PrivateSearchObjectLoaderStatusTuple> {
+    statusObservable(): Observable<OfflineCacheLoaderStatusTuple> {
         return this._statusSubject;
     }
 
-    status(): PrivateSearchObjectLoaderStatusTuple {
+    status(): OfflineCacheLoaderStatusTuple {
         return this._status;
     }
 
@@ -191,29 +208,26 @@ export class PrivateSearchObjectLoaderService extends NgLifeCycleEvents {
             .then(() => this.getObjectsWhenReady(objectTypeId, objectIds));
     }
 
-    private _notifyStatus(): void {
-        this._status.cacheForOfflineEnabled =
-            this.deviceCacheControllerService.cachingEnabled;
-        this._status.initialLoadComplete = this.index.initialLoadComplete;
+    private _notifyReady(): void {
+        if (this._hasLoaded) this._hasLoadedSubject.next();
+    }
 
-        this._status.loadProgress = Object.keys(
-            this.index.updateDateByChunkKey
-        ).length;
-        for (let chunk of this.askServerChunks)
-            this._status.loadProgress -= Object.keys(
+    private _notifyStatus(paused: boolean = false): void {
+        this._status.lastCheckDate = new Date();
+        this._status.paused = paused;
+        this._status.initialFullLoadComplete = this.index.initialLoadComplete;
+
+        this._status.loadingQueueCount = 0;
+        for (let chunk of this.askServerChunks) {
+            this._status.loadingQueueCount += Object.keys(
                 chunk.updateDateByChunkKey
             ).length;
+        }
 
         this._statusSubject.next(this._status);
-
-        const status = new OfflineCacheStatusTuple();
-        status.pluginName = "peek_core_search";
-        status.indexName = "Object Index";
-        status.loadingQueueCount = this._status.loadProgress;
-        status.totalLoadedCount = this._status.loadTotal;
-        status.lastCheckDate = new Date();
-        status.initialFullLoadComplete = this._status.initialLoadComplete;
-        this.deviceCacheControllerService.updateCachingStatus(status);
+        this.deviceCacheControllerService.updateLoaderCachingStatus(
+            this._status
+        );
     }
 
     /** Initial load
@@ -225,20 +239,19 @@ export class PrivateSearchObjectLoaderService extends NgLifeCycleEvents {
             .loadTuples(new UpdateDateTupleSelector())
             .then((tuplesAny: any[]) => {
                 let tuples: SearchObjectUpdateDateTuple[] = tuplesAny;
-                if (tuples.length != 0) {
+                if (tuples.length === 0) {
+                    this.index = new SearchObjectUpdateDateTuple();
+                } else {
                     this.index = tuples[0];
 
                     if (this.index.initialLoadComplete) {
                         this._hasLoaded = true;
-                        this._hasLoadedSubject.next();
+                        this._notifyReady();
                     }
                 }
 
-                this.askServerForUpdates();
                 this._notifyStatus();
             });
-
-        this._notifyStatus();
     }
 
     private setupVortexSubscriptions(): void {
@@ -289,7 +302,7 @@ export class PrivateSearchObjectLoaderService extends NgLifeCycleEvents {
                 let keys = Object.keys(serverIndex.updateDateByChunkKey);
                 let keysNeedingUpdate: string[] = [];
 
-                this._status.loadTotal = keys.length;
+                this._status.totalLoadedCount = keys.length;
 
                 // Tuples is an array of strings
                 for (let chunkKey of keys) {
@@ -338,7 +351,7 @@ export class PrivateSearchObjectLoaderService extends NgLifeCycleEvents {
 
         this.askServerForNextUpdateChunk();
 
-        this._status.lastCheck = new Date();
+        this._status.lastCheckDate = new Date();
     }
 
     private askServerForNextUpdateChunk() {
@@ -346,22 +359,22 @@ export class PrivateSearchObjectLoaderService extends NgLifeCycleEvents {
 
         if (this.askServerChunks.length == 0) return;
 
-        this.deviceCacheControllerService //
-            .waitForGarbageCollector()
-            .then(() => {
-                let indexChunk: SearchObjectUpdateDateTuple =
-                    this.askServerChunks.pop();
-                let filt = extend(
-                    {},
-                    clientSearchObjectWatchUpdateFromDeviceFilt
-                );
-                filt[cacheAll] = true;
-                let pl = new Payload(filt, [indexChunk]);
-                this.vortexService.sendPayload(pl);
+        if (this.deviceCacheControllerService.isOfflineCachingPaused) {
+            this.saveChunkCacheIndex(true) //
+                .catch((e) => console.log(`ERROR saveChunkCacheIndex: ${e}`));
+            this._notifyStatus(true);
+            return;
+        }
 
-                this._status.lastCheck = new Date();
-                this._notifyStatus();
-            });
+        let indexChunk: SearchObjectUpdateDateTuple =
+            this.askServerChunks.pop();
+        let filt = extend({}, clientSearchObjectWatchUpdateFromDeviceFilt);
+        filt[cacheAll] = true;
+        let pl = new Payload(filt, [indexChunk]);
+        this.vortexService.sendPayload(pl);
+
+        this._status.lastCheckDate = new Date();
+        this._notifyStatus();
     }
 
     /** Process SearchObjects From Server
