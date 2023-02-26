@@ -78,7 +78,6 @@ class FastKeywordController(TupleActionProcessorDelegateABC):
                 self._excludedSearchTerms = prepareExcludedTermsForFind(
                     tuples[0].excludedSearchTerms
                 )
-            logger.critical(self._excludedSearchTerms)
 
         self._excludedSubscription = (
             serverTupleObserver.subscribeToTupleSelector(
