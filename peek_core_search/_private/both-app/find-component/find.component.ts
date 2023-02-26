@@ -48,6 +48,8 @@ export class FindComponent extends NgLifeCycleEvents implements OnInit {
     searchNotAvailable$ = new BehaviorSubject<boolean>(false);
     notEnoughTokens$ = new BehaviorSubject<boolean>(false);
 
+    private searchNeeded: boolean = false;
+
     private readonly ALL = "All";
     private performAutoCompleteSubject: Subject<string> = new Subject<string>();
 
@@ -251,6 +253,12 @@ export class FindComponent extends NgLifeCycleEvents implements OnInit {
     }
 
     private performAutoComplete(): void {
+        if (this.searchInProgress) {
+            this.searchNeeded = true;
+            return;
+        }
+        this.searchNeeded = false;
+
         const check = () => {
             if (this._searchString == null || this._searchString.length === 0) {
                 return false;
@@ -284,6 +292,7 @@ export class FindComponent extends NgLifeCycleEvents implements OnInit {
             .then(() => {
                 this.searchInProgress = false;
                 this.firstSearchHasRun = true;
+                if (this.searchNeeded) this.performAutoComplete();
             });
     }
 }
