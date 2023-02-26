@@ -23,6 +23,7 @@ import {
     searchTupleOfflineServiceName,
 } from "@peek/peek_core_search/_private";
 import { NzSwitchModule } from "ng-zorro-antd/switch";
+import { EditExcludeSearchTermComponent } from "./edit-exclude-search-term-table/edit.component";
 
 export function tupleActionPushNameServiceFactory() {
     return new TupleActionPushNameService(
@@ -80,6 +81,7 @@ export const pluginRoutes: Routes = [
         EditSettingComponent,
         EditObjectTypeComponent,
         StatusComponent,
+        EditExcludeSearchTermComponent,
     ],
 })
 export class SearchModule {}

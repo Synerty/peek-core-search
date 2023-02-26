@@ -14,7 +14,9 @@ from peek_core_search._private.worker.tasks.KeywordSplitter import (
     splitFullKeywords,
     splitPartialKeywords,
 )
-from peek_core_search._private.worker.tasks._CalcChunkKey import makeSearchIndexChunkKey
+from peek_core_search._private.worker.tasks._CalcChunkKey import (
+    makeSearchIndexChunkKey,
+)
 from peek_plugin_base.worker import CeleryDbConn
 
 logger = logging.getLogger(__name__)
@@ -28,10 +30,13 @@ def removeObjectIdsFromSearchIndex(deletedObjectIds: List[int]) -> None:
     pass
 
 
-def reindexSearchObject(conn, objectsToIndex: List[ObjectToIndexTuple]) -> None:
+def reindexSearchObject(
+    conn, objectsToIndex: List[ObjectToIndexTuple], excludeStrings: list[str]
+) -> None:
     """Reindex Search Object
 
-    :param conn:
+    :param excludeStrings: A list of strings to exclude from tokenizing
+    :param conn: The database connection
     :param objectsToIndex: Object To Index
     :returns:
     """
@@ -48,10 +53,12 @@ def reindexSearchObject(conn, objectsToIndex: List[ObjectToIndexTuple]) -> None:
     searchIndexChunksToQueue = set()
 
     for objectToIndex in objectsToIndex:
-        newSearchIndexes.extend(_indexObject(objectToIndex))
+        newSearchIndexes.extend(_indexObject(objectToIndex, excludeStrings))
         objectIds.append(objectToIndex.id)
 
-    newIdGen = CeleryDbConn.prefetchDeclarativeIds(SearchIndex, len(newSearchIndexes))
+    newIdGen = CeleryDbConn.prefetchDeclarativeIds(
+        SearchIndex, len(newSearchIndexes)
+    )
     for newSearchIndex in newSearchIndexes:
         newSearchIndex.id = next(newIdGen)
         searchIndexChunksToQueue.add(newSearchIndex.chunkKey)
@@ -78,7 +85,8 @@ def reindexSearchObject(conn, objectsToIndex: List[ObjectToIndexTuple]) -> None:
 
     if searchIndexChunksToQueue:
         conn.execute(
-            queueTable.insert(), [dict(chunkKey=k) for k in searchIndexChunksToQueue]
+            queueTable.insert(),
+            [dict(chunkKey=k) for k in searchIndexChunksToQueue],
         )
 
     logger.info(
@@ -101,7 +109,9 @@ def reindexSearchObject(conn, objectsToIndex: List[ObjectToIndexTuple]) -> None:
 # lemmatizer = WordNetLemmatizer()
 
 
-def _indexObject(objectToIndex: ObjectToIndexTuple) -> List[SearchIndex]:
+def _indexObject(
+    objectToIndex: ObjectToIndexTuple, excludeStrings: list[str]
+) -> List[SearchIndex]:
     """Index Object
 
     This method creates  the "SearchIndex" objects to insert into the DB.
@@ -127,7 +137,7 @@ def _indexObject(objectToIndex: ObjectToIndexTuple) -> List[SearchIndex]:
             )
 
     for propKey, text in objectToIndex.partialKwProps.items():
-        for token in splitPartialKeywords(text):
+        for token in splitPartialKeywords(excludeStrings, text):
             searchIndexes.append(
                 SearchIndex(
                     chunkKey=makeSearchIndexChunkKey(token),

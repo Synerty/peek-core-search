@@ -1,4 +1,4 @@
-import { filter, first, takeUntil } from "rxjs/operators";
+import { filter, first, map, takeUntil } from "rxjs/operators";
 import { Injectable } from "@angular/core";
 import {
     NgLifeCycleEvents,
@@ -59,7 +59,9 @@ export class SearchService extends NgLifeCycleEvents {
         super();
         this.fastIndexController = new FastKeywordController(
             searchIndexLoader,
-            searchObjectLoader
+            searchObjectLoader,
+            tupleService,
+            this
         );
         this._loadPropsAndObjs();
     }
@@ -79,6 +81,12 @@ export class SearchService extends NgLifeCycleEvents {
             .pipe(map((values) => true));
     }
 
+    haveEnoughSearchKeywords(keywordsString: string): boolean {
+        return this.fastIndexController.haveEnoughSearchKeywords(
+            keywordsString
+        );
+    }
+
     /** Get Locations
      *
      * Get the objects with matching keywords from the index..
@@ -89,6 +97,14 @@ export class SearchService extends NgLifeCycleEvents {
         objectTypeId: number | null,
         keywordsString: string
     ): Promise<SearchResultObjectTuple[]> {
+        if (!this.haveEnoughSearchKeywords(keywordsString)) {
+            console.log(
+                `Skipping search for '${keywordsString}'` +
+                    ` as it's too short after excluding keywords`
+            );
+            return [];
+        }
+
         // If we're online
         if (this.vortexStatusService.snapshot.isOnline) {
             return this.getObjectsOnline(

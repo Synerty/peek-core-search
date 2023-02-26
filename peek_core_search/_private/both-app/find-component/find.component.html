@@ -1,18 +1,6 @@
-<nz-alert
-    *ngIf="searchNotAvailable$ | async"
-    [nzMessage]="offlineAlertContent"
-    nzType="warning"
->
-    <ng-template #offlineAlertContent>
-        You are offline and offline mode is not enabled.
-        Search is unavailable at this time.
-    </ng-template>
-</nz-alert>
-
 <div class="search-input">
     <nz-input-group [nzSuffix]="suffixTemplate">
         <input
-            (ngModelChange)="searchKeywordOnChange($event)"
             [(ngModel)]="searchString"
             autofocus
             nz-input
@@ -39,7 +27,6 @@
         <nz-form-label nzFor="searchPropertyId">Property</nz-form-label>
         <nz-form-control>
             <nz-select
-                (ngModelChange)="searchPropertyOnChange($event)"
                 [(ngModel)]="searchProperty"
                 id="searchPropertyId"
                 name="searchPropertyId"
@@ -57,7 +44,6 @@
         <nz-form-label nzFor="searchObjectTypesId">Object Type</nz-form-label>
         <nz-form-control>
             <nz-select
-                (ngModelChange)="searchObjectTypesOnChange($event)"
                 [(ngModel)]="searchObjectType"
                 id="searchObjectTypesId"
                 name="searchObjectTypesId"
@@ -72,13 +58,35 @@
     </nz-form-item>
 </div>
 
-<div
-    *ngIf="!(resultObjects$ | async)?.length && (firstSearchHasRun$ | async)"
-    class="result-alert"
->
+<div class="result-alert">
     <nz-alert
         nzDescription="Peek could not find any results, please refine your search"
         nzMessage="No Results"
+        nzType="info"
+        *ngIf="
+            !(notEnoughTokens$ | async) &&
+            !(resultObjects$ | async)?.length &&
+            (firstSearchHasRun$ | async)
+        "
+    >
+    </nz-alert>
+
+    <nz-alert
+        *ngIf="searchNotAvailable$ | async"
+        [nzMessage]="offlineAlertContent"
+        nzType="warning"
+    >
+        <ng-template #offlineAlertContent>
+            <p>
+                You are offline and offline mode is not enabled. Search is
+                unavailable at this time.
+            </p>
+        </ng-template>
+    </nz-alert>
+
+    <nz-alert
+        *ngIf="notEnoughTokens$ | async"
+        nzMessage="Please enter more text to find what you're looking for."
         nzType="info"
     >
     </nz-alert>

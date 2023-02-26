@@ -1,17 +1,48 @@
 import {
     _splitFullTokens,
+    filterExcludedTerms,
+    prepareExcludedTermsForFind,
     splitFullKeywords,
     splitPartialKeywords,
-} from "@peek/peek_core_search/_private/KeywordSplitter";
-import { PrivateSearchIndexLoaderService } from "@peek/peek_core_search/_private/search-index-loader";
-import { PrivateSearchObjectLoaderService } from "@peek/peek_core_search/_private/search-object-loader";
-import { SearchResultObjectTuple } from "@peek/peek_core_search";
+} from "./KeywordSplitter";
+import { PrivateSearchIndexLoaderService } from "./search-index-loader";
+import { PrivateSearchObjectLoaderService } from "./search-object-loader";
+import { SearchResultObjectTuple } from "../SearchResultObjectTuple";
+import { SearchTupleService } from "./SearchTupleService";
+import { NgLifeCycleEvents, TupleSelector } from "@synerty/vortexjs";
+import { ExcludeSearchStringsTuple } from "./tuples/ExcludeSearchStringsTuple";
+import { filter, takeUntil } from "rxjs/operators";
 
 export class FastKeywordController {
+    private excludedSearchTerms: string[] = [];
     constructor(
         private searchIndexLoader: PrivateSearchIndexLoaderService,
-        private searchObjectLoader: PrivateSearchObjectLoaderService
-    ) {}
+        private searchObjectLoader: PrivateSearchObjectLoaderService,
+        tupleService: SearchTupleService,
+        ngLifeCycleEvents: NgLifeCycleEvents
+    ) {
+        const excludeStringsTs = new TupleSelector(
+            ExcludeSearchStringsTuple.tupleName,
+            {}
+        );
+        tupleService.offlineObserver
+            .subscribeToTupleSelector(excludeStringsTs)
+            .pipe(takeUntil(ngLifeCycleEvents.onDestroyEvent))
+            .pipe(filter((t) => t.length !== 0))
+            .subscribe((tuples: any[]) => {
+                this.excludedSearchTerms = prepareExcludedTermsForFind(
+                    tuples[0].excludedSearchTerms
+                );
+            });
+    }
+
+    haveEnoughSearchKeywords(keywordsString: string): boolean {
+        const kw = filterExcludedTerms(
+            this.excludedSearchTerms,
+            keywordsString
+        );
+        return kw != null && 3 <= kw.length;
+    }
 
     /** Get Locations
      *
@@ -23,6 +54,12 @@ export class FastKeywordController {
         objectTypeId: number | null,
         keywordsString: string
     ): Promise<SearchResultObjectTuple[]> {
+        const statTime = new Date();
+
+        if (!this.haveEnoughSearchKeywords(keywordsString)) {
+            return [];
+        }
+
         // If we do have offline support
         const objectIds: number[] = await this.getObjectIdsForSearchString(
             keywordsString,
@@ -47,9 +84,13 @@ export class FastKeywordController {
 
         results = results.slice(0, 50);
 
+        const duration =
+            Math.round(new Date().getTime() - statTime.getTime()) / 1000;
+
         console.debug(
             `Completed search for |${keywordsString}|` +
-                `, returning ${results.length} objects`
+                `, returning ${results.length} objects` +
+                ` in ${duration}s`
         );
 
         return results;
@@ -96,7 +137,10 @@ export class FastKeywordController {
 
         // ---------------
         // Search for partials
-        const partialTokens = splitPartialKeywords(searchString);
+        const partialTokens = splitPartialKeywords(
+            this.excludedSearchTerms,
+            searchString
+        );
         console.log(`Searching for partial tokens |${partialTokens}|`);
 
         // Now lookup any remaining keywords, if any
@@ -218,7 +262,10 @@ export class FastKeywordController {
         const tokens = _splitFullTokens(searchString);
         for (let token of tokens) {
             let existing = mergedResultsByKw[token] || [];
-            const partialKws = splitPartialKeywords(token);
+            const partialKws = splitPartialKeywords(
+                this.excludedSearchTerms,
+                token
+            );
 
             if (!(partialKws.length <= resultsByPartialKwSet.length)) continue;
 

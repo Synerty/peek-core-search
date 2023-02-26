@@ -47,6 +47,16 @@
                 >Edit Search Object Types
             </a>
         </li>
+        <!-- Edit Exclude Search Terms -->
+        <li role="presentation">
+            <a
+                aria-controls="editExcludeString"
+                data-toggle="tab"
+                href="#editExcludeString"
+                role="tab"
+                >Edit Exclude Search Terms
+            </a>
+        </li>
     </ul>
 
     <!-- Tab panes -->
@@ -90,6 +100,10 @@
         <!-- Edit Object Type Tab -->
         <div class="tab-pane" id="editSearchObjectType" role="tabpanel">
             <pl-search-edit-object-type></pl-search-edit-object-type>
+        </div>
+        <!-- Edit Object Type Tab -->
+        <div class="tab-pane" id="editExcludeString" role="tabpanel">
+            <pl-search-edit-exclude-search-term></pl-search-edit-exclude-search-term>
         </div>
     </div>
 </div>

@@ -38,15 +38,48 @@ export function splitFullKeywords(keywordStr): string[] {
     return results;
 }
 
+export function filterExcludedTerms(
+    excludeStrings: string[],
+    keywordStr: string
+): string {
+    keywordStr = keywordStr.toLowerCase();
+    for (const excludeString of excludeStrings) {
+        keywordStr = keywordStr.replace(excludeString, "");
+    }
+    return keywordStr;
+}
+
+export function prepareExcludedTermsForFind(
+    excludeStrings: string[]
+): string[] {
+    // copy the array
+    const uniqueExcludes = {};
+    for (let term of excludeStrings) {
+        uniqueExcludes[term] = null;
+        while (3 < term.length) {
+            term = term.slice(0, -1);
+            uniqueExcludes[term] = null;
+        }
+    }
+    return Object.keys(uniqueExcludes) //
+        .sort((a, b) => b.length - a.length);
+}
+
 /** Partial Split Keywords
  *
  * This MUST MATCH the code that runs in the worker
  * peek_core_search/_private/worker/tasks/ImportSearchIndexTask.py
  *
+ * @param excludeStrings: An array of strings to filter out, all lowercase
  * @param {string} keywordStr: The keywords as one string
  * @returns {string[]} The keywords as an array
  */
-export function splitPartialKeywords(keywordStr): string[] {
+export function splitPartialKeywords(
+    excludeStrings: string[],
+    keywordStr
+): string[] {
+    keywordStr = filterExcludedTerms(excludeStrings, keywordStr);
+
     // Filter out the empty words and words less than three letters
     const tokens = _splitFullTokens(keywordStr);
 

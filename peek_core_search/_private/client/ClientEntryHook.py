@@ -158,7 +158,9 @@ class ClientEntryHook(PluginClientEntryHookABC):
         # Fast Keyword Controller
 
         fastKeywordController = FastKeywordController(
-            searchObjectCacheController, searchIndexCacheController
+            searchObjectCacheController,
+            searchIndexCacheController,
+            serverTupleObserver,
         )
         self._loadedObjects.append(fastKeywordController)
 

@@ -14,7 +14,9 @@ from twisted.internet.defer import inlineCallbacks, Deferred
 from vortex.DeferUtil import deferToThreadWrapWithLogger
 from vortex.Payload import Payload
 from vortex.TupleAction import TupleActionABC
+from vortex.TupleSelector import TupleSelector
 from vortex.handler.TupleActionProcessor import TupleActionProcessorDelegateABC
+from vortex.handler.TupleDataObserverClient import TupleDataObserverClient
 
 from peek_core_search._private.client.controller.SearchIndexCacheController import (
     SearchIndexCacheController,
@@ -25,11 +27,20 @@ from peek_core_search._private.client.controller.SearchObjectCacheController imp
 from peek_core_search._private.storage.EncodedSearchIndexChunk import (
     EncodedSearchIndexChunk,
 )
+from peek_core_search._private.tuples.ExcludeSearchStringsTuple import (
+    ExcludeSearchStringsTuple,
+)
 from peek_core_search._private.tuples.KeywordAutoCompleteTupleAction import (
     KeywordAutoCompleteTupleAction,
 )
 from peek_core_search._private.tuples.search_object.SearchResultObjectTuple import (
     SearchResultObjectTuple,
+)
+from peek_core_search._private.worker.tasks.KeywordSplitter import (
+    filterExcludedTerms,
+)
+from peek_core_search._private.worker.tasks.KeywordSplitter import (
+    prepareExcludedTermsForFind,
 )
 from peek_core_search._private.worker.tasks.KeywordSplitter import (
     splitPartialKeywords,
@@ -48,6 +59,7 @@ class FastKeywordController(TupleActionProcessorDelegateABC):
         self,
         objectCacheController: SearchObjectCacheController,
         indexCacheController: SearchIndexCacheController,
+        serverTupleObserver: TupleDataObserverClient,
     ):
         self._objectCacheController = objectCacheController
         self._indexCacheController = indexCacheController
@@ -55,16 +67,51 @@ class FastKeywordController(TupleActionProcessorDelegateABC):
             str, Dict[str, Dict[str, List[int]]]
         ] = {}
 
+        self._excludedSearchTerms: list[str] = []
+
+        excludeStringsTs = TupleSelector(
+            ExcludeSearchStringsTuple.tupleName(), {}
+        )
+
+        def excludeCallback(tuples):
+            if tuples:
+                self._excludedSearchTerms = prepareExcludedTermsForFind(
+                    tuples[0].excludedSearchTerms
+                )
+            logger.critical(self._excludedSearchTerms)
+
+        self._excludedSubscription = (
+            serverTupleObserver.subscribeToTupleSelector(
+                excludeStringsTs
+            ).subscribe(excludeCallback)
+        )
+
     def shutdown(self):
         self._objectCacheController = None
         self._indexCacheController = None
         self._objectIdsByKeywordByPropertyKeyByChunkKey = {}
+        self._excludedSearchTerms = []
+
+        # Ok, we won't unsubscribe...
+        # AttributeError: 'AnonymousDisposable' object has no attribute 'unsubscribe'
+        # self._excludedSubscription.unsubscribe()
+
+    def haveEnoughSearchKeywords(self, keywordsString: str) -> bool:
+        kw = filterExcludedTerms(self._excludedSearchTerms, keywordsString)
+        return kw and 3 <= len(kw)
 
     @inlineCallbacks
     def processTupleAction(self, tupleAction: TupleActionABC) -> Deferred:
         assert isinstance(
             tupleAction, KeywordAutoCompleteTupleAction
         ), "Tuple is not a KeywordAutoCompleteTupleAction"
+
+        if not self.haveEnoughSearchKeywords(tupleAction.searchString):
+            logger.debug(
+                f"Skipping search for '${tupleAction.searchString}'"
+                f" as it's too short after excluding keywords"
+            )
+            return []
 
         startTime = datetime.now(pytz.utc)
 
@@ -178,7 +225,9 @@ class FastKeywordController(TupleActionProcessorDelegateABC):
 
         # ---------------
         # Search for partials
-        partialTokens = splitPartialKeywords(searchString)
+        partialTokens = splitPartialKeywords(
+            self._excludedSearchTerms, searchString
+        )
         logger.debug("Searching for partial tokens |%s|", partialTokens)
 
         # Now lookup any remaining keywords, if any
@@ -234,13 +283,17 @@ class FastKeywordController(TupleActionProcessorDelegateABC):
         for token in tokens:
             token = token.strip("^$")
             existing = mergedResultsByKw.get(token, list())
-            partialKws = splitPartialKeywords(token)
+            partialKws = splitPartialKeywords(self._excludedSearchTerms, token)
 
             if not len(partialKws) <= len(resultsByPartialKwSet):
                 continue
 
             # Union all
-            objectIdsForToken = set(resultsByPartialKw[partialKws.pop()])
+            objectIdsForToken = (
+                set(resultsByPartialKw[partialKws.pop()])
+                if partialKws
+                else set()
+            )
             while partialKws:
                 objectIdsForToken &= set(resultsByPartialKw[partialKws.pop()])
 

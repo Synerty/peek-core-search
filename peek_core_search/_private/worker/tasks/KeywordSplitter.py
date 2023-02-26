@@ -29,7 +29,31 @@ def splitFullKeywords(keywordStr: str) -> Set[str]:
     return set(tokens)
 
 
-def splitPartialKeywords(keywordStr: str) -> Set[str]:
+def filterExcludedTerms(excludeStrings, keywordStr):
+    keywordStr = keywordStr.lower()
+    for excludeString in excludeStrings:
+        keywordStr = keywordStr.replace(excludeString, "")
+    return keywordStr
+
+
+def prepareExcludedTermsForFind(excludeStrings: list[str]) -> list[str]:
+    # Add terms so we have `conn` and `con`
+
+    uniqueExcludes = set()
+
+    for term in excludeStrings:
+        uniqueExcludes.add(term)
+        while 3 < len(term):
+            term = term[:-1]
+            uniqueExcludes.add(term)
+
+    # Sort terms so we replace larger matches first
+    return list(sorted(uniqueExcludes, key=lambda s: -len(s)))
+
+
+def splitPartialKeywords(
+    excludeStrings: list[str], keywordStr: str
+) -> Set[str]:
     """Split Partial Keywords
 
     This tokenizer function is used for search strings loaded into the
@@ -40,9 +64,13 @@ def splitPartialKeywords(keywordStr: str) -> Set[str]:
     * all numbers as full keywords
     * all remaining items will be tokenized in a rolling three char method.
 
+    :param excludeStrings: An array of lowercase strings that are not worth
+        tokenizing
     :param keywordStr: The string to tokenize
 
     """
+    keywordStr = filterExcludedTerms(excludeStrings, keywordStr)
+
     # Strip and Split words, filter out words less than three letters
     tokens = _splitFullTokens(keywordStr)
 

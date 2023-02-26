@@ -10,11 +10,19 @@ from peek_core_search._private.server.tuple_providers.SearchObjectTypeTupleProvi
 from peek_core_search._private.storage.SearchObjectTypeTuple import (
     SearchObjectTypeTuple,
 )
-from peek_core_search._private.storage.SearchPropertyTuple import SearchPropertyTuple
+from peek_core_search._private.storage.SearchPropertyTuple import (
+    SearchPropertyTuple,
+)
 from peek_core_search._private.tuples.AdminStatusTuple import AdminStatusTuple
 from vortex.handler.TupleDataObservableHandler import TupleDataObservableHandler
 from .controller.StatusController import StatusController
-from .tuple_providers.SearchPropertyTupleProvider import SearchPropertyTupleProvider
+from .tuple_providers.ExcludeSearchStringsTupleProvider import (
+    ExcludeSearchStringsTupleProvider,
+)
+from .tuple_providers.SearchPropertyTupleProvider import (
+    SearchPropertyTupleProvider,
+)
+from ..tuples.ExcludeSearchStringsTuple import ExcludeSearchStringsTuple
 
 
 def makeTupleDataObservableHandler(
@@ -37,13 +45,20 @@ def makeTupleDataObservableHandler(
 
     # Search Property
     tupleObservable.addTupleProvider(
-        SearchPropertyTuple.tupleName(), SearchPropertyTupleProvider(dbSessionCreator)
+        SearchPropertyTuple.tupleName(),
+        SearchPropertyTupleProvider(dbSessionCreator),
     )
 
     # Search Object Type
     tupleObservable.addTupleProvider(
         SearchObjectTypeTuple.tupleName(),
         SearchObjectTypeTupleProvider(dbSessionCreator),
+    )
+
+    # Exclude Terms Tuple
+    tupleObservable.addTupleProvider(
+        ExcludeSearchStringsTuple.tupleName(),
+        ExcludeSearchStringsTupleProvider(dbSessionCreator),
     )
 
     # Admin status tuple

@@ -33,19 +33,20 @@ import { map } from "rxjs/operators";
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FindComponent extends NgLifeCycleEvents implements OnInit {
-    searchString: string = "";
+    _searchString: string = "";
     resultObjects$ = new BehaviorSubject<SearchResultObjectTuple[]>([]);
     searchInProgress$ = new BehaviorSubject<boolean>(false);
     searchProperties: SearchPropertyTuple[] = [];
     searchPropertyStrings: string[] = [];
-    searchProperty: SearchPropertyTuple = new SearchPropertyTuple();
+    _searchProperty: SearchPropertyTuple = new SearchPropertyTuple();
     searchObjectTypes: SearchObjectTypeTuple[] = [];
     searchObjectTypeStrings: string[] = [];
-    searchObjectType: SearchObjectTypeTuple = new SearchObjectTypeTuple();
+    _searchObjectType: SearchObjectTypeTuple = new SearchObjectTypeTuple();
     optionsShown$ = new BehaviorSubject<boolean>(false);
     firstSearchHasRun$ = new BehaviorSubject<boolean>(false);
 
     searchNotAvailable$ = new BehaviorSubject<boolean>(false);
+    notEnoughTokens$ = new BehaviorSubject<boolean>(false);
 
     private readonly ALL = "All";
     private performAutoCompleteSubject: Subject<string> = new Subject<string>();
@@ -58,8 +59,8 @@ export class FindComponent extends NgLifeCycleEvents implements OnInit {
         private deviceCacheControllerService: DeviceOfflineCacheService
     ) {
         super();
-        this.searchProperty.title = this.ALL;
-        this.searchObjectType.title = this.ALL;
+        this._searchProperty.title = this.ALL;
+        this._searchObjectType.title = this.ALL;
 
         zip(
             this.vortexStatusService.isOnline,
@@ -69,11 +70,47 @@ export class FindComponent extends NgLifeCycleEvents implements OnInit {
             .subscribe((state) => this.searchNotAvailable$.next(state));
     }
 
+    get searchString() {
+        return this._searchString;
+    }
+
+    set searchString(value: string) {
+        this._searchString = value;
+        this.notEnoughTokens$.next(
+            !this.searchService.haveEnoughSearchKeywords(value)
+        );
+
+        if (this.notEnoughTokens$.getValue()) {
+            return;
+        }
+
+        this.performAutoComplete();
+        this.performAutoCompleteSubject.next(value);
+    }
+
+    get searchProperty() {
+        return this._searchProperty;
+    }
+
+    set searchProperty(value: SearchPropertyTuple) {
+        this._searchProperty = value;
+        this.performAutoComplete();
+    }
+
+    get searchObjectType() {
+        return this._searchObjectType;
+    }
+
+    set searchObjectType(value: SearchObjectTypeTuple) {
+        this._searchObjectType = value;
+        this.performAutoComplete();
+    }
+
     get resultObjects() {
         return this.resultObjects$.getValue();
     }
 
-    set resultObjects(value) {
+    set resultObjects(value: SearchResultObjectTuple[]) {
         this.resultObjects$.next(value);
     }
 
@@ -102,7 +139,7 @@ export class FindComponent extends NgLifeCycleEvents implements OnInit {
     }
 
     get getSearchPropertyName(): string | null {
-        const prop = this.searchProperty;
+        const prop = this._searchProperty;
         if (prop.title != this.ALL && prop.name != null && prop.name.length) {
             return prop.name;
         }
@@ -110,7 +147,7 @@ export class FindComponent extends NgLifeCycleEvents implements OnInit {
     }
 
     get getSearchObjectTypeId(): number | null {
-        const objProp = this.searchObjectType;
+        const objProp = this._searchObjectType;
         if (
             objProp.title != this.ALL &&
             objProp.name != null &&
@@ -165,25 +202,10 @@ export class FindComponent extends NgLifeCycleEvents implements OnInit {
     }
 
     resetSearch(): void {
-        this.searchString = "";
+        this._searchString = "";
         this.resultObjects = [];
         this.firstSearchHasRun = false;
         this.searchInProgress = false;
-    }
-
-    searchKeywordOnChange($event): void {
-        this.searchString = $event;
-        this.performAutoCompleteSubject.next($event);
-    }
-
-    searchPropertyOnChange($event): void {
-        this.searchProperty = $event;
-        this.performAutoComplete();
-    }
-
-    searchObjectTypesOnChange($event): void {
-        this.searchObjectType = $event;
-        this.performAutoComplete();
     }
 
     private updateSearchProperties(v: SearchPropertyTuple[]): void {
@@ -191,8 +213,8 @@ export class FindComponent extends NgLifeCycleEvents implements OnInit {
         const all = new SearchPropertyTuple();
         all.title = "All";
 
-        if (this.searchProperty.title === all.title) {
-            this.searchProperty = all;
+        if (this._searchProperty.title === all.title) {
+            this._searchProperty = all;
         }
 
         // Update the search objects
@@ -212,8 +234,8 @@ export class FindComponent extends NgLifeCycleEvents implements OnInit {
         const all = new SearchObjectTypeTuple();
         all.title = "All";
 
-        if (this.searchObjectType.title === all.title) {
-            this.searchObjectType = all;
+        if (this._searchObjectType.title === all.title) {
+            this._searchObjectType = all;
         }
 
         // Update the search objects
@@ -230,11 +252,11 @@ export class FindComponent extends NgLifeCycleEvents implements OnInit {
 
     private performAutoComplete(): void {
         const check = () => {
-            if (this.searchString == null || this.searchString.length === 0) {
+            if (this._searchString == null || this._searchString.length === 0) {
                 return false;
             }
 
-            if (this.searchString.length < 3) {
+            if (this._searchString.length < 3) {
                 return false;
             }
 
@@ -251,7 +273,7 @@ export class FindComponent extends NgLifeCycleEvents implements OnInit {
             .getObjects(
                 this.getSearchPropertyName,
                 this.getSearchObjectTypeId,
-                this.searchString
+                this._searchString
             )
             .then((results: SearchResultObjectTuple[]) => {
                 this.resultObjects = results;

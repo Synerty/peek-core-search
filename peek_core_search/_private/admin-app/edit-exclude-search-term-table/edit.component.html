@@ -1,0 +1,50 @@
+<div class="panel panel-default">
+    <div class="panel-heading">
+        Edit Object Types
+        <div class="btn-toolbar pull-right">
+            <div class="btn-group">
+                <div (click)="save()" class="btn btn-default btn-sm">Save</div>
+                <div (click)="load()" class="btn btn-default btn-sm">Reset</div>
+                <div (click)="addRow()" class="btn btn-default btn-sm">Add</div>
+            </div>
+        </div>
+    </div>
+    <div class="panel-body">
+        <p></p>
+        <table class="table">
+            <tr>
+                <th>Term</th>
+                <th>Comment</th>
+                <th></th>
+            </tr>
+            <tr *ngFor="let item of items">
+                <td>
+                    <input
+                        [(ngModel)]="item.term"
+                        class="form-control input-sm"
+                        type="text"
+                    />
+                </td>
+                <td>
+                    <textarea
+                        [(ngModel)]="item.comment"
+                        class="form-control input-sm"
+                        type="text"
+                        rows="1"
+                    ></textarea>
+                </td>
+                <td>
+                    <div
+                        (click)="removeRow(item)"
+                        class="btn btn-default btn-sm"
+                    >
+                        <span
+                            aria-hidden="true"
+                            class="glyphicon glyphicon-minus"
+                        ></span>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+</div>

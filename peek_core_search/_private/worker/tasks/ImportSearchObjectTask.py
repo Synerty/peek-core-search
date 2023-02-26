@@ -5,15 +5,23 @@ from datetime import datetime
 from typing import List, Dict, Tuple, Set
 
 import pytz
+
+from peek_core_search._private.storage.ExcludeSearchStringTable import (
+    ExcludeSearchStringTable,
+)
 from peek_core_search._private.storage.SearchObject import SearchObject
 from peek_core_search._private.storage.SearchObjectCompilerQueue import (
     SearchObjectCompilerQueue,
 )
-from peek_core_search._private.storage.SearchObjectRoute import SearchObjectRoute
+from peek_core_search._private.storage.SearchObjectRoute import (
+    SearchObjectRoute,
+)
 from peek_core_search._private.storage.SearchObjectTypeTuple import (
     SearchObjectTypeTuple,
 )
-from peek_core_search._private.storage.SearchPropertyTuple import SearchPropertyTuple
+from peek_core_search._private.storage.SearchPropertyTuple import (
+    SearchPropertyTuple,
+)
 from peek_core_search._private.worker.tasks.ImportSearchIndexTask import (
     ObjectToIndexTuple,
     reindexSearchObject,
@@ -21,7 +29,9 @@ from peek_core_search._private.worker.tasks.ImportSearchIndexTask import (
 from peek_core_search._private.worker.tasks._CalcChunkKey import (
     makeSearchObjectChunkKey,
 )
-from peek_core_search.tuples.ImportSearchObjectTuple import ImportSearchObjectTuple
+from peek_core_search.tuples.ImportSearchObjectTuple import (
+    ImportSearchObjectTuple,
+)
 from peek_plugin_base.worker import CeleryDbConn
 from peek_plugin_base.worker.CeleryApp import celeryApp
 from sqlalchemy import select, bindparam, and_, or_
@@ -65,7 +75,9 @@ def importSearchObjectTask(self, searchObjectsEncodedPayload: bytes) -> None:
             o.fullKeywords = {k.lower(): v for k, v in o.fullKeywords.items()}
 
         if o.partialKeywords:
-            o.partialKeywords = {k.lower(): v for k, v in o.partialKeywords.items()}
+            o.partialKeywords = {
+                k.lower(): v for k, v in o.partialKeywords.items()
+            }
 
     try:
         objectTypeIdsByName = _prepareLookups(newSearchObjects)
@@ -89,7 +101,9 @@ def importSearchObjectTask(self, searchObjectsEncodedPayload: bytes) -> None:
         raise self.retry(exc=e, countdown=3)
 
 
-def _prepareLookups(newSearchObjects: List[ImportSearchObjectTuple]) -> Dict[str, int]:
+def _prepareLookups(
+    newSearchObjects: List[ImportSearchObjectTuple],
+) -> Dict[str, int]:
     """Check Or Insert Search Properties
 
     Make sure the search properties exist.
@@ -120,7 +134,9 @@ def _prepareLookups(newSearchObjects: List[ImportSearchObjectTuple]) -> Dict[str
 
         if propertyNames:
             for newPropName in propertyNames:
-                dbSession.add(SearchPropertyTuple(name=newPropName, title=newPropName))
+                dbSession.add(
+                    SearchPropertyTuple(name=newPropName, title=newPropName)
+                )
 
             dbSession.commit()
 
@@ -145,7 +161,9 @@ def _prepareLookups(newSearchObjects: List[ImportSearchObjectTuple]) -> Dict[str
             dbObjectTypes = dbSession.query(SearchObjectTypeTuple).all()
             objectTypeIdsByName = {o.name: o.id for o in dbObjectTypes}
 
-        logger.debug("Prepared lookups in %s", (datetime.now(pytz.utc) - startTime))
+        logger.debug(
+            "Prepared lookups in %s", (datetime.now(pytz.utc) - startTime)
+        )
 
         return objectTypeIdsByName
 
@@ -158,7 +176,8 @@ def _prepareLookups(newSearchObjects: List[ImportSearchObjectTuple]) -> Dict[str
 
 
 def _insertOrUpdateObjects(
-    newSearchObjects: List[ImportSearchObjectTuple], objectTypeIdsByName: Dict[str, int]
+    newSearchObjects: List[ImportSearchObjectTuple],
+    objectTypeIdsByName: Dict[str, int],
 ) -> Tuple[Dict[str, int], Set[int]]:
     """Insert or Update Objects
 
@@ -168,6 +187,7 @@ def _insertOrUpdateObjects(
     """
 
     searchObjectTable = SearchObject.__table__
+    excludeSearchStringTable = ExcludeSearchStringTable.__table__
 
     startTime = datetime.now(pytz.utc)
 
@@ -186,7 +206,15 @@ def _insertOrUpdateObjects(
         inserts = []
         propUpdates = []
         objectTypeUpdates = []
-        chunkKeysForQueue: Set[int] = set()
+        chunkKeysForQueue: set[int] = set()
+
+        excludeStrings = [
+            result.term.lower()
+            for result in conn.execute(
+                select(columns=[excludeSearchStringTable.c.term])
+            )
+        ]
+        excludeStrings.sort(key=lambda t: len(t))
 
         # Work out which objects have been updated or need inserting
         for importObject in newSearchObjects:
@@ -209,7 +237,9 @@ def _insertOrUpdateObjects(
                 # Add the data we're importing second
                 # Remove null values
                 fullKwPropsWithKey.update(importObject.fullKeywords)
-                fullKwPropsWithKey = {k: v for k, v in fullKwPropsWithKey.items() if v}
+                fullKwPropsWithKey = {
+                    k: v for k, v in fullKwPropsWithKey.items() if v
+                }
 
             if importObject.partialKeywords:
                 if existingObject and existingObject.partialKwPropertiesJson:
@@ -243,7 +273,8 @@ def _insertOrUpdateObjects(
                 searchIndexUpdateNeeded = (
                     searchIndexUpdateNeeded
                     or partialKwPropsStr
-                    and existingObject.partialKwPropertiesJson != partialKwPropsStr
+                    and existingObject.partialKwPropertiesJson
+                    != partialKwPropsStr
                 )
 
                 if searchIndexUpdateNeeded:
@@ -306,7 +337,7 @@ def _insertOrUpdateObjects(
             conn.execute(stmt, objectTypeUpdates)
 
         # Reindex the keywords
-        reindexSearchObject(conn, list(objectsToIndex.values()))
+        reindexSearchObject(conn, list(objectsToIndex.values()), excludeStrings)
 
         if objectsToIndex or inserts or propUpdates or objectTypeUpdates:
             transaction.commit()
@@ -364,7 +395,9 @@ def _loadExistingObjects(newSearchObjects, searchObjectTable):
     finally:
         conn.close()
     # Get the IDs that we need
-    newSearchObjectUniqueCount = len(set([o.key.lower() for o in newSearchObjects]))
+    newSearchObjectUniqueCount = len(
+        set([o.key.lower() for o in newSearchObjects])
+    )
     newIdGen = CeleryDbConn.prefetchDeclarativeIds(
         SearchObject, newSearchObjectUniqueCount - len(createdObjectByKey)
     )
@@ -373,7 +406,8 @@ def _loadExistingObjects(newSearchObjects, searchObjectTable):
 
 
 def _insertObjectRoutes(
-    newSearchObjects: List[ImportSearchObjectTuple], objectIdByKey: Dict[str, int]
+    newSearchObjects: List[ImportSearchObjectTuple],
+    objectIdByKey: Dict[str, int],
 ):
     """Insert Object Routes
 
@@ -443,7 +477,8 @@ def _insertObjectRoutes(
 
                 if uniqueRouteStr in existingRoutes:
                     logger.debug(
-                        "A duplicate route exists in another" " import group\n%s\n%s",
+                        "A duplicate route exists in another"
+                        " import group\n%s\n%s",
                         existingRoutes[uniqueRouteStr],
                         routeInsert,
                     )
@@ -519,7 +554,9 @@ def _packObjectJson(updatedIds: List[int], chunkKeysForQueue: Set[int]):
                 SearchObjectRoute.routeTitle,
                 SearchObjectRoute.routePath,
             )
-            .outerjoin(SearchObjectRoute, SearchObject.id == SearchObjectRoute.objectId)
+            .outerjoin(
+                SearchObjectRoute, SearchObject.id == SearchObjectRoute.objectId
+            )
             .filter(SearchObject.id.in_(updatedIds))
             .filter(
                 or_(
@@ -573,7 +610,8 @@ def _packObjectJson(updatedIds: List[int], chunkKeysForQueue: Set[int]):
 
         if chunkKeysForQueue:
             dbSession.execute(
-                objectQueueTable.insert(), [dict(chunkKey=v) for v in chunkKeysForQueue]
+                objectQueueTable.insert(),
+                [dict(chunkKey=v) for v in chunkKeysForQueue],
             )
 
         if packedJsonUpdates or chunkKeysForQueue:
