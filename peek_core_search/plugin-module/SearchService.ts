@@ -13,6 +13,7 @@ import { SearchPropertyTuple, SearchTupleService } from "./_private";
 import { KeywordAutoCompleteTupleAction } from "./_private/tuples/KeywordAutoCompleteTupleAction";
 import { DeviceOfflineCacheService } from "@peek/peek_core_device";
 import { FastKeywordController } from "./_private/fast-keyword-controller";
+import { Observable, zip } from "rxjs";
 
 export interface SearchPropT {
     title: string;
@@ -61,6 +62,21 @@ export class SearchService extends NgLifeCycleEvents {
             searchObjectLoader
         );
         this._loadPropsAndObjs();
+    }
+
+    get canSearchOffline$(): Observable<boolean> {
+        return zip(
+            this.searchIndexLoader.isReadyObservable(),
+            this.searchObjectLoader.isReadyObservable()
+        )
+            .pipe(
+                filter(
+                    () =>
+                        this.searchObjectLoader.offlineEnabled &&
+                        this.searchIndexLoader.offlineEnabled
+                )
+            )
+            .pipe(map((values) => true));
     }
 
     /** Get Locations

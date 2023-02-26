@@ -63,7 +63,7 @@ export class FindComponent extends NgLifeCycleEvents implements OnInit {
 
         zip(
             this.vortexStatusService.isOnline,
-            this.deviceCacheControllerService.offlineModeEnabled$
+            this.searchService.canSearchOffline$
         )
             .pipe(map((values) => !values[0] && !values[1]))
             .subscribe((state) => this.searchNotAvailable$.next(state));
