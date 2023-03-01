@@ -1,7 +1,8 @@
 import {
     _splitFullTokens,
-    filterExcludedTerms,
-    prepareExcludedTermsForFind,
+    filterExcludedFullTerms,
+    filterExcludedPartialTerms,
+    prepareExcludedPartialTermsForFind,
     splitFullKeywords,
     splitPartialKeywords,
 } from "./KeywordSplitter";
@@ -14,7 +15,8 @@ import { ExcludeSearchStringsTuple } from "./tuples/ExcludeSearchStringsTuple";
 import { filter, takeUntil } from "rxjs/operators";
 
 export class FastKeywordController {
-    private excludedSearchTerms: string[] = [];
+    private excludedPartialSearchTerms: string[] = [];
+    private excludedFullSearchTerms: Set<string> = new Set<string>();
     constructor(
         private searchIndexLoader: PrivateSearchIndexLoaderService,
         private searchObjectLoader: PrivateSearchObjectLoaderService,
@@ -30,15 +32,23 @@ export class FastKeywordController {
             .pipe(takeUntil(ngLifeCycleEvents.onDestroyEvent))
             .pipe(filter((t) => t.length !== 0))
             .subscribe((tuples: any[]) => {
-                this.excludedSearchTerms = prepareExcludedTermsForFind(
-                    tuples[0].excludedSearchTerms
+                this.excludedPartialSearchTerms =
+                    prepareExcludedPartialTermsForFind(
+                        tuples[0].excludedPartialSearchTerms
+                    );
+                this.excludedFullSearchTerms = new Set<string>(
+                    tuples[0].excludedFullSearchTerms
                 );
             });
     }
 
     haveEnoughSearchKeywords(keywordsString: string): boolean {
-        const kw = filterExcludedTerms(
-            this.excludedSearchTerms,
+        keywordsString = filterExcludedFullTerms(
+            this.excludedFullSearchTerms,
+            keywordsString
+        );
+        const kw = filterExcludedPartialTerms(
+            this.excludedPartialSearchTerms,
             keywordsString
         );
         return kw != null && 3 <= kw.length;
@@ -110,7 +120,10 @@ export class FastKeywordController {
 
         // ---------------
         // Search for fulls
-        const fullKwTokens = splitFullKeywords(searchString);
+        const fullKwTokens = splitFullKeywords(
+            this.excludedFullSearchTerms,
+            searchString
+        );
 
         console.log(`Searching for full tokens |${fullKwTokens}|`);
 
@@ -138,7 +151,7 @@ export class FastKeywordController {
         // ---------------
         // Search for partials
         const partialTokens = splitPartialKeywords(
-            this.excludedSearchTerms,
+            this.excludedPartialSearchTerms,
             searchString
         );
         console.log(`Searching for partial tokens |${partialTokens}|`);
@@ -263,7 +276,7 @@ export class FastKeywordController {
         for (let token of tokens) {
             let existing = mergedResultsByKw[token] || [];
             const partialKws = splitPartialKeywords(
-                this.excludedSearchTerms,
+                this.excludedPartialSearchTerms,
                 token
             );
 

@@ -31,11 +31,15 @@ def removeObjectIdsFromSearchIndex(deletedObjectIds: List[int]) -> None:
 
 
 def reindexSearchObject(
-    conn, objectsToIndex: List[ObjectToIndexTuple], excludeStrings: list[str]
+    conn,
+    objectsToIndex: List[ObjectToIndexTuple],
+    excludedPartialSearchTerms: list[str],
+    excludedFullSearchTerms: set[str],
 ) -> None:
     """Reindex Search Object
 
-    :param excludeStrings: A list of strings to exclude from tokenizing
+    :param excludedFullSearchTerms:
+    :param excludedPartialSearchTerms: A list of strings to exclude from tokenizing
     :param conn: The database connection
     :param objectsToIndex: Object To Index
     :returns:
@@ -53,7 +57,13 @@ def reindexSearchObject(
     searchIndexChunksToQueue = set()
 
     for objectToIndex in objectsToIndex:
-        newSearchIndexes.extend(_indexObject(objectToIndex, excludeStrings))
+        newSearchIndexes.extend(
+            _indexObject(
+                objectToIndex,
+                excludedPartialSearchTerms,
+                excludedFullSearchTerms,
+            )
+        )
         objectIds.append(objectToIndex.id)
 
     newIdGen = CeleryDbConn.prefetchDeclarativeIds(
@@ -110,7 +120,9 @@ def reindexSearchObject(
 
 
 def _indexObject(
-    objectToIndex: ObjectToIndexTuple, excludeStrings: list[str]
+    objectToIndex: ObjectToIndexTuple,
+    excludedPartialSearchTerms: list[str],
+    excludedFullSearchTerms: set[str],
 ) -> List[SearchIndex]:
     """Index Object
 
@@ -126,7 +138,7 @@ def _indexObject(
     searchIndexes = []
 
     for propKey, text in objectToIndex.fullKwProps.items():
-        for token in splitFullKeywords(text):
+        for token in splitFullKeywords(excludedFullSearchTerms, text):
             searchIndexes.append(
                 SearchIndex(
                     chunkKey=makeSearchIndexChunkKey(token),
@@ -137,7 +149,7 @@ def _indexObject(
             )
 
     for propKey, text in objectToIndex.partialKwProps.items():
-        for token in splitPartialKeywords(excludeStrings, text):
+        for token in splitPartialKeywords(excludedPartialSearchTerms, text):
             searchIndexes.append(
                 SearchIndex(
                     chunkKey=makeSearchIndexChunkKey(token),

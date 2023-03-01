@@ -13,4 +13,6 @@ class ExcludeSearchStringTable(Tuple, DeclarativeBase):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     term = Column(String, nullable=False)
+    partial = Column(Boolean, nullable=True)
+    full = Column(Boolean, nullable=True)
     comment = Column(String, nullable=True)

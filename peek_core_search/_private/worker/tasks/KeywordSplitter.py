@@ -13,7 +13,13 @@ def _splitFullTokens(keywordStr: str) -> Set[str]:
     return set([w.strip() for w in tokens if 2 <= len(w)])
 
 
-def splitFullKeywords(keywordStr: str) -> Set[str]:
+def filterExcludedFullTerms(excludeStrings: set[str], keywordStr: str):
+    return " ".join(
+        filter(lambda t: t not in excludeStrings, _splitFullTokens(keywordStr))
+    )
+
+
+def splitFullKeywords(excludeStrings: set[str], keywordStr: str) -> Set[str]:
     """Split Full Keywords
 
     This tokenizer function is used for search strings loaded into
@@ -24,19 +30,19 @@ def splitFullKeywords(keywordStr: str) -> Set[str]:
 
     """
     tokens = _splitFullTokens(keywordStr)
-    tokens = ["^%s$" % t for t in tokens]
+    tokens = ["^%s$" % t for t in tokens if t not in excludeStrings]
 
     return set(tokens)
 
 
-def filterExcludedTerms(excludeStrings, keywordStr):
+def filterExcludedPartialTerms(excludeStrings, keywordStr):
     keywordStr = keywordStr.lower()
     for excludeString in excludeStrings:
         keywordStr = keywordStr.replace(excludeString, "")
     return keywordStr
 
 
-def prepareExcludedTermsForFind(excludeStrings: list[str]) -> list[str]:
+def prepareExcludedPartialTermsForFind(excludeStrings: list[str]) -> list[str]:
     # Add terms so we have `conn` and `con`
 
     uniqueExcludes = set()
@@ -69,7 +75,7 @@ def splitPartialKeywords(
     :param keywordStr: The string to tokenize
 
     """
-    keywordStr = filterExcludedTerms(excludeStrings, keywordStr)
+    keywordStr = filterExcludedPartialTerms(excludeStrings, keywordStr)
 
     # Strip and Split words, filter out words less than three letters
     tokens = _splitFullTokens(keywordStr)

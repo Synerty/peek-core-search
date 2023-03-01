@@ -1,6 +1,6 @@
 <div class="panel panel-default">
     <div class="panel-heading">
-        Edit Object Types
+        Edit Terms to Exclude from Index
         <div class="btn-toolbar pull-right">
             <div class="btn-group">
                 <div (click)="save()" class="btn btn-default btn-sm">Save</div>
@@ -14,6 +14,8 @@
         <table class="table">
             <tr>
                 <th>Term</th>
+                <th>Partial?</th>
+                <th>Full?</th>
                 <th>Comment</th>
                 <th></th>
             </tr>
@@ -23,6 +25,20 @@
                         [(ngModel)]="item.term"
                         class="form-control input-sm"
                         type="text"
+                    />
+                </td>
+                <td>
+                    <input
+                        [(ngModel)]="item.partial"
+                        class="form-control input-sm"
+                        type="checkbox"
+                    />
+                </td>
+                <td>
+                    <input
+                        [(ngModel)]="item.full"
+                        class="form-control input-sm"
+                        type="checkbox"
                     />
                 </td>
                 <td>

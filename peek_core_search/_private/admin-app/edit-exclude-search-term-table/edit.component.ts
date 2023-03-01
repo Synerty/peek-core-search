@@ -38,6 +38,10 @@ export class EditExcludeSearchTermComponent extends NgLifeCycleEvents {
     }
 
     save() {
+        for (const item of this.items) {
+            item.term = item.term.toLowerCase();
+        }
+
         let itemsToDelete = this.itemsToDelete;
 
         this.loader

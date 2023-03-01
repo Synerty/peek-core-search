@@ -115,7 +115,6 @@ def _prepareLookups(
     startTime = datetime.now(pytz.utc)
 
     try:
-
         objectTypeNames = {"none"}
         propertyNames = {"key"}
 
@@ -187,7 +186,6 @@ def _insertOrUpdateObjects(
     """
 
     searchObjectTable = SearchObject.__table__
-    excludeSearchStringTable = ExcludeSearchStringTable.__table__
 
     startTime = datetime.now(pytz.utc)
 
@@ -199,7 +197,6 @@ def _insertOrUpdateObjects(
     transaction = conn.begin()
 
     try:
-
         # Create state arrays
         objectsToIndex: Dict[int, ObjectToIndexTuple] = {}
         objectIdByKey: Dict[str, int] = {}
@@ -208,13 +205,10 @@ def _insertOrUpdateObjects(
         objectTypeUpdates = []
         chunkKeysForQueue: set[int] = set()
 
-        excludeStrings = [
-            result.term.lower()
-            for result in conn.execute(
-                select(columns=[excludeSearchStringTable.c.term])
-            )
-        ]
-        excludeStrings.sort(key=lambda t: len(t))
+        (
+            excludedFullSearchTerms,
+            excludedPartialSearchTerms,
+        ) = queryExcludedTerms(conn)
 
         # Work out which objects have been updated or need inserting
         for importObject in newSearchObjects:
@@ -337,7 +331,12 @@ def _insertOrUpdateObjects(
             conn.execute(stmt, objectTypeUpdates)
 
         # Reindex the keywords
-        reindexSearchObject(conn, list(objectsToIndex.values()), excludeStrings)
+        reindexSearchObject(
+            conn,
+            list(objectsToIndex.values()),
+            excludedPartialSearchTerms,
+            excludedFullSearchTerms,
+        )
 
         if objectsToIndex or inserts or propUpdates or objectTypeUpdates:
             transaction.commit()
@@ -361,6 +360,32 @@ def _insertOrUpdateObjects(
 
     finally:
         conn.close()
+
+
+def queryExcludedTerms(conn):
+    excludeSearchStringTable = ExcludeSearchStringTable.__table__
+
+    sql = select(
+        columns=[
+            excludeSearchStringTable.c.term,
+            excludeSearchStringTable.c.partial,
+            excludeSearchStringTable.c.full,
+        ]
+    )
+
+    excludedPartialSearchTerms = []
+    excludedFullSearchTerms = []
+
+    for result in conn.execute(sql):
+        if result.partial:
+            excludedPartialSearchTerms.append(result.term.lower())
+        if result.full:
+            excludedFullSearchTerms.append(result.term.lower())
+
+    excludedPartialSearchTerms.sort(key=lambda t: len(t))
+    excludedFullSearchTerms = set(excludedFullSearchTerms)
+
+    return excludedFullSearchTerms, excludedPartialSearchTerms
 
 
 def _loadExistingObjects(newSearchObjects, searchObjectTable):
@@ -544,7 +569,6 @@ def _packObjectJson(updatedIds: List[int], chunkKeysForQueue: Set[int]):
     startTime = datetime.now(pytz.utc)
 
     try:
-
         indexQry = (
             dbSession.query(
                 SearchObject.id,

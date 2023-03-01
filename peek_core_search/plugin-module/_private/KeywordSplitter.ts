@@ -20,36 +20,54 @@ export function _splitFullTokens(keywordStr): string[] {
     return tokens;
 }
 
+export function filterExcludedFullTerms(
+    excludeStrings: Set<string>,
+    keywordStr: string
+): string {
+    return _splitFullTokens(keywordStr)
+        .filter((token) => !excludeStrings.has(token))
+        .join(" ");
+}
+
 /** Full Split Keywords
  *
  * This MUST MATCH the code that runs in the worker
  * peek_core_search/_private/worker/tasks/ImportSearchIndexTask.py
  *
+ * @param excludeStrings: The full keyword strings we ignore
  * @param {string} keywordStr: The keywords as one string
  * @returns {string[]} The keywords as an array
  */
-export function splitFullKeywords(keywordStr): string[] {
+export function splitFullKeywords(
+    excludeStrings: Set<string>,
+    keywordStr
+): string[] {
     // Filter out the empty words and words less than three letters
     const tokens = _splitFullTokens(keywordStr);
 
     let results = [];
-    for (let token of tokens) results.push(`^${token}$`);
+    for (let token of tokens) {
+        if (!excludeStrings.has(token)) {
+            results.push(`^${token}$`);
+        }
+    }
 
     return results;
 }
 
-export function filterExcludedTerms(
-    excludeStrings: string[],
+export function filterExcludedPartialTerms(
+    excludedPartialSearchTerms: string[],
     keywordStr: string
 ): string {
     keywordStr = keywordStr.toLowerCase();
-    for (const excludeString of excludeStrings) {
+
+    for (const excludeString of excludedPartialSearchTerms) {
         keywordStr = keywordStr.replace(excludeString, "");
     }
     return keywordStr;
 }
 
-export function prepareExcludedTermsForFind(
+export function prepareExcludedPartialTermsForFind(
     excludeStrings: string[]
 ): string[] {
     // copy the array
@@ -78,7 +96,7 @@ export function splitPartialKeywords(
     excludeStrings: string[],
     keywordStr
 ): string[] {
-    keywordStr = filterExcludedTerms(excludeStrings, keywordStr);
+    keywordStr = filterExcludedPartialTerms(excludeStrings, keywordStr);
 
     // Filter out the empty words and words less than three letters
     const tokens = _splitFullTokens(keywordStr);

@@ -9,4 +9,5 @@ from peek_core_search._private.PluginNames import searchTuplePrefix
 class ExcludeSearchStringsTuple(Tuple):
     __tupleType__ = searchTuplePrefix + "ExcludeSearchStringsTuple"
 
-    excludedSearchTerms: list[str] = TupleField([])
+    excludedPartialSearchTerms: list[str] = TupleField([])
+    excludedFullSearchTerms: list[str] = TupleField([])

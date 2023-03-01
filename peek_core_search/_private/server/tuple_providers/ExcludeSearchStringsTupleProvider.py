@@ -27,13 +27,18 @@ class ExcludeSearchStringsTupleProvider(TuplesProviderABC):
     ) -> Union[Deferred, bytes]:
         session = self._ormSessionCreator()
         try:
-            excludedSearchTerms = [
-                o.term.lower()
-                for o in session.query(ExcludeSearchStringTable.term).all()
-            ]
+            partials = []
+            fulls = []
+            for exclude in session.query(ExcludeSearchStringTable):
+                if exclude.partial:
+                    partials.append(exclude.term)
+
+                if exclude.full:
+                    fulls.append(exclude.term)
 
             tuple_ = ExcludeSearchStringsTuple()
-            tuple_.excludedSearchTerms = excludedSearchTerms
+            tuple_.excludedPartialSearchTerms = partials
+            tuple_.excludedFullSearchTerms = fulls
 
             # Create the vortex message
             return (

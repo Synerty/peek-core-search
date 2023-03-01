@@ -37,10 +37,13 @@ from peek_core_search._private.tuples.search_object.SearchResultObjectTuple impo
     SearchResultObjectTuple,
 )
 from peek_core_search._private.worker.tasks.KeywordSplitter import (
-    filterExcludedTerms,
+    filterExcludedFullTerms,
 )
 from peek_core_search._private.worker.tasks.KeywordSplitter import (
-    prepareExcludedTermsForFind,
+    filterExcludedPartialTerms,
+)
+from peek_core_search._private.worker.tasks.KeywordSplitter import (
+    prepareExcludedPartialTermsForFind,
 )
 from peek_core_search._private.worker.tasks.KeywordSplitter import (
     splitPartialKeywords,
@@ -67,7 +70,8 @@ class FastKeywordController(TupleActionProcessorDelegateABC):
             str, Dict[str, Dict[str, List[int]]]
         ] = {}
 
-        self._excludedSearchTerms: list[str] = []
+        self.excludedPartialSearchTerms: list[str] = []
+        self.excludedFullSearchTerms: set[str] = set()
 
         excludeStringsTs = TupleSelector(
             ExcludeSearchStringsTuple.tupleName(), {}
@@ -75,8 +79,14 @@ class FastKeywordController(TupleActionProcessorDelegateABC):
 
         def excludeCallback(tuples):
             if tuples:
-                self._excludedSearchTerms = prepareExcludedTermsForFind(
-                    tuples[0].excludedSearchTerms
+                self.excludedPartialSearchTerms = (
+                    prepareExcludedPartialTermsForFind(
+                        tuples[0].excludedPartialSearchTerms
+                    )
+                )
+
+                self.excludedFullSearchTerms = set(
+                    tuples[0].excludedFullSearchTerms
                 )
 
         self._excludedSubscription = (
@@ -89,14 +99,20 @@ class FastKeywordController(TupleActionProcessorDelegateABC):
         self._objectCacheController = None
         self._indexCacheController = None
         self._objectIdsByKeywordByPropertyKeyByChunkKey = {}
-        self._excludedSearchTerms = []
+        self.excludedPartialSearchTerms = []
+        self.excludedFullSearchTerms = set()
 
         # Ok, we won't unsubscribe...
         # AttributeError: 'AnonymousDisposable' object has no attribute 'unsubscribe'
         # self._excludedSubscription.unsubscribe()
 
     def haveEnoughSearchKeywords(self, keywordsString: str) -> bool:
-        kw = filterExcludedTerms(self._excludedSearchTerms, keywordsString)
+        keywordsString = filterExcludedFullTerms(
+            self.excludedFullSearchTerms, keywordsString
+        )
+        kw = filterExcludedPartialTerms(
+            self.excludedPartialSearchTerms, keywordsString
+        )
         return kw and 3 <= len(kw)
 
     @inlineCallbacks
@@ -210,7 +226,9 @@ class FastKeywordController(TupleActionProcessorDelegateABC):
 
         # ---------------
         # Search for fulls
-        fullTokens = splitFullKeywords(searchString)
+        fullTokens = splitFullKeywords(
+            self.excludedFullSearchTerms, searchString
+        )
 
         logger.debug("Searching for full tokens |%s|", fullTokens)
 
@@ -225,7 +243,7 @@ class FastKeywordController(TupleActionProcessorDelegateABC):
         # ---------------
         # Search for partials
         partialTokens = splitPartialKeywords(
-            self._excludedSearchTerms, searchString
+            self.excludedPartialSearchTerms, searchString
         )
         logger.debug("Searching for partial tokens |%s|", partialTokens)
 
@@ -282,7 +300,9 @@ class FastKeywordController(TupleActionProcessorDelegateABC):
         for token in tokens:
             token = token.strip("^$")
             existing = mergedResultsByKw.get(token, list())
-            partialKws = splitPartialKeywords(self._excludedSearchTerms, token)
+            partialKws = splitPartialKeywords(
+                self.excludedPartialSearchTerms, token
+            )
 
             if not len(partialKws) <= len(resultsByPartialKwSet):
                 continue
@@ -295,7 +315,8 @@ class FastKeywordController(TupleActionProcessorDelegateABC):
             )
             while partialKws:
                 objectIdsForToken &= set(
-                    resultsByPartialKw.get(partialKws.pop(), []))
+                    resultsByPartialKw.get(partialKws.pop(), [])
+                )
 
             existing.extend(list(objectIdsForToken))
 
@@ -306,7 +327,6 @@ class FastKeywordController(TupleActionProcessorDelegateABC):
     def _setIntersectFilterIndexResults(
         self, objectIdsByKw: Dict[str, List[int]]
     ) -> List[int]:
-
         if not objectIdsByKw:
             return []
 
@@ -401,7 +421,6 @@ class FastKeywordController(TupleActionProcessorDelegateABC):
 
     @deferToThreadWrapWithLogger(logger)
     def _unpackKeywordsFromChunk(self, chunk: EncodedSearchIndexChunk) -> None:
-
         chunkDataTuples = Payload().fromEncodedPayload(chunk.encodedData).tuples
 
         chunkData: Dict[str, Dict[str, List[int]]] = defaultdict(dict)

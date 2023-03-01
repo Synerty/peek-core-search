@@ -1,7 +1,7 @@
 from twisted.trial import unittest
 
 from peek_core_search._private.worker.tasks.KeywordSplitter import (
-    prepareExcludedTermsForFind,
+    prepareExcludedPartialTermsForFind,
 )
 from peek_core_search._private.worker.tasks.KeywordSplitter import (
     splitPartialKeywords,
@@ -25,25 +25,43 @@ class KeywordSplitterTest(unittest.TestCase):
         )
 
     def testFullKeywordSplit(self):
-        self.assertEqual({"^smith$"}, splitFullKeywords("smith"))
-        self.assertEqual({"^zorro-reyner$"}, splitFullKeywords("ZORRO-REYNER"))
-        self.assertEqual({"^34534535$"}, splitFullKeywords("34534535"))
+        self.assertEqual({"^smith$"}, splitFullKeywords(set(), "smith"))
+        self.assertEqual(
+            {"^zorro-reyner$"}, splitFullKeywords(set(), "ZORRO-REYNER")
+        )
+        self.assertEqual({"^34534535$"}, splitFullKeywords(set(), "34534535"))
 
-        self.assertEqual({"^and$"}, splitFullKeywords("and"))
-        self.assertEqual({"^to$"}, splitFullKeywords("to"))
-        self.assertEqual({"^to$"}, splitFullKeywords("to"))
+        self.assertEqual({"^and$"}, splitFullKeywords(set(), "and"))
+        self.assertEqual({"^to$"}, splitFullKeywords(set(), "to"))
+        self.assertEqual({"^to$"}, splitFullKeywords(set(), "to"))
 
         self.assertEqual(
-            {"^milton$", "^unit$", "^22$"}, splitFullKeywords("Milton Unit 22")
+            {"^milton$", "^unit$", "^22$"},
+            splitFullKeywords(set(), "Milton Unit 22"),
         )
 
-        self.assertEqual({"^unit$"}, splitFullKeywords("Unit A"))
+        self.assertEqual({"^unit$"}, splitFullKeywords(set(), "Unit A"))
 
-        self.assertEqual({"^unit$"}, splitFullKeywords("Unit 1"))
+        self.assertEqual({"^unit$"}, splitFullKeywords(set(), "Unit 1"))
 
         self.assertEqual(
             {"^trans$", "^66kv$", "^b3$", "^cb$", "^ats$"},
-            splitFullKeywords("ATS B3 TRANS 66KV CB"),
+            splitFullKeywords(set(), "ATS B3 TRANS 66KV CB"),
+        )
+
+    def testFullKeywordSplitWithExcludes(self):
+        self.assertEqual(
+            {"^66kv$", "^b3$", "^cb$"},
+            splitFullKeywords({"trans", "ats"}, "ATS B3 TRANS 66KV CB"),
+        )
+
+        self.assertEqual(
+            {"^66kv$", "^b3$", "^cb$", "^trans$"},
+            splitFullKeywords({"tran", "ats"}, "ATS B3 TRANS 66KV CB"),
+        )
+
+        self.assertEqual(
+            {"^milton$", "^22$"}, splitFullKeywords({"unit"}, "Milton Unit 22")
         )
 
     def testPartialKeywordSplit(self):
@@ -111,6 +129,7 @@ class KeywordSplitterTest(unittest.TestCase):
             splitPartialKeywords([], "COL LINS"),
         )
 
+    def test_splitPartialWithExcludes(self):
         # Test to ensure we can remove useless tokens.
         self.assertEqual(
             {"^123", "234", "345", "456"},
@@ -124,8 +143,8 @@ class KeywordSplitterTest(unittest.TestCase):
             ),
         )
 
-    def test_prepareExcludedTermsForFind(self):
+    def test_preparePartialExcludedTermsForFind(self):
         self.assertEqual(
             ["123456", "12345", "1234", "123", "1"],
-            prepareExcludedTermsForFind(["1234", "123", "123456", "1"]),
+            prepareExcludedPartialTermsForFind(["1234", "123", "123456", "1"]),
         )

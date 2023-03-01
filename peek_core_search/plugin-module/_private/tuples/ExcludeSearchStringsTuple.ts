@@ -6,7 +6,8 @@ export class ExcludeSearchStringsTuple extends Tuple {
     public static readonly tupleName =
         searchTuplePrefix + "ExcludeSearchStringsTuple";
 
-    excludedSearchTerms: string[] = [];
+    excludedPartialSearchTerms: string[] = [];
+    excludedFullSearchTerms: string[] = [];
 
     constructor() {
         super(ExcludeSearchStringsTuple.tupleName);
