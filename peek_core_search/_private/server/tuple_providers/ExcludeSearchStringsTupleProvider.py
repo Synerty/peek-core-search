@@ -25,8 +25,6 @@ class ExcludeSearchStringsTupleProvider(TuplesProviderABC):
     def makeVortexMsg(
         self, filt: dict, tupleSelector: TupleSelector
     ) -> Union[Deferred, bytes]:
-        logger.critical("ExcludeSearchStringsTupleProvider")
-
         session = self._ormSessionCreator()
         try:
             excludedSearchTerms = [

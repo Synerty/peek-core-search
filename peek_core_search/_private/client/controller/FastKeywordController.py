@@ -289,12 +289,13 @@ class FastKeywordController(TupleActionProcessorDelegateABC):
 
             # Union all
             objectIdsForToken = (
-                set(resultsByPartialKw[partialKws.pop()])
+                set(resultsByPartialKw.get(partialKws.pop(), []))
                 if partialKws
                 else set()
             )
             while partialKws:
-                objectIdsForToken &= set(resultsByPartialKw[partialKws.pop()])
+                objectIdsForToken &= set(
+                    resultsByPartialKw.get(partialKws.pop(), []))
 
             existing.extend(list(objectIdsForToken))
 
