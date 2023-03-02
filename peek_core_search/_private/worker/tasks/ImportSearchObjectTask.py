@@ -382,7 +382,7 @@ def queryExcludedTerms(conn):
         if result.full:
             excludedFullSearchTerms.append(result.term.lower())
 
-    excludedPartialSearchTerms.sort(key=lambda t: len(t))
+    excludedPartialSearchTerms.sort(key=lambda t: -len(t))
     excludedFullSearchTerms = set(excludedFullSearchTerms)
 
     return excludedFullSearchTerms, excludedPartialSearchTerms
