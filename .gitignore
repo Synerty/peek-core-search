@@ -113,3 +113,4 @@ doc_dist_latex
 
 # for the Peek Doc projects
 **/doc_link
+/peek_core_search/_private/worker/tasks/_trial_temp/_trial_marker
