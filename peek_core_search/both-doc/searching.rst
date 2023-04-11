@@ -13,8 +13,8 @@ This screen is used to search the Peek database.
 
 Searches can be performed with the following criteria :
 
-- Whole keywords (partial is on the roadmap)
-- An object type, or all object types
+- Whole or Parial Keywords
+- An object type, or all object types.
 - The property name that contains the keyword, or all property names.
 
 Peeks Search functionality can be used to find:
