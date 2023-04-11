@@ -3,28 +3,29 @@ Admin Tasks
 
 This section describes how to perform administration tasks for the Search plugin.
 
+General Settings
+````````````````
+To enable or disable the Search compilers:
+
+#. Toggle the Compiler value to **True** or **False**.
+#. Click **Save**.
+
+.. image:: general_settings.png
+    :align: center
+
 Updating Object Type Names
 ``````````````````````````
 
 The search object type names displayed to the user can be update via the admin UI.
 To update the names, follow this procedure:
 
-----
-
 #.  Open the Peek Admin UI and navigate to the Search plugin.
-
 #.  Click on the **Edit Search Object Types** tab.
-
 #.  Update the **Description** column.
-
 #.  Click **Save**.
 
 .. image:: admin_task_update_object_type_name.png
-
-----
-
-The user will see the updated search object type name when next they view the search.
-
+    :align: center
 
 Updating Property Names
 ```````````````````````
@@ -32,21 +33,40 @@ Updating Property Names
 The search property names displayed to the user can be update via the admin UI.
 To update the names, follow this procedure:
 
-----
+
 
 #.  Open the Peek Admin UI and navigate to the Search plugin.
-
 #.  Click on the **Edit Search Properties** tab
-
 #.  Update the **Description** column.
-
 #.  Click **Save**.
 
 .. image:: admin_task_update_object_properties.png
 
-----
 
-The user will see the updated search property names when next they view the search.
+Edit Exclude Search Terms
+`````````````````````````
+To add a keyword for the Search database to exclude:
+
+#. Click **Add**.
+#. Enter a keyword into the **Term** text box.
+#. Select **Partial** to exclude any result containing the keyword.
+#. Select **Full** to exclude only the keyword.
+#. Add a **Comment** if required.
+#. Click **Save**.
+
+
+.. image:: exclude_keyword.png
+    :align: center
+
+To remove an excluded keyword:
+
+#. Click the **Remove** button.
+
+.. image:: remove_exclude.png
+    :align: center
+
+.. note:: You will need to recompile the search keyword index for keyword
+    exclusion to take effect.
 
 Recompile Keyword Index
 ```````````````````````
@@ -58,10 +78,7 @@ Recompiling the index will rebuild these hash buckets.
 
 .. note:: You should not expect to need to recompile the index.
 
-----
-
 #.  Stop all peek services.
-
 #.  Execute the following ::
 
 
@@ -77,9 +94,6 @@ Recompiling the index will rebuild these hash buckets.
 
 #.  Start all Peek services.
 
-----
-
-Peek will now rebuild the keyword index.
 
 Recompile Object Index
 ``````````````````````
@@ -109,7 +123,4 @@ Recompiling the index will rebuild these hash buckets.
 
 #.  Start all Peek services.
 
-----
-
-Peek will now rebuild the object index.
 
