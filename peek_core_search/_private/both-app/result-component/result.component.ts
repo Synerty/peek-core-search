@@ -65,10 +65,11 @@ export class ResultComponent extends NgLifeCycleEvents {
             let typeResult = resultsGroupByType[object.objectType.id];
 
             if (typeResult == null) {
-                typeResult = resultsGroupByType[object.objectType.id] = {
+                typeResult = {
                     type: object.objectType,
                     results: [],
                 };
+                resultsGroupByType[object.objectType.id] = typeResult;
                 resultObjectTypes.push(typeResult);
             }
 
@@ -85,7 +86,9 @@ export class ResultComponent extends NgLifeCycleEvents {
             });
         }
 
-        resultObjectTypes = resultObjectTypes.sort((a,b) => a.order-b.order);
+        resultObjectTypes = resultObjectTypes.sort(
+            (a, b) => a.type.order - b.type.order
+        );
         this.resultObjectTypes$.next(resultObjectTypes);
     }
 
