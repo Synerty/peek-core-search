@@ -13,18 +13,29 @@ To enable or disable the Search compilers:
 .. image:: general_settings.png
     :align: center
 
-Updating Object Type Names
-``````````````````````````
+Editing Search Object Types
+```````````````````````````
 
-The search object type names displayed to the user can be update via the admin UI.
-To update the names, follow this procedure:
+The Object Types displayed to the user can be update via the admin UI.
 
-#.  Open the Peek Admin UI and navigate to the Search plugin.
-#.  Click on the **Edit Search Object Types** tab.
-#.  Update the **Description** column.
-#.  Click **Save**.
+To update the names:
+
+#. Open the Peek Admin UI and navigate to the Search plugin.
+#. Click on the **Edit Search Object Types** tab.
+#. Enter the preferred name in the **Description** column.
+#. Click **Save**.
 
 .. image:: admin_task_update_object_type_name.png
+    :align: center
+
+To update the display order:
+
+#. Open the Peek Admin UI and navigate to the Search plugin.
+#. Click on the **Edit Search Object Types** tab.
+#. Enter the preferred order to display the objects in the **Order** column.
+#. Click **Save**.
+
+.. image:: search_object_order.png
     :align: center
 
 Updating Property Names
@@ -45,6 +56,7 @@ To update the names, follow this procedure:
 
 Edit Exclude Search Terms
 `````````````````````````
+
 To add a keyword for the Search database to exclude:
 
 #. Click **Add**.
