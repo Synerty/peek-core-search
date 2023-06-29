@@ -1,8 +1,9 @@
+import json
 import logging
 from collections import defaultdict
-from typing import List, Optional
+from typing import List
+from typing import Optional
 
-import json
 from vortex.DeferUtil import deferToThreadWrapWithLogger
 from vortex.Payload import Payload
 
@@ -64,7 +65,6 @@ class SearchObjectCacheController(ACICacheControllerABC):
     def getObjectsBlocking(
         self, objectTypeId: Optional[int], objectIds: List[int]
     ) -> List[SearchResultObjectTuple]:
-
         objectIdsByChunkKey = defaultdict(list)
         for objectId in objectIds:
             objectIdsByChunkKey[makeSearchObjectChunkKey(objectId)].append(
@@ -82,7 +82,6 @@ class SearchObjectCacheController(ACICacheControllerABC):
     def _getObjectsForChunkBlocking(
         self, chunkKey: str, objectTypeId: Optional[int], objectIds: List[int]
     ) -> List[SearchResultObjectTuple]:
-
         chunk = self.encodedChunk(chunkKey)
         if not chunk:
             return []

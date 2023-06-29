@@ -6,6 +6,7 @@ This module stores a memory resident model of a graph network.
 import logging
 from collections import defaultdict
 from datetime import datetime
+from functools import cmp_to_key
 from typing import Optional, List, Dict, Iterable, Set
 
 import pytz
@@ -26,6 +27,9 @@ from peek_core_search._private.client.controller.SearchObjectCacheController imp
 )
 from peek_core_search._private.storage.EncodedSearchIndexChunk import (
     EncodedSearchIndexChunk,
+)
+from peek_core_search._private.storage.SearchObjectTypeTuple import (
+    SearchObjectTypeTuple,
 )
 from peek_core_search._private.tuples.ExcludeSearchStringsTuple import (
     ExcludeSearchStringsTuple,
@@ -77,6 +81,8 @@ class FastKeywordController(TupleActionProcessorDelegateABC):
             ExcludeSearchStringsTuple.tupleName(), {}
         )
 
+        # excludeCallback
+
         def excludeCallback(tuples):
             if tuples:
                 self.excludedPartialSearchTerms = (
@@ -93,6 +99,26 @@ class FastKeywordController(TupleActionProcessorDelegateABC):
             serverTupleObserver.subscribeToTupleSelector(
                 excludeStringsTs
             ).subscribe(excludeCallback)
+        )
+
+        # _objectTypeSubscription
+
+        self._objectTypeOrdersById: Dict[int, int] = {}
+
+        def objectTypeCallback(tuples: list[SearchObjectTypeTuple]):
+            if not tuples:
+                return
+
+            self._objectTypeOrdersById = {}
+            for objectType in tuples:
+                self._objectTypeOrdersById[objectType.id] = objectType.order
+
+        objectTypeTs = TupleSelector(SearchObjectTypeTuple.tupleName(), {})
+
+        self._objectTypeSubscription = (
+            serverTupleObserver.subscribeToTupleSelector(
+                objectTypeTs
+            ).subscribe(objectTypeCallback)
         )
 
     def shutdown(self):
@@ -197,6 +223,12 @@ class FastKeywordController(TupleActionProcessorDelegateABC):
                 for w in splitWords:
                     if p.startswith(w):
                         result.rank += len(p) - len(w)
+
+            # 10,000 should be a good differentiator
+            # Order by the results by object type order
+            result.rank *= (
+                self._objectTypeOrdersById.get(result.objectType.id, 0) * 10000
+            )
 
             return True
 

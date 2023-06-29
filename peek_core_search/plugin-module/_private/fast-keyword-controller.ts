@@ -13,22 +13,24 @@ import { SearchTupleService } from "./SearchTupleService";
 import { NgLifeCycleEvents, TupleSelector } from "@synerty/vortexjs";
 import { ExcludeSearchStringsTuple } from "./tuples/ExcludeSearchStringsTuple";
 import { filter, takeUntil } from "rxjs/operators";
+import { SearchObjectTypeTuple } from "@peek/peek_core_search";
 
 export class FastKeywordController {
     private excludedPartialSearchTerms: string[] = [];
     private excludedFullSearchTerms: Set<string> = new Set<string>();
+
+    private objectTypeOrdersById = {};
+
     constructor(
         private searchIndexLoader: PrivateSearchIndexLoaderService,
         private searchObjectLoader: PrivateSearchObjectLoaderService,
         tupleService: SearchTupleService,
         ngLifeCycleEvents: NgLifeCycleEvents
     ) {
-        const excludeStringsTs = new TupleSelector(
-            ExcludeSearchStringsTuple.tupleName,
-            {}
-        );
         tupleService.offlineObserver
-            .subscribeToTupleSelector(excludeStringsTs)
+            .subscribeToTupleSelector(
+                new TupleSelector(ExcludeSearchStringsTuple.tupleName, {})
+            )
             .pipe(takeUntil(ngLifeCycleEvents.onDestroyEvent))
             .pipe(filter((t) => t.length !== 0))
             .subscribe((tuples: any[]) => {
@@ -39,6 +41,19 @@ export class FastKeywordController {
                 this.excludedFullSearchTerms = new Set<string>(
                     tuples[0].excludedFullSearchTerms
                 );
+            });
+
+        tupleService.offlineObserver
+            .subscribeToTupleSelector(
+                new TupleSelector(SearchObjectTypeTuple.tupleName, {})
+            )
+            .pipe(takeUntil(ngLifeCycleEvents.onDestroyEvent))
+            .pipe(filter((t) => t.length !== 0))
+            .subscribe((tuples: any[]) => {
+                this.objectTypeOrdersById = {};
+                for (let tuple of tuples) {
+                    this.objectTypeOrdersById[tuple.id] = tuple.order;
+                }
             });
     }
 
@@ -195,11 +210,11 @@ export class FastKeywordController {
     }
 
     /** Rank and Filter Objects For Search String
-     
+
      STAGE 2 of the search.
-     
+
      This method filters the loaded objects to ensure we have full matches.
-     
+
      :param results:
      :param searchString:
      :param propertyName:
@@ -237,6 +252,11 @@ export class FastKeywordController {
                     if (p.indexOf(w) === 0) result.rank += p.length - w.length;
                 }
             }
+
+            // 10,000 should be a good differentiator
+            // Order by the results by object type order
+            result.rank *=
+                (this.objectTypeOrdersById[result.objectType.id] || 0) * 10000;
 
             return true;
         };
