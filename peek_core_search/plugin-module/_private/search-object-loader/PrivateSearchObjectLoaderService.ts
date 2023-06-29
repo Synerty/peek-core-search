@@ -75,16 +75,16 @@ let OBJECT_BUCKET_COUNT = 8192;
 
 function objectIdChunk(objectId: number): string {
     /** Object ID Chunk
-     
+
      This method creates an int from 0 to MAX, representing the hash bucket for this
      object Id.
-     
+
      This is simple, and provides a reasonable distribution
-     
+
      @param objectId: The ID if the object to get the chunk key for
-     
+
      @return: The bucket / chunkKey where you'll find the object with this ID
-     
+
      */
     if (objectId == null) throw new Error("objectId None or zero length");
 
@@ -480,20 +480,26 @@ export class PrivateSearchObjectLoaderService extends NgLifeCycleEvents {
             );
         }
 
+        const objectIdsAdded = new Set<number>();
         return Promise.all(promises).then(
-            (results: SearchResultObjectTuple[][]) => {
-                let objects: SearchResultObjectTuple[] = [];
-                for (let result of results) {
-                    objects.add(result);
+            (listOfObjectLists: SearchResultObjectTuple[][]) => {
+                let objectsToReturn: SearchResultObjectTuple[] = [];
+                for (let listOfObjects of listOfObjectLists) {
+                    for (let objectTuple of listOfObjects) {
+                        if (!objectIdsAdded.has(objectTuple.id)) {
+                            objectIdsAdded.add(objectTuple.id);
+                            objectsToReturn.push(objectTuple);
+                        }
+                    }
                 }
-                return objects;
+                return objectsToReturn;
             }
         );
     }
 
     /** Get Objects for Object ID
      *
-     * Get the objects with matching keywords from the index..
+     * Get the objects with matching keywords from the index.
      *
      */
     private getObjectsForObjectIds(
