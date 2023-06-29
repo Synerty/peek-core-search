@@ -261,10 +261,18 @@ export class FastKeywordController {
             return true;
         };
 
+        const sortComp = (a, b) => {
+            if (a.rank !== b.rank) {
+                return a.rank - b.rank;
+            }
+
+            return a.key.localeCompare(b.key);
+        };
+
         // Filter and set the rank
         return results //
             .filter(rankResult)
-            .sort((a, b) => a.rank - b.rank);
+            .sort(sortComp);
     }
 
     /** Merge Partial

@@ -232,8 +232,21 @@ class FastKeywordController(TupleActionProcessorDelegateABC):
 
             return True
 
+        def sortComp(a, b):
+            if a.rank != b.rank:
+                return a.rank - b.rank
+
+            if a.key < b.key:
+                return -1
+            elif a.key > b.key:
+                return 1
+            else:
+                return 0
+
         # Filter and set the rank
-        return list(sorted(filter(rankResult, results), key=lambda r: r.rank))
+        return list(
+            sorted(filter(rankResult, results), key=cmp_to_key(sortComp))
+        )
 
     @deferToThreadWrapWithLogger(logger)
     def _getObjectIdsForSearchString(
