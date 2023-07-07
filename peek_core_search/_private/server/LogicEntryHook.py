@@ -3,7 +3,7 @@ import os
 
 from celery import Celery
 from jsoncfg.value_mappers import require_string
-from sqlalchemy import MetaData
+from sqlalchemy import MetaData, text
 
 from peek_plugin_base.server.PluginLogicEntryHookABC import PluginLogicEntryHookABC
 from peek_plugin_base.server.PluginServerStorageEntryHookABC import (
@@ -90,7 +90,7 @@ class LogicEntryHook(
         )
 
         # Rename the plugin schema to core.
-        renameToCoreSql = """
+        renameToCoreSql = text("""
             DO $$
             BEGIN
                 IF EXISTS(
@@ -104,7 +104,7 @@ class LogicEntryHook(
                 END IF;
             END
             $$;
-        """
+        """)
 
         dbSession = dbConn.ormSessionCreator()
         try:
