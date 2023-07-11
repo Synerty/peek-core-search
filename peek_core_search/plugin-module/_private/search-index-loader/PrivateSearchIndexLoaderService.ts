@@ -2,7 +2,6 @@ import { Observable, Subject } from "rxjs";
 import { filter, first, takeUntil } from "rxjs/operators";
 import { Injectable } from "@angular/core";
 import {
-    extend,
     NgLifeCycleEvents,
     Payload,
     PayloadEnvelope,
@@ -31,7 +30,7 @@ import {
 
 // ----------------------------------------------------------------------------
 
-let clientSearchIndexWatchUpdateFromDeviceFilt = extend(
+let clientSearchIndexWatchUpdateFromDeviceFilt = Object.assign(
     { key: "clientSearchIndexWatchUpdateFromDevice" },
     searchFilt
 );
@@ -365,7 +364,10 @@ export class PrivateSearchIndexLoaderService extends NgLifeCycleEvents {
         }
 
         let indexChunk: SearchIndexUpdateDateTuple = this.askServerChunks.pop();
-        let filt = extend({}, clientSearchIndexWatchUpdateFromDeviceFilt);
+        let filt = Object.assign(
+            {},
+            clientSearchIndexWatchUpdateFromDeviceFilt
+        );
         filt[cacheAll] = true;
         let pl = new Payload(filt, [indexChunk]);
         this.vortexService.sendPayload(pl);
