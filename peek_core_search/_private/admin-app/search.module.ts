@@ -1,7 +1,7 @@
 import { CommonModule } from "@angular/common";
 import { FormsModule } from "@angular/forms";
 import { NgModule } from "@angular/core";
-import { RouterModule, Routes } from "@angular/router";
+import { RouterModule, Route, Routes } from "@angular/router";
 import { EditPropertyComponent } from "./edit-property-table/edit.component";
 import { EditObjectTypeComponent } from "./edit-object-type-table/edit.component";
 import { EditSettingComponent } from "./edit-setting-table/edit.component";
