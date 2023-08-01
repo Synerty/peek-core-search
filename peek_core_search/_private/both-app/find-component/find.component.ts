@@ -71,7 +71,7 @@ export class FindComponent extends NgLifeCycleEvents implements OnInit {
             .subscribe((state) => this.searchNotAvailable$.next(state));
     }
 
-    ngOnInit() {
+    override ngOnInit() {
         const propTs = new TupleSelector(SearchPropertyTuple.tupleName, {});
         this.tupleService.offlineObserver
             .subscribeToTupleSelector(propTs)
