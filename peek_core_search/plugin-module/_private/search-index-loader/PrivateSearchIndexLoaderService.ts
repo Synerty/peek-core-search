@@ -50,7 +50,7 @@ class SearchIndexChunkTupleSelector extends TupleSelector {
         super(searchTuplePrefix + "SearchIndexChunkTuple", { key: chunkKey });
     }
 
-    toOrderedJsonStr(): string {
+    override toOrderedJsonStr(): string {
         return this.chunkKey.toString();
     }
 }

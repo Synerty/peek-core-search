@@ -51,7 +51,7 @@ class SearchObjectChunkTupleSelector extends TupleSelector {
         super(searchTuplePrefix + "SearchObjectChunkTuple", { key: chunkKey });
     }
 
-    toOrderedJsonStr(): string {
+    override toOrderedJsonStr(): string {
         return this.chunkKey.toString();
     }
 }
