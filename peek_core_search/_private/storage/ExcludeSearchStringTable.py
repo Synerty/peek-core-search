@@ -7,7 +7,7 @@ from vortex.Tuple import Tuple, addTupleType
 
 
 @addTupleType
-class ExcludeSearchStringTable(Tuple, DeclarativeBase):
+class ExcludeSearchStringTable(DeclarativeBase, Tuple):
     __tupleType__ = searchTuplePrefix + "ExcludeSearchStringTable"
     __tablename__ = "ExcludeSearchString"
 
