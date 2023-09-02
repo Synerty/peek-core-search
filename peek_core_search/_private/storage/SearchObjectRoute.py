@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 @addTupleType
-class SearchObjectRoute(Tuple, DeclarativeBase):
+class SearchObjectRoute(DeclarativeBase, Tuple):
     """Search Object Route
 
     This is like the "Open with"

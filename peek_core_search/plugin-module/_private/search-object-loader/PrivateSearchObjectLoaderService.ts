@@ -2,7 +2,6 @@ import { Observable, Subject } from "rxjs";
 import { filter, first, takeUntil } from "rxjs/operators";
 import { Injectable } from "@angular/core";
 import {
-    extend,
     NgLifeCycleEvents,
     Payload,
     PayloadEnvelope,
@@ -34,7 +33,7 @@ import { SearchIndexUpdateDateTuple } from "@peek/peek_core_search/_private";
 
 // ----------------------------------------------------------------------------
 
-let clientSearchObjectWatchUpdateFromDeviceFilt = extend(
+let clientSearchObjectWatchUpdateFromDeviceFilt = Object.assign(
     { key: "clientSearchObjectWatchUpdateFromDevice" },
     searchFilt
 );
@@ -52,7 +51,7 @@ class SearchObjectChunkTupleSelector extends TupleSelector {
         super(searchTuplePrefix + "SearchObjectChunkTuple", { key: chunkKey });
     }
 
-    toOrderedJsonStr(): string {
+    override toOrderedJsonStr(): string {
         return this.chunkKey.toString();
     }
 }
@@ -362,7 +361,10 @@ export class PrivateSearchObjectLoaderService extends NgLifeCycleEvents {
 
         let indexChunk: SearchObjectUpdateDateTuple =
             this.askServerChunks.pop();
-        let filt = extend({}, clientSearchObjectWatchUpdateFromDeviceFilt);
+        let filt = Object.assign(
+            {},
+            clientSearchObjectWatchUpdateFromDeviceFilt
+        );
         filt[cacheAll] = true;
         let pl = new Payload(filt, [indexChunk]);
         this.vortexService.sendPayload(pl);

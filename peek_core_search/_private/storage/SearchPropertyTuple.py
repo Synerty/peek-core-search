@@ -7,7 +7,7 @@ from vortex.Tuple import Tuple, addTupleType
 
 
 @addTupleType
-class SearchPropertyTuple(Tuple, DeclarativeBase):
+class SearchPropertyTuple(DeclarativeBase, Tuple):
     __tupleType__ = searchTuplePrefix + "SearchPropertyTuple"
     __tablename__ = "SearchProperty"
 

@@ -1,7 +1,6 @@
 import { Component } from "@angular/core";
 import { BalloonMsgService } from "@synerty/peek-plugin-base-js";
 import {
-    extend,
     NgLifeCycleEvents,
     TupleLoader,
     VortexService,
@@ -28,7 +27,7 @@ export class EditObjectTypeComponent extends NgLifeCycleEvents {
         super();
 
         this.loader = vortexService.createTupleLoader(this, () =>
-            extend({}, this.filt, searchFilt)
+            Object.assign({}, this.filt, searchFilt)
         );
 
         this.loader.observable.subscribe(

@@ -15,10 +15,12 @@ branch_labels = None
 depends_on = None
 
 from alembic import op
+from sqlalchemy import text
 
 
 def _alterColumnPkBigInt(schemaName, tableName):
-    return """
+    return text(
+        """
         
         DO $$
             DECLARE
@@ -67,8 +69,8 @@ def _alterColumnPkBigInt(schemaName, tableName):
         ALTER TABLE %(schemaName)s."%(tableName)s"
         ALTER COLUMN "%(columnName)s" SET DEFAULT 
             nextval('%(schemaName)s."%(tableName)s_%(columnName)s_seq"'::regclass);
-        """ % dict(
-        schemaName=schemaName, tableName=tableName, columnName="id"
+        """
+        % dict(schemaName=schemaName, tableName=tableName, columnName="id")
     )
 
 

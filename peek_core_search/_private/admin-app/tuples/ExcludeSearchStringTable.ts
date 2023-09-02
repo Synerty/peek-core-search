@@ -8,6 +8,8 @@ export class ExcludeSearchStringTable extends Tuple {
 
     id: number;
     term: string;
+    partial: boolean;
+    full: boolean;
     comment: string;
 
     constructor() {

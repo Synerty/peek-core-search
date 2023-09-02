@@ -8,7 +8,7 @@ export class SearchObjectUpdateDateTuple extends Tuple {
     initialLoadComplete: boolean = false;
     updateDateByChunkKey: {} = {};
     // Improve performance of the JSON serialisation
-    protected _rawJonableFields = [
+    protected override _rawJonableFields = [
         "initialLoadComplete",
         "updateDateByChunkKey",
     ];

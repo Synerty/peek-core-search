@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=61.2", "setuptools-scm[toml]>=7.1"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "peek-core-search"
+version = "0.0.0"
+authors = [{name = "Synerty", email = "contact@synerty.com"}]
+description = "Peek Plugin Search - My first enhancement."
+keywords = ["Peek", "Python", "Platform", "synerty"]
+classifiers = []
+dependencies = [
+    "peek-plugin-base==0.0.*,>=0.0.0",
+    "peek_abstract_chunked_index==0.0.*,>=0.0.0",
+]
+
+[project.urls]
+Homepage = "https://bitbucket.org/synerty/peek-core-search"
+Download = "https://bitbucket.org/synerty/peek-core-search/get/0.0.0.zip"
+
+#https://stackoverflow.com/a/75636144
+
+# exclude/include in python packages
+# use from ... import ... for package paths
+[tool.setuptools.packages.find]
+where = ["."]
+namespaces = false
+exclude = ["*.tests", "*.tests.*", "tests.*", "tests",
+    "*.node_modules", "*.node_modules.*", "node_modules.*", "node_modules",
+]
+
+# includes for data files - files outside of python packages
+[tool.setuptools.package-data]
+"*" = ["webpack.config.js", "karma.conf.js", "protractor.conf.js"]
+
+# exludes for data files - files outside of python packages
+[tool.setuptools.exclude-package-data]
+"*" = ["__pycache__", "platforms", "dist",
+    "*.pyc", "*.js", "*.js.map", "*.lastHash"
+]

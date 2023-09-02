@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 @addTupleType
-class SearchObject(Tuple, DeclarativeBase):
+class SearchObject(DeclarativeBase, Tuple):
     __tablename__ = "SearchObject"
     __tupleType__ = searchTuplePrefix + "SearchObjectTable"
 
